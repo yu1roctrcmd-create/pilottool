@@ -1661,15 +1661,22 @@ function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
   const g       = document.getElementById('gantt');
   const MIN_GAP = 8; // % — minimum spacing between axis labels to avoid overlap
 
-  const uniqMain = [...new Set([toM, winStart, ...slots.slice(1).map(s=>s.start), winEnd, etaM])]
-    .sort((a,b)=>a-b);
+  // T/O, each rest start, ETA are always labeled (never suppressed)
+  const alwaysLabelMs = new Set([toM, ...slots.map(s => s.start), etaM]);
+
+  const uniqMain = [...new Set([toM, ...slots.map(s => s.start), winEnd, etaM])]
+    .sort((a,b) => a-b);
 
   let lastLabelPct = -Infinity;
   const mainTickData = uniqMain.map(m => {
-    const pct = (m-toM)/flightDur*100;
-    const showLabel = (pct - lastLabelPct) >= MIN_GAP;
+    const pct    = (m-toM)/flightDur*100;
+    const forced = alwaysLabelMs.has(m);
+    const showLabel = forced || (pct - lastLabelPct) >= MIN_GAP;
     if (showLabel) lastLabelPct = pct;
-    return { m, pct, showLabel };
+    const label = m === toM   ? 'T/O ' + toTimeStr(m)
+                : m === etaM  ? 'ETA ' + toTimeStr(m)
+                : toTimeStr(m);
+    return { m, pct, showLabel, label };
   });
 
   const labeledPcts = mainTickData.filter(t => t.showLabel).map(t => t.pct);
@@ -1683,10 +1690,11 @@ function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
   const tickTxf = pct => pct < 5 ? 'translateX(0)' : pct > 95 ? 'translateX(-100%)' : 'translateX(-50%)';
 
   let html = `<div class="g-axis-row"><div class="g-axis-spacer"></div><div class="g-axis">`;
-  mainTickData.forEach(({ m, pct, showLabel }) => {
+  mainTickData.forEach(({ m, pct, showLabel, label }) => {
+    const isSpecial = m === toM || m === etaM;
     html += `<div class="g-tick" style="left:${pct.toFixed(2)}%;transform:${tickTxf(pct)}">
-      <div class="g-tick-line"></div>
-      ${showLabel ? `<div class="g-tick-label">${toTimeStr(m)}</div>` : ''}
+      <div class="g-tick-line" style="${isSpecial ? 'background:#00c8ff;height:9px;' : ''}"></div>
+      ${showLabel ? `<div class="g-tick-label" style="${isSpecial ? 'color:#00c8ff;font-weight:700;' : ''}">${label}</div>` : ''}
     </div>`;
   });
   halfTickData.forEach(({ m, pct }) => {
