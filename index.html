@@ -1585,15 +1585,17 @@ function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
     return ok ? { m, pct } : null;
   }).filter(Boolean);
 
+  const tickTxf = pct => pct < 5 ? 'translateX(0)' : pct > 95 ? 'translateX(-100%)' : 'translateX(-50%)';
+
   let html = `<div class="g-axis-row"><div class="g-axis-spacer"></div><div class="g-axis">`;
   mainTickData.forEach(({ m, pct, showLabel }) => {
-    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%">
+    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%;transform:${tickTxf(pct)}">
       <div class="g-tick-line"></div>
       ${showLabel ? `<div class="g-tick-label">${toTimeStr(m)}</div>` : ''}
     </div>`;
   });
   halfTickData.forEach(({ m, pct }) => {
-    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%">
+    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%;transform:${tickTxf(pct)}">
       <div class="g-tick-line" style="background:#2a4060;height:4px;"></div>
       <div class="g-tick-label" style="font-size:.55rem;color:#2a4a6a;">½ ${toTimeStr(m)}</div>
     </div>`;
