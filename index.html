@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NCA Tools">
+  <title>NCA Tools</title>
+  <style>
+    /* ══════════════════════════════════════════
+       ROOT / RESET
+    ══════════════════════════════════════════ */
+    :root {
+      --bg:     #060d16;
+      --card:   #0b1624;
+      --border: #162840;
+      --accent: #00c8ff;
+      --text:   #b8cce0;
+      --muted:  #4a6880;
+      --green:  #00e698;
+      --gold:   #ffd166;
+      --warn:   #ff8c42;
+      --error:  #ff4560;
+      --purple: #b48aff;
+      --radius: 12px;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════════════════
+       TAB BAR
+    ══════════════════════════════════════════ */
+    .tab-bar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      max-width: 480px; margin: 0 auto;
+    }
+    .tab-btn {
+      flex: 1; padding: 13px 4px 11px; border: none; background: transparent;
+      color: var(--muted); font-family: inherit; font-size: 0.75em; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ══════════════════════════════════════════
+       PANELS
+    ══════════════════════════════════════════ */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .tab-content {
+      max-width: 480px; margin: 0 auto; padding: 16px 16px 40px;
+    }
+
+    /* ══════════════════════════════════════════
+       SHARED: XWIND + PITCH
+    ══════════════════════════════════════════ */
+
+    /* ── HEADER ── */
+    .hdr {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 12px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
+    }
+    .hdr-left { display: flex; flex-direction: column; gap: 2px; }
+    .hdr-ac  { font-size: 1.3em; font-weight: 700; color: var(--accent); letter-spacing: 3px; display: block; }
+    .hdr-sub { font-size: 0.68em; color: var(--muted); letter-spacing: 1.5px; display: block; margin-top: 2px; }
+    .hdr-rev { font-size: 0.6em; color: #2a4860; text-align: right; line-height: 1.4; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.6em; font-weight: 600; color: var(--accent);
+      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 12px;
+    }
+
+    /* ── FORM ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fg   { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .fg:last-child { margin-bottom: 0; }
+    label {
+      font-size: 0.62em; color: var(--muted); letter-spacing: 1.5px;
+      text-transform: uppercase; font-weight: 500;
+    }
+    select, input[type="number"] {
+      width: 100%; background: #060d16; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 10px 12px;
+      font-family: inherit; font-size: 0.95em;
+      -webkit-appearance: none; appearance: none; transition: border-color 0.15s;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M.5.5l5 5 5-5' stroke='%234a6880' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+    .hint { font-size: 0.6em; color: #2a4860; letter-spacing: 0.5px; }
+
+    /* ── TOGGLE BUTTON GROUP ── */
+    .tgl-group { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .tgl {
+      flex: 1; padding: 10px 8px; background: #060d16; border: none; color: var(--muted);
+      font-family: inherit; font-size: 0.88em; font-weight: 600; cursor: pointer;
+      letter-spacing: 1px; transition: all 0.15s; border-right: 1px solid var(--border);
+    }
+    .tgl:last-child { border-right: none; }
+    .tgl.on        { background: var(--accent);  color: #060d16; }
+    .tgl.on-green  { background: var(--green);   color: #060d16; }
+    .tgl.on-purple { background: var(--purple);  color: #060d16; }
+
+    /* ── XW LIMIT BOX ── */
+    .xwl-box {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #060d16; border: 1px solid var(--accent); border-radius: 8px;
+      padding: 10px 16px; margin-top: 10px;
+    }
+    .xwl-left  { display: flex; flex-direction: column; gap: 2px; }
+    .xwl-label { font-size: 0.6em; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+    .xwl-cond  { font-size: 0.7em; color: var(--accent); opacity: 0.7; }
+    .xwl-right { display: flex; align-items: baseline; gap: 5px; }
+    .xwl-val   { font-size: 2.4em; font-weight: 700; color: var(--accent); line-height: 1; }
+    .xwl-unit  { font-size: 0.8em; color: var(--muted); letter-spacing: 1px; }
+    .xwl-star  { font-size: 0.62em; color: var(--warn); margin-top: 2px; }
+
+    /* ── FORMULA BOX ── */
+    .formula-box {
+      background: #060d16; border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; font-size: 0.82em; color: var(--muted); line-height: 1.8;
+    }
+    .formula-box .big { font-size: 1.15em; font-weight: 700; color: var(--accent); }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      background: linear-gradient(160deg, #070f1c 0%, #0a1828 100%);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; margin-bottom: 12px; position: relative;
+    }
+    .result-card::after {
+      content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,200,255,0.4), transparent);
+    }
+
+    /* ── DIAGRAM ── */
+    #diagram { display: block; margin: 0 auto 14px; }
+
+    /* ── COMPONENT GRID ── */
+    .comp3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .comp-item  { background: #060d16; border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; }
+    .comp-label { font-size: 0.55em; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .comp-val   { font-size: 1.9em; font-weight: 700; letter-spacing: 0.5px; line-height: 1; color: #1a3050; transition: color 0.2s; }
+    .comp-val.head  { color: var(--green); }
+    .comp-val.tail  { color: var(--error); }
+    .comp-val.cross { color: var(--gold);  }
+    .comp-val.zero  { color: #2a4060; }
+    .comp-unit { font-size: 0.58em; color: var(--muted); letter-spacing: 1.5px; margin-top: 2px; }
+    .comp-dir  { font-size: 0.58em; color: var(--muted); margin-top: 3px; min-height: 12px; }
+
+    /* ── LIMIT BARS ── */
+    .lbar {
+      padding: 11px 14px; border-radius: 8px; font-size: 0.82em; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
+    .lbar:last-child { margin-bottom: 0; }
+    .lbar.ok     { background: rgba(0,230,152,0.08); border: 1px solid rgba(0,230,152,0.3); color: var(--green); }
+    .lbar.exceed { background: rgba(255,69,96,0.12);  border: 1px solid rgba(255,69,96,0.35); color: var(--error); }
+    .lbar.warn-y { background: rgba(255,140,66,0.1);  border: 1px solid rgba(255,140,66,0.3); color: var(--warn); }
+    .lbar .lval  { font-size: 1.2em; letter-spacing: 1px; }
+
+    /* ── AUTOLAND SECTION ── */
+    .al-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .al-title   { font-size: 0.6em; color: var(--purple); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .al-badge   { background: rgba(180,138,255,0.15); border: 1px solid rgba(180,138,255,0.35); border-radius: 4px; padding: 2px 6px; font-size: 0.9em; color: var(--purple); }
+    .al-row     { display: grid; grid-template-columns: 52px 1fr 60px 48px; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.8em; border-bottom: 1px solid var(--border); }
+    .al-row:last-child { border-bottom: none; }
+    .al-lbl  { color: var(--muted); font-size: 0.9em; letter-spacing: 1px; }
+    .al-bar  { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+    .al-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .al-lim  { color: var(--muted); font-size: 0.85em; text-align: right; }
+    .al-stat { font-weight: 700; font-size: 0.9em; text-align: right; }
+    .al-stat.ok { color: var(--green); }
+    .al-stat.ng { color: var(--error); }
+
+    /* ── TAS BOX ── */
+    .tas-box {
+      background: #060d16; border: 1px solid rgba(0,230,152,0.4); border-radius: 8px;
+      padding: 12px 16px; margin-top: 10px; min-height: 44px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .tas-formula { font-size: 0.75em; color: var(--muted); line-height: 1.9; }
+    .tas-total   { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+    .tas-label   { font-size: 0.6em; color: var(--green); letter-spacing: 2px; text-transform: uppercase; }
+    .tas-val     { font-size: 2.4em; font-weight: 700; color: var(--green); line-height: 1; }
+    .tas-unit    { font-size: 0.8em; color: var(--muted); letter-spacing: 1px; }
+
+    /* ── PITCH: result-card override ── */
+    #tab-pitch .result-card {
+      border: 1px solid var(--accent);
+      padding: 22px 20px 20px; text-align: center; overflow: hidden;
+    }
+    .res-label { font-size: 0.6em; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+    .res-val   { font-size: 5em; font-weight: 700; line-height: 1; letter-spacing: 1px; transition: color 0.25s, opacity 0.25s; }
+    .res-val.idle { color: #1a3050; }
+    .res-val.ok   { color: #00e5ff; }
+    .res-val.na   { color: var(--warn);  font-size: 2.8em; padding: 12px 0; }
+    .res-val.err  { color: var(--error); font-size: 2.4em; padding: 12px 0; }
+    .res-unit   { font-size: 0.68em; color: var(--muted); letter-spacing: 3px; margin-top: 6px; }
+    .breakdown  { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); text-align: left; }
+    .brow       { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.82em; color: var(--muted); }
+    .brow .v    { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+    .brow.total { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--accent); font-weight: 600; }
+    .msg        { font-size: 0.75em; padding: 10px 14px; border-radius: 8px; margin-top: 12px; line-height: 1.5; text-align: left; }
+    .msg.error  { background: rgba(255,69,96,0.1);  border: 1px solid rgba(255,69,96,0.3);  color: #ff8090; }
+    .msg.warn   { background: rgba(255,140,66,0.1); border: 1px solid rgba(255,140,66,0.3); color: #ffa060; }
+
+    /* ── FOOTNOTE ── */
+    .footnote { font-size: 0.62em; color: #1e3450; line-height: 1.7; padding: 4px 4px 0; }
+    .footnote li { margin-left: 14px; }
+
+    /* ══════════════════════════════════════════
+       CREW TAB
+    ══════════════════════════════════════════ */
+    #tab-crew .tab-content { max-width: 860px; background: #070c18; color: #d4e4ff; }
+    #tab-crew .card        { background: #0f1829; border: 1px solid #1a3055; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    #tab-crew .card-title  { font-size: 0.75rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a6a99; margin-bottom: 18px; }
+
+    .crew-hdr { text-align: center; margin-bottom: 32px; }
+    .crew-hdr h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #60a5fa; }
+    .crew-hdr p  { color: #4a6a99; font-size: 0.85rem; margin-top: 4px; letter-spacing: 1px; }
+
+    /* Drum picker */
+    .picker-row   { display: flex; gap: 16px; flex-wrap: wrap; }
+    .picker-group { flex: 1; min-width: 200px; }
+    .picker-group-label { font-size: 0.75rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
+    .drum {
+      position: relative; height: 220px;
+      background: #070c18; border: 1px solid #1a3055;
+      border-radius: 14px; overflow: hidden;
+      display: flex; align-items: stretch;
+    }
+    .drum-col {
+      flex: 1; overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding: 88px 0;
+      overscroll-behavior: contain;
+    }
+    .drum-col::-webkit-scrollbar { display: none; }
+    .drum-item {
+      height: 44px; display: flex; align-items: center; justify-content: center;
+      scroll-snap-align: center; font-size: 2rem; font-weight: 200;
+      color: #d4e4ff; font-variant-numeric: tabular-nums; letter-spacing: 3px;
+    }
+    .drum-sep {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 200; color: #3a5a88;
+      flex-shrink: 0; width: 28px; position: relative; z-index: 4; padding-bottom: 4px;
+    }
+    .drum::before, .drum::after {
+      content: ''; position: absolute; left: 0; right: 0; pointer-events: none; z-index: 2;
+    }
+    .drum::before {
+      top: 0; height: 42%;
+      background: linear-gradient(to bottom, #070c18 0%, rgba(7,12,24,.85) 50%, transparent 100%);
+    }
+    .drum::after {
+      bottom: 0; height: 42%;
+      background: linear-gradient(to top, #070c18 0%, rgba(7,12,24,.85) 50%, transparent 100%);
+    }
+    .drum-sel {
+      position: absolute; top: 50%; left: 10px; right: 10px;
+      transform: translateY(-50%); height: 44px;
+      border-top: 1px solid #2a4a7f; border-bottom: 1px solid #2a4a7f;
+      border-radius: 6px; pointer-events: none; z-index: 3;
+    }
+    .drum-display {
+      text-align: center; font-size: 1.05rem; font-weight: 600;
+      color: #60a5fa; margin-top: 10px; font-variant-numeric: tabular-nums;
+      letter-spacing: 3px; min-height: 1.4em;
+    }
+
+    /* Crew order */
+    .crew-order-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .crew-slot      { flex: 1; min-width: 100px; }
+    .crew-slot-label { font-size: 0.68rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; text-align: center; }
+    .crew-slot-num  { font-size: 0.55rem; background: #1a3055; color: #4a6a99; border-radius: 3px; padding: 1px 5px; margin-right: 4px; }
+    .crew-select {
+      width: 100%; background: #070c18; border: 1px solid #1a3055;
+      border-radius: 10px; color: #d4e4ff; font-size: 1.25rem; font-weight: 700;
+      letter-spacing: 2px; padding: 10px; outline: none; text-align: center;
+      -webkit-appearance: none; appearance: none; cursor: pointer; transition: border-color 0.15s;
+    }
+    .crew-select:focus          { border-color: #60a5fa; }
+    .crew-select.color-cap      { color: #60a5fa; border-color: #1d4ed8; }
+    .crew-select.color-cop      { color: #34d399; border-color: #065f46; }
+    .crew-select.color-cpm      { color: #fbbf24; border-color: #92400e; }
+    .slot-arrow { display: flex; align-items: center; justify-content: center; color: #2a4060; font-size: 1rem; flex-shrink: 0; padding-top: 28px; }
+
+    /* Calc button */
+    .calc-btn {
+      width: 100%; margin-top: 20px; padding: 13px;
+      background: #1d4ed8; border: none; border-radius: 8px;
+      color: #fff; font-size: 0.9rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .calc-btn:hover  { background: #2563eb; }
+    .calc-btn:active { transform: scale(0.99); }
+
+    /* Summary */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .summary-item { background: #0f1829; border: 1px solid #1a3055; border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .s-label { font-size: 0.7rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .s-value { font-size: 1.4rem; font-weight: 700; color: #60a5fa; font-variant-numeric: tabular-nums; }
+    .s-sub   { font-size: 0.7rem; color: #4a6a99; margin-top: 2px; }
+
+    /* Gantt */
+    .gantt-wrap { overflow-x: auto; }
+    .gantt { min-width: 500px; padding-bottom: 4px; }
+    .g-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .g-label    { width: 48px; font-size: 0.85rem; font-weight: 700; text-align: right; flex-shrink: 0; }
+    .g-bar-wrap { flex: 1; position: relative; height: 38px; background: #070c18; border-radius: 6px; }
+    .g-seg { position: absolute; top: 0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; overflow: hidden; }
+    .g-seg:first-child { border-radius: 6px 0 0 6px; }
+    .g-seg:last-child  { border-radius: 0 6px 6px 0; }
+    .seg-buffer     { background: #0c1525; color: #2a4060; }
+    .seg-duty       { background: #111e36; color: #2a4a70; }
+    .seg-rest-cap   { background: #1d4ed8; color: #bfdbfe; }
+    .seg-rest-cop   { background: #065f46; color: #a7f3d0; }
+    .seg-rest-cpm   { background: #92400e; color: #fde68a; }
+    .seg-ref-window { background: #1a2540; }
+    .g-axis-row    { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+    .g-axis-spacer { width: 48px; flex-shrink: 0; }
+    .g-axis  { flex: 1; position: relative; height: 24px; min-width: 0; }
+    .g-tick  { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .g-tick-line  { width: 1px; height: 6px; background: #2a4060; }
+    .g-tick-label { font-size: 0.65rem; color: #4a6a99; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    /* Table */
+    .rest-table { width: 100%; border-collapse: collapse; }
+    .rest-table th { background: #070c18; padding: 9px 14px; text-align: left; font-size: 0.7rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #1a3055; }
+    .rest-table td { padding: 12px 14px; border-bottom: 1px solid #0c1525; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+    .rest-table tr:last-child td { border-bottom: none; }
+    .c-cap { color: #60a5fa; font-weight: 700; }
+    .c-cop { color: #34d399; font-weight: 700; }
+    .c-cpm { color: #fbbf24; font-weight: 700; }
+
+    .crew-results { display: none; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #4a6a99; }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* Segmented control (crew buffer) */
+    .seg-ctrl { display: flex; background: #070c18; border: 1px solid #1a3055; border-radius: 10px; padding: 3px; gap: 3px; }
+    .seg-btn  { flex: 1; padding: 9px 6px; background: transparent; border: none; border-radius: 7px; color: #4a6a99; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .seg-btn.active { background: #1a3055; color: #60a5fa; }
+
+    /* Gantt half-duration dotted line */
+    .g-half-line {
+      position: absolute;
+      left: 50%; top: 5px; bottom: 5px;
+      border-left: 1.5px dashed rgba(255,255,255,0.3);
+      pointer-events: none;
+    }
+
+    .error-msg { background: #2d1515; border: 1px solid #7f2020; border-radius: 8px; padding: 14px 18px; color: #f87171; font-size: 0.9rem; display: none; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- TAB BAR -->
+<div class="tab-bar" id="main-tab-bar">
+  <button class="tab-btn active" onclick="switchTab('xwind',this)">XWIND</button>
+  <button class="tab-btn"        onclick="switchTab('pitch',this)">PITCH</button>
+  <button class="tab-btn"        onclick="switchTab('crew', this)">CREW</button>
+</div>
+
+<!-- ═══════════════════════════ TAB: XWIND ═══════════════════════════ -->
+<div class="tab-panel active" id="tab-xwind">
+<div class="tab-content">
+
+<div class="hdr">
+  <div>
+    <span class="hdr-ac">B747-8F</span>
+    <span class="hdr-sub">CROSSWIND CALCULATOR</span>
+  </div>
+  <div class="hdr-rev">NCA 運航規程<br>S-3-5</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Runway</div>
+  <div class="row2">
+    <div class="fg">
+      <label>RW</label>
+      <select id="rwyNum" onchange="onRwySelect()">
+        <option value="">選択...</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>RW HDG (°MAG)</label>
+      <input type="number" id="rwyHdg" value="" min="1" max="360" step="1"
+             inputmode="numeric" placeholder="---" oninput="calc()">
+      <span class="hint">実際の磁方位で微修正</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Wind</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Direction Type</label>
+      <select id="windType" onchange="toggleMagVar(); calc()">
+        <option value="MAG">Magnetic</option>
+        <option value="TRUE">True (気象テレタイプ)</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Direction (°)</label>
+      <input type="number" id="windDir" value="270" min="0" max="360" step="1"
+             inputmode="numeric" oninput="calc()">
+    </div>
+  </div>
+  <div class="fg" id="magVarGroup" style="display:none">
+    <label>Magnetic Variation (East +, West −)</label>
+    <input type="number" id="magVar" value="-8" step="0.5" inputmode="decimal" oninput="calc()">
+    <span class="hint">日本 ≈ −7〜−9°（磁偏西）</span>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Steady (KT)</label>
+      <input type="number" id="steady" value="20" min="0" max="99" step="1"
+             inputmode="numeric" oninput="updateGustOptions()">
+    </div>
+    <div class="fg">
+      <label>Gust / Max Wind (KT)</label>
+      <select id="gust" onchange="calc()">
+        <option value="">なし</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Runway Condition &amp; Limits</div>
+  <div class="fg">
+    <label>Operation</label>
+    <div class="tgl-group">
+      <button id="btnTO"  class="tgl on" onclick="setOp('TO')">TO</button>
+      <button id="btnLDG" class="tgl"    onclick="setOp('LDG')">LDG</button>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Runway Condition</label>
+    <select id="rwyCond" onchange="onCondChange()">
+      <option value="">選択...</option>
+      <optgroup label="── DRY ──">
+        <option value="dry">Dry</option>
+      </optgroup>
+      <optgroup label="── WET ──">
+        <option value="wet_grv">Wet — Grooved / PFC</option>
+        <option value="wet_ngrv">Wet — Non Grooved</option>
+      </optgroup>
+      <optgroup label="── CONTAMINATED ──">
+        <option value="rwycc5">RWYCC 5  /  Braking Good</option>
+        <option value="rwycc4">RWYCC 4  /  Good to Medium  ★</option>
+        <option value="rwycc3">RWYCC 3  /  Medium  ★</option>
+        <option value="rwycc2">RWYCC 2  /  Medium to Poor  ★</option>
+        <option value="rwycc1">RWYCC 1  /  Poor</option>
+      </optgroup>
+    </select>
+  </div>
+  <div class="fg" id="rwyLenGroup" style="display:none">
+    <label>Runway Length  <span style="color:var(--warn)">★ 適用条件</span></label>
+    <div class="tgl-group">
+      <button id="btnLong"  class="tgl on" onclick="setLen('long')">≥ 3,000 m</button>
+      <button id="btnShort" class="tgl"    onclick="setLen('short')">&lt; 3,000 m</button>
+    </div>
+  </div>
+  <div class="xwl-box" id="xwlBox" style="display:none">
+    <div class="xwl-left">
+      <span class="xwl-label">Crosswind Limit</span>
+      <span class="xwl-cond" id="xwlCond">—</span>
+      <span class="xwl-star" id="xwlStar" style="display:none">★ &lt;3000m LDG 適用値</span>
+    </div>
+    <div class="xwl-right">
+      <span class="xwl-val" id="xwlVal">--</span>
+      <span class="xwl-unit">KT</span>
+    </div>
+  </div>
+  <div class="fg" id="autolandGroup" style="display:none">
+    <label>Autoland (AFM)</label>
+    <div class="tgl-group">
+      <button id="btnAlOff" class="tgl on"        onclick="setAutoland(false)">OFF</button>
+      <button id="btnAlOn"  class="tgl on-purple" style="background:#060d16;color:var(--muted)" onclick="setAutoland(true)">ON</button>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="tasCard" style="display:none">
+  <div class="card-title">Target Approach Speed</div>
+  <div class="row2">
+    <div class="fg">
+      <label>VREF (KT)</label>
+      <input type="number" id="vref" value="" min="100" max="200" step="1"
+             inputmode="numeric" placeholder="---" oninput="calc()">
+    </div>
+    <div class="fg">
+      <label>Autothrottle</label>
+      <div class="tgl-group">
+        <button id="btnAtOn"  class="tgl on" onclick="setAt(true)">ENGAGED</button>
+        <button id="btnAtOff" class="tgl"    onclick="setAt(false)">NOT ENG</button>
+      </div>
+    </div>
+  </div>
+  <div class="tas-box" id="tasBox">
+    <span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Wind Data 算出</div>
+  <div class="formula-box" id="formulaBox">—</div>
+</div>
+
+<div class="result-card">
+  <svg id="diagram" viewBox="-115 -115 230 230" width="190" height="190"></svg>
+  <div class="comp3">
+    <div class="comp-item">
+      <div class="comp-label">Headwind</div>
+      <div class="comp-val" id="hwVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir">↑ HEAD</div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Crosswind</div>
+      <div class="comp-val" id="xwVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir" id="xwDir"></div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Tailwind</div>
+      <div class="comp-val" id="twVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir">↓ TAIL</div>
+    </div>
+  </div>
+  <div id="limitBars"></div>
+  <div class="al-section" id="alSection" style="display:none">
+    <div class="al-title"><span>Autoland Limits</span><span class="al-badge">AFM</span></div>
+    <div id="alRows"></div>
+  </div>
+</div>
+
+<ul class="footnote">
+  <li>Maximum Wind = Steady を 10KT 以上上回る最大瞬間風速</li>
+  <li>気象テレタイプの風向は真方位 / ATIS 等は磁方位</li>
+  <li>★ &lt;3000m 値は LDG のみ適用（TO には適用しない）</li>
+  <li>Autoland 制限は AFM による</li>
+</ul>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-xwind -->
+
+<!-- ═══════════════════════════ TAB: PITCH ═══════════════════════════ -->
+<div class="tab-panel" id="tab-pitch">
+<div class="tab-content">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-ac">B747-8F</span>
+    <span class="hdr-sub">TAKEOFF REFERENCE INITIAL PITCH</span>
+  </div>
+  <div class="hdr-rev">PH Rev.17<br>MAR 03, 2026</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Configuration</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Thrust Rating</label>
+      <select id="thrust" onchange="onThrustChange()">
+        <option value="TO">TO</option>
+        <option value="TO1">TO1</option>
+        <option value="TO2">TO2</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Flaps</label>
+      <select id="flaps" onchange="onFlapsChange()">
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Takeoff Weight (× 1000 LB)</label>
+    <input type="number" id="weight" value="800" step="1" inputmode="decimal" oninput="pitchCalc()">
+    <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Temperature / AT Condition</div>
+  <div class="fg">
+    <label>OAT or Assumed Temperature</label>
+    <select id="condition" onchange="pitchCalc()"></select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Corrections</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Pressure Altitude (FT)</label>
+      <input type="number" id="palt" value="0" step="100" inputmode="numeric" oninput="pitchCalc()">
+    </div>
+    <div class="fg">
+      <label>Air Conditioning</label>
+      <select id="ac" onchange="pitchCalc()">
+        <option value="ON">ON</option>
+        <option value="OFF">OFF</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="result-card">
+  <div class="res-label">Takeoff Reference Initial Pitch</div>
+  <div class="res-val idle" id="resVal">--.-</div>
+  <div class="res-unit">DEGREES</div>
+  <div class="breakdown" id="breakdown" style="display:none"></div>
+  <div id="msgArea"></div>
+</div>
+
+<ul class="footnote">
+  <li>Base values: A/C ON, A/I OFF, Gear Up, V2+10KT, Sea Level P.ALT</li>
+  <li>Interpolation applied between table values</li>
+  <li>Engine A/I effect ≈ −0.02° — negligible, ignored</li>
+  <li>CG effect &lt; 0.1° — negligible, ignored</li>
+</ul>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-pitch -->
+
+<!-- ═══════════════════════════ TAB: CREW ═══════════════════════════ -->
+<div class="tab-panel" id="tab-crew">
+<div class="tab-content">
+
+<div class="crew-hdr">
+  <h1>✈ Crew Rest Calculator</h1>
+  <p>3-Crew Rest Rotation &nbsp;|&nbsp; CAP · COP · CPM</p>
+</div>
+
+<div class="card">
+  <div class="card-title">Flight Times</div>
+  <div class="picker-row">
+    <div class="picker-group">
+      <div class="picker-group-label">🛫 Takeoff (T/O)</div>
+      <div class="drum" id="drum-to">
+        <div class="drum-col" id="to-h"></div>
+        <div class="drum-sep">:</div>
+        <div class="drum-col" id="to-m"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-to">10:00</div>
+    </div>
+    <div class="picker-group">
+      <div class="picker-group-label">🛬 Estimated Landing (ETA)</div>
+      <div class="drum" id="drum-eta">
+        <div class="drum-col" id="eta-h"></div>
+        <div class="drum-sep">:</div>
+        <div class="drum-col" id="eta-m"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-eta">20:00</div>
+    </div>
+  </div>
+
+  <div class="card-title" style="margin-top:24px;margin-bottom:12px;">Post-Takeoff Buffer (T/O +)</div>
+  <div class="seg-ctrl" id="to-buf-ctrl">
+    <button class="seg-btn"        data-val="20" onclick="selectToBuf(this)">20 min</button>
+    <button class="seg-btn active" data-val="30" onclick="selectToBuf(this)">30 min</button>
+    <button class="seg-btn"        data-val="40" onclick="selectToBuf(this)">40 min</button>
+  </div>
+
+  <div class="card-title" style="margin-top:20px;margin-bottom:12px;">Pre-Landing Buffer (ETA −)</div>
+  <div class="seg-ctrl" id="buf-ctrl">
+    <button class="seg-btn active" data-val="60" onclick="selectBuf(this)">60 min</button>
+    <button class="seg-btn"        data-val="50" onclick="selectBuf(this)">50 min</button>
+    <button class="seg-btn"        data-val="40" onclick="selectBuf(this)">40 min</button>
+  </div>
+
+  <div class="card-title" style="margin-top:24px;margin-bottom:12px;">Rest Order</div>
+  <div class="crew-order-row">
+    <div class="crew-slot">
+      <div class="crew-slot-label"><span class="crew-slot-num">1st</span>Rest</div>
+      <select class="crew-select color-cap" id="slot0" onchange="onCrewChange(0)">
+        <option value="CAP">CAP</option>
+        <option value="COP">COP</option>
+        <option value="CPM">CPM</option>
+      </select>
+    </div>
+    <div class="slot-arrow">›</div>
+    <div class="crew-slot">
+      <div class="crew-slot-label"><span class="crew-slot-num">2nd</span>Rest</div>
+      <select class="crew-select color-cop" id="slot1" onchange="onCrewChange(1)">
+        <option value="CAP">CAP</option>
+        <option value="COP" selected>COP</option>
+        <option value="CPM">CPM</option>
+      </select>
+    </div>
+    <div class="slot-arrow">›</div>
+    <div class="crew-slot">
+      <div class="crew-slot-label"><span class="crew-slot-num">3rd</span>Rest</div>
+      <select class="crew-select color-cpm" id="slot2" onchange="onCrewChange(2)">
+        <option value="CAP">CAP</option>
+        <option value="COP">COP</option>
+        <option value="CPM" selected>CPM</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="crewCalc()">▶ Calculate Rest Schedule</button>
+  <div class="error-msg" id="error-msg"></div>
+</div>
+
+<div class="crew-results" id="crew-results">
+  <div class="summary-grid" id="summary-grid"></div>
+  <div class="card">
+    <div class="card-title">Timeline</div>
+    <div class="legend" id="legend"></div>
+    <div class="gantt-wrap"><div class="gantt" id="gantt"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Rest Schedule Detail</div>
+    <table class="rest-table">
+      <thead>
+        <tr>
+          <th>Crew</th><th>Rest Start</th><th>Rest End</th>
+          <th>Duration</th><th>½ Duration</th>
+        </tr>
+      </thead>
+      <tbody id="schedule-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-crew -->
+
+<script>
+/* ══════════════════════════════════════════
+   TAB SWITCHING
+══════════════════════════════════════════ */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#main-tab-bar .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'crew') requestAnimationFrame(initCrewDrums);
+}
+
+let _crewDrumReady = false;
+function initCrewDrums() {
+  if (_crewDrumReady) return;
+  _crewDrumReady = true;
+  const toH  = document.getElementById('to-h');
+  const toM  = document.getElementById('to-m');
+  const etaH = document.getElementById('eta-h');
+  const etaM = document.getElementById('eta-m');
+  // Set scroll positions now that the tab is visible
+  toH._skipNotify  = true; toH.scrollTop  = 10 * ITEM_H;
+  toM._skipNotify  = true; toM.scrollTop  = 0  * ITEM_H;
+  etaH._skipNotify = true; etaH.scrollTop = 20 * ITEM_H;
+  etaM._skipNotify = true; etaM.scrollTop = 0  * ITEM_H;
+  requestAnimationFrame(() => {
+    toH._skipNotify = false; toM._skipNotify = false;
+    etaH._skipNotify = false; etaM._skipNotify = false;
+    updateDrumDisplay(toH,  toM,  document.getElementById('disp-to'));
+    updateDrumDisplay(etaH, etaM, document.getElementById('disp-eta'));
+    crewCalc();
+  });
+}
+
+/* ══════════════════════════════════════════
+   SHARED HELPER
+══════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+/* ══════════════════════════════════════════
+   XWIND — DATA
+══════════════════════════════════════════ */
+const RWY_COND = [
+  { key:'dry',      label:'Dry',                    xw:30, xwShort:30, star:false },
+  { key:'wet_grv',  label:'Wet — Grooved / PFC',   xw:25, xwShort:25, star:false },
+  { key:'wet_ngrv', label:'Wet — Non Grooved',      xw:20, xwShort:20, star:false },
+  { key:'rwycc5',   label:'RWYCC 5 / Good',         xw:20, xwShort:20, star:false },
+  { key:'rwycc4',   label:'RWYCC 4 / Good to Med',  xw:20, xwShort:15, star:true  },
+  { key:'rwycc3',   label:'RWYCC 3 / Medium',       xw:20, xwShort:15, star:true  },
+  { key:'rwycc2',   label:'RWYCC 2 / Med to Poor',  xw:15, xwShort:10, star:true  },
+  { key:'rwycc1',   label:'RWYCC 1 / Poor',         xw:10, xwShort:10, star:false },
+];
+const AUTOLAND = { hw:25, tw:15, xw:25 };
+
+let currentOp  = 'TO';
+let currentLen = 'long';
+let autolandOn = false;
+let atEngaged  = true;
+
+/* ── XWIND helpers ── */
+function norm360(a)  { a %= 360; return a < 0 ? a + 360 : a; }
+function normPM180(a){ a %= 360; if (a > 180) a -= 360; if (a < -180) a += 360; return a; }
+function getCond()   { return RWY_COND.find(c => c.key === $('rwyCond').value) || null; }
+function getXwLimit() {
+  const cond = getCond();
+  if (!cond) return null;
+  if (currentOp === 'LDG' && currentLen === 'short' && cond.star) return cond.xwShort;
+  return cond.xw;
+}
+
+function toggleMagVar() {
+  $('magVarGroup').style.display = $('windType').value === 'TRUE' ? 'block' : 'none';
+}
+function onRwySelect() {
+  const n = parseInt($('rwyNum').value);
+  if (!isNaN(n) && n >= 1 && n <= 36) $('rwyHdg').value = n * 10;
+  calc();
+}
+function setOp(op) {
+  currentOp = op;
+  $('btnTO').classList.toggle('on', op === 'TO');
+  $('btnLDG').classList.toggle('on', op === 'LDG');
+  $('autolandGroup').style.display = op === 'LDG' ? 'block' : 'none';
+  $('tasCard').style.display       = op === 'LDG' ? 'block' : 'none';
+  if (op === 'TO') { autolandOn = false; updateAutolandBtn(); }
+  onCondChange();
+}
+function setAt(on) {
+  atEngaged = on;
+  $('btnAtOn').classList.toggle('on', on);
+  $('btnAtOff').classList.toggle('on', !on);
+  calc();
+}
+function setLen(len) {
+  currentLen = len;
+  $('btnLong').classList.toggle('on',  len === 'long');
+  $('btnShort').classList.toggle('on', len === 'short');
+  onCondChange();
+}
+function setAutoland(on) {
+  autolandOn = on;
+  updateAutolandBtn();
+  calc();
+}
+function updateAutolandBtn() {
+  $('btnAlOff').classList.toggle('on', !autolandOn);
+  $('btnAlOff').style.background = autolandOn ? '#060d16' : '';
+  $('btnAlOff').style.color      = autolandOn ? 'var(--muted)' : '';
+  $('btnAlOn').classList.toggle('on-purple', autolandOn);
+  $('btnAlOn').style.background  = autolandOn ? '' : '#060d16';
+  $('btnAlOn').style.color       = autolandOn ? '' : 'var(--muted)';
+}
+function onCondChange() {
+  const cond = getCond();
+  const showStar = cond && cond.star && currentOp === 'LDG';
+  $('rwyLenGroup').style.display = showStar ? 'block' : 'none';
+  if (cond) {
+    const lim = getXwLimit();
+    const isShort = currentOp === 'LDG' && currentLen === 'short' && cond.star;
+    $('xwlBox').style.display  = 'flex';
+    $('xwlVal').textContent    = lim;
+    $('xwlCond').textContent   = cond.label;
+    $('xwlStar').style.display = isShort ? 'block' : 'none';
+  } else {
+    $('xwlBox').style.display  = 'none';
+  }
+  calc();
+}
+
+/* ── XWIND diagram ── */
+function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned) {
+  const R   = 88;
+  const svg = $('diagram');
+  if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
+    svg.innerHTML = `<circle cx="0" cy="0" r="${R+14}" fill="#060d16" stroke="#162840"/>
+      <text x="0" y="5" text-anchor="middle" fill="#2a4860" font-size="12">—</text>`;
+    return;
+  }
+  const rwyRad  = rwyHdg     * Math.PI / 180;
+  const windRad = windDirMag * Math.PI / 180;
+  const rFx =  Math.sin(rwyRad) * R * 0.87, rFy = -Math.cos(rwyRad) * R * 0.87;
+  const rBx = -rFx, rBy = -rFy;
+  const wFx =  Math.sin(windRad) * R * 0.82, wFy = -Math.cos(windRad) * R * 0.82;
+  const sc  = (R * 0.82) / windData;
+  const hx  =  Math.sin(rwyRad) * headComp * sc;
+  const hy  = -Math.cos(rwyRad) * headComp * sc;
+  const cx  =  Math.cos(rwyRad) * crossSigned * sc;
+  const cy  =  Math.sin(rwyRad) * crossSigned * sc;
+  const arcR   = R * 0.37;
+  const dAngle = normPM180(windDirMag - rwyHdg);
+  const sweepF = dAngle >= 0 ? 1 : 0;
+  const largeF = Math.abs(dAngle) > 180 ? 1 : 0;
+  const ax1 = Math.sin(rwyRad)  * arcR, ay1 = -Math.cos(rwyRad)  * arcR;
+  const ax2 = Math.sin(windRad) * arcR, ay2 = -Math.cos(windRad) * arcR;
+  const arcD = `M${ax1.toFixed(1)} ${ay1.toFixed(1)} A${arcR} ${arcR} 0 ${largeF} ${sweepF} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
+  const ticks = Array.from({length:12},(_,i)=>{
+    const a = i * 30 * Math.PI / 180, r0 = i%3===0 ? R+3 : R+6;
+    return `<line x1="${(Math.sin(a)*r0).toFixed(1)}" y1="${(-Math.cos(a)*r0).toFixed(1)}" x2="${(Math.sin(a)*(R+14)).toFixed(1)}" y2="${(-Math.cos(a)*(R+14)).toFixed(1)}" stroke="#162840" stroke-width="1"/>`;
+  }).join('');
+  const hwColor = headComp >= 0 ? '#00e698' : '#ff4560';
+  const hwMark  = headComp >= 0 ? 'url(#mh)' : 'url(#mt)';
+  const midA  = (rwyHdg + dAngle / 2) * Math.PI / 180;
+  const lr    = arcR * 1.55;
+  const absDeg = Math.abs(Math.round(dAngle));
+  const angLbl = absDeg > 4
+    ? `<text x="${(Math.sin(midA)*lr).toFixed(1)}" y="${(-Math.cos(midA)*lr+4).toFixed(1)}" text-anchor="middle" fill="#ffd166" font-size="9" opacity="0.85">${absDeg}°</text>`
+    : '';
+  svg.innerHTML = `
+    <defs>
+      <marker id="mw" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff8c42"/></marker>
+      <marker id="mh" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#00e698"/></marker>
+      <marker id="mt" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff4560"/></marker>
+      <marker id="mc" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffd166"/></marker>
+    </defs>
+    <circle cx="0" cy="0" r="${R+14}" fill="#060d16" stroke="#162840" stroke-width="1"/>
+    ${ticks}
+    <text x="0" y="${-(R+21)}" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">N</text>
+    <text x="${R+21}" y="4" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">E</text>
+    <text x="0" y="${R+28}" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">S</text>
+    <text x="${-(R+22)}" y="4" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">W</text>
+    <path d="${arcD}" fill="none" stroke="rgba(255,209,102,0.55)" stroke-width="2.5" stroke-dasharray="4,3"/>
+    ${angLbl}
+    <line x1="${rBx.toFixed(1)}" y1="${rBy.toFixed(1)}" x2="${rFx.toFixed(1)}" y2="${rFy.toFixed(1)}" stroke="#00c8ff" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <circle cx="${rFx.toFixed(1)}" cy="${rFy.toFixed(1)}" r="6" fill="#00c8ff" opacity="0.55"/>
+    <line x1="${(rBx+Math.cos(rwyRad)*10).toFixed(1)}" y1="${(rBy+Math.sin(rwyRad)*10).toFixed(1)}" x2="${(rBx-Math.cos(rwyRad)*10).toFixed(1)}" y2="${(rBy-Math.sin(rwyRad)*10).toFixed(1)}" stroke="#00c8ff" stroke-width="2" opacity="0.4"/>
+    <circle cx="${wFx.toFixed(1)}" cy="${wFy.toFixed(1)}" r="6" fill="#ff8c42"/>
+    <line x1="${wFx.toFixed(1)}" y1="${wFy.toFixed(1)}" x2="3" y2="3" stroke="#ff8c42" stroke-width="2.5" marker-end="url(#mw)"/>
+    <line x1="0" y1="0" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="${hwColor}" stroke-width="2.5" marker-end="${hwMark}" opacity="0.85"/>
+    <line x1="0" y1="0" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#ffd166" stroke-width="2.5" marker-end="url(#mc)" opacity="0.85"/>
+    <circle cx="0" cy="0" r="4" fill="#e0e0e0" opacity="0.2"/>`;
+}
+
+/* ── XWIND autoland row ── */
+function alRow(label, val, limit) {
+  const pct = Math.min(100, (val / limit) * 100).toFixed(1);
+  const ok  = val <= limit;
+  return `
+    <div class="al-row">
+      <span class="al-lbl">${label}</span>
+      <div class="al-bar"><div class="al-fill" style="width:${pct}%;background:${ok ? 'var(--green)' : 'var(--error)'}"></div></div>
+      <span class="al-lim">${val.toFixed(1)} / ${limit}</span>
+      <span class="al-stat ${ok ? 'ok' : 'ng'}">${ok ? '✓' : '✗'}</span>
+    </div>`;
+}
+
+/* ── XWIND main calc ── */
+function calc() {
+  const rwyHdg  = parseFloat($('rwyHdg').value);
+  const windDir = parseFloat($('windDir').value);
+  const magVar  = parseFloat($('magVar').value) || 0;
+  const steady  = parseFloat($('steady').value) || 0;
+  const gustRaw = $('gust').value.trim();
+  const gust    = gustRaw !== '' ? parseFloat(gustRaw) : null;
+
+  const windDirMag = $('windType').value === 'TRUE'
+    ? norm360(windDir - magVar)
+    : norm360(windDir);
+
+  let windData, formulaHTML = '';
+  if (gust !== null && !isNaN(gust)) {
+    const diff = gust - steady;
+    if (diff >= 10) {
+      windData = steady + diff / 2;
+      formulaHTML = `<span>Maximum Wind 通報あり　(Gust − Steady = ${diff.toFixed(0)} KT ≥ 10 KT)</span><br>Wind Data = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span>`;
+    } else {
+      windData = steady;
+      formulaHTML = `<span>Gust − Steady = ${diff.toFixed(0)} KT &lt; 10 KT → Maximum Wind に非該当</span><br>Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`;
+    }
+  } else {
+    windData = steady;
+    formulaHTML = `<span>Maximum Wind 通報なし</span><br>Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`;
+  }
+  $('formulaBox').innerHTML = formulaHTML;
+
+  if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
+    ['hwVal','xwVal','twVal'].forEach(id => { $(id).className = 'comp-val'; $(id).textContent = '--'; });
+    $('xwDir').textContent = ''; $('limitBars').innerHTML = ''; $('alSection').style.display = 'none';
+    if (currentOp === 'LDG') renderTas(null, null, null);
+    drawDiagram(NaN, NaN, 0, 0, 0); return;
+  }
+
+  const relAngle    = normPM180(windDirMag - norm360(rwyHdg));
+  const relRad      = relAngle * Math.PI / 180;
+  const headComp    = windData * Math.cos(relRad);
+  const crossSigned = windData * Math.sin(relRad);
+  const crossAbs    = Math.abs(crossSigned);
+  const headPos     = Math.max(0, headComp);
+  const tailPos     = Math.max(0, -headComp);
+
+  const hwEl = $('hwVal');
+  hwEl.className   = headPos > 0.05 ? 'comp-val head' : 'comp-val zero';
+  hwEl.textContent = headPos.toFixed(1);
+
+  $('xwVal').className   = 'comp-val cross';
+  $('xwVal').textContent = crossAbs.toFixed(1);
+  $('xwDir').textContent = crossSigned > 0.05 ? '→ R' : crossSigned < -0.05 ? '← L' : '—';
+
+  const twEl = $('twVal');
+  twEl.className   = tailPos > 0.05 ? 'comp-val tail' : 'comp-val zero';
+  twEl.textContent = tailPos.toFixed(1);
+
+  const xwLimit = getXwLimit();
+  const lbEl = $('limitBars');
+  if (xwLimit !== null) {
+    const ok = crossAbs <= xwLimit;
+    const over = (crossAbs - xwLimit).toFixed(1);
+    lbEl.innerHTML = `
+      <div class="lbar ${ok ? 'ok' : 'exceed'}">
+        <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
+        <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
+      </div>`;
+  } else {
+    lbEl.innerHTML = '';
+  }
+
+  const alSec = $('alSection');
+  if (autolandOn && currentOp === 'LDG') {
+    alSec.style.display = 'block';
+    $('alRows').innerHTML =
+      alRow('HEAD', headPos, AUTOLAND.hw) +
+      alRow('XW',   crossAbs, AUTOLAND.xw) +
+      alRow('TAIL', tailPos, AUTOLAND.tw);
+  } else {
+    alSec.style.display = 'none';
+  }
+
+  if (currentOp === 'LDG') renderTas(relRad, gust, steady);
+  drawDiagram(norm360(rwyHdg), windDirMag, windData, headComp, crossSigned);
+}
+
+/* ── Target Approach Speed ── */
+function renderTas(relRad, gust, steady) {
+  const vref = parseFloat($('vref').value);
+  if (isNaN(vref)) {
+    $('tasBox').innerHTML = '<span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>';
+    return;
+  }
+  if (atEngaged) {
+    const tas = vref + 5;
+    $('tasBox').innerHTML = `
+      <div class="tas-formula">Autothrottle <b style="color:var(--green)">ENGAGED</b> &nbsp;→&nbsp; VREF + 5 KT</div>
+      <div class="tas-total">
+        <span class="tas-label">IAS</span>
+        <span class="tas-val">${tas}</span>
+        <span class="tas-unit">KT</span>
+      </div>`;
+    return;
+  }
+  if (relRad === null) {
+    $('tasBox').innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Autothrottle NOT ENGAGED — RW / Wind を入力してください</span>';
+    return;
+  }
+  const st    = steady || 0;
+  const sHead = Math.max(0, st * Math.cos(relRad));
+  const gIncr = (gust !== null && !isNaN(gust)) ? Math.max(0, gust - st) : 0;
+  const raw   = 0.5 * sHead + gIncr;
+  const add   = Math.max(5, Math.min(20, raw));
+  const tas   = Math.round(vref + add);
+  const note  = raw < 5  ? ' <span style="color:var(--warn)">→ Min 5 KT 適用</span>'
+              : raw > 20 ? ' <span style="color:var(--warn)">→ Max 20 KT 適用</span>'
+              : '';
+  $('tasBox').innerHTML = `
+    <div class="tas-formula">
+      Autothrottle <b style="color:var(--warn)">NOT ENGAGED</b> &nbsp;→&nbsp; VREF + (½ Wind + Gust)*<br>
+      Steady Head = ${sHead.toFixed(1)} KT &emsp; Gust = ${gIncr.toFixed(1)} KT<br>
+      ½ × ${sHead.toFixed(1)} + ${gIncr.toFixed(1)} = <b>${raw.toFixed(1)} KT</b>${note}&ensp;<span style="opacity:0.5;font-size:0.9em">*Min 5 / Max 20</span>
+    </div>
+    <div class="tas-total">
+      <span class="tas-label">IAS</span>
+      <span class="tas-val">${tas}</span>
+      <span class="tas-unit">KT</span>
+    </div>`;
+}
+
+/* ── Gust dropdown ── */
+function updateGustOptions() {
+  const steady  = parseFloat($('steady').value) || 0;
+  const sel     = $('gust');
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">なし</option>';
+  const min = Math.ceil(steady) + 5;
+  for (let v = min; v <= 50; v++) {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = `${v} KT`;
+    sel.appendChild(opt);
+  }
+  if (prevVal !== '' && parseInt(prevVal) >= min && parseInt(prevVal) <= 50) sel.value = prevVal;
+  calc();
+}
+
+/* ══════════════════════════════════════════
+   PITCH — DATA
+══════════════════════════════════════════ */
+const CONDITIONS = [
+  { key:'c1', label:'OAT < 30℃  (No AT)' },
+  { key:'c2', label:'OAT = 35℃, No AT   /   AT = 35℃' },
+  { key:'c3', label:'OAT = 40℃, No AT   /   AT = 40℃' },
+  { key:'c4', label:'OAT = 45℃, No AT   /   AT = 45℃' },
+  { key:'c5', label:'OAT = 50℃, No AT   /   AT = 50℃' },
+  { key:'c6', label:'AT = 55℃  (Any OAT)' },
+  { key:'c7', label:'AT = 60℃  (Any OAT)' },
+];
+
+const PITCH_DATA = {
+  'TO_10': {
+    weights: [600, 650, 700, 750, 800, 850, 900, 950],
+    pitch: [
+      [21.9,20.6,19.4,18.3,17.3,16.5,15.8,15.1],
+      [21.3,20.0,18.8,17.7,16.8,16.0,15.2,14.6],
+      [null,20.3,19.1,17.9,16.9,16.0,15.3,14.6],
+      [null,null,19.4,18.2,17.1,16.2,15.3,14.6],
+      [null,null,18.6,17.4,16.4,15.5,14.7,14.0],
+      [null,null,null,17.8,16.7,15.7,14.8,14.1],
+      [null,null,null,17.3,16.3,15.3,14.5,13.8],
+    ],
+    palt:  [-0.3,-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
+    acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+  },
+  'TO1_10': {
+    weights: [550, 600, 650, 700, 750, 800, 850],
+    pitch: [
+      [21.4,19.9,18.6,17.5,16.5,15.6,14.9],
+      [20.8,19.4,18.1,17.0,16.0,15.2,14.5],
+      [20.1,18.7,17.5,16.4,15.5,14.8,14.1],
+      [null,19.2,17.9,16.7,15.7,14.9,14.1],
+      [null,18.4,17.1,16.0,15.1,14.3,13.6],
+      [null,null,17.6,16.4,15.4,14.5,13.7],
+      [null,null,17.0,15.9,14.9,14.0,13.3],
+    ],
+    palt:  [-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
+    acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+  },
+  'TO2_10': {
+    weights: [450, 500, 550, 600, 650, 700, 750],
+    pitch: [
+      [22.9,21.1,19.5,18.1,16.9,15.9,15.0],
+      [22.3,20.5,18.9,17.6,16.4,15.5,14.6],
+      [21.6,19.9,18.4,17.1,16.0,15.0,14.2],
+      [20.6,19.0,17.6,16.3,15.3,14.4,13.7],
+      [19.8,18.2,16.8,15.7,14.7,13.9,13.1],
+      [null,18.9,17.4,16.1,15.0,14.1,13.3],
+      [null,18.3,16.8,15.6,14.5,13.7,12.9],
+    ],
+    palt:  [-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
+    acOff: [ 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2],
+  },
+  'TO_20': {
+    weights: [700, 750, 800, 850, 900, 950, 987],
+    pitch: [
+      [16.8,15.7,14.8,13.9,13.2,12.6,12.1],
+      [16.2,15.2,14.3,13.5,12.7,12.1,11.7],
+      [15.4,14.4,13.5,12.8,12.1,11.5,11.1],
+      [null,14.6,13.7,12.8,12.1,11.5,10.9],
+      [null,13.9,13.0,12.2,11.5,10.9,null],
+      [null,null,13.2,12.3,11.6,10.9,null],
+      [null,null,12.8,12.0,11.2,10.6,null],
+    ],
+    palt:  [-0.2,-0.2,-0.2,-0.2,-0.2,-0.2,-0.2],
+    acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+  },
+};
+
+/* ── PITCH interpolation ── */
+function interp(weights, values, w) {
+  const n = weights.length;
+  for (let i = 0; i < n; i++) { if (weights[i] === w) return values[i]; }
+  for (let i = 0; i < n - 1; i++) {
+    if (weights[i] < w && w < weights[i + 1]) {
+      const v0 = values[i], v1 = values[i + 1];
+      if (v0 === null || v1 === null) return null;
+      const t = (w - weights[i]) / (weights[i + 1] - weights[i]);
+      return v0 + t * (v1 - v0);
+    }
+  }
+  return null;
+}
+
+function pitchTableKey() { return `${$('thrust').value}_${$('flaps').value}`; }
+function pitchTable()    { return PITCH_DATA[pitchTableKey()]; }
+function condIndex()     { return CONDITIONS.findIndex(c => c.key === $('condition').value); }
+function fmt(v, plus) {
+  if (v === null || v === undefined) return '—';
+  const s = v.toFixed(1);
+  return plus && v > 0 ? '+' + s : s;
+}
+
+/* ── PITCH UI events ── */
+function onThrustChange() {
+  const thrust  = $('thrust').value;
+  const flapsEl = $('flaps');
+  const prev    = flapsEl.value;
+  flapsEl.innerHTML = thrust === 'TO'
+    ? '<option value="10">10</option><option value="20">20</option>'
+    : '<option value="10">10</option>';
+  if ([...flapsEl.options].some(o => o.value === prev)) flapsEl.value = prev;
+  onFlapsChange();
+}
+
+function onFlapsChange() {
+  const tbl     = pitchTable();
+  const condEl  = $('condition');
+  const prevKey = condEl.value;
+  condEl.innerHTML = '';
+  CONDITIONS.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.key; opt.textContent = c.label;
+    condEl.appendChild(opt);
+  });
+  if ([...condEl.options].some(o => o.value === prevKey)) condEl.value = prevKey;
+  const minW = Math.min(...tbl.weights), maxW = Math.max(...tbl.weights);
+  $('weightHint').textContent = `Valid range: ${minW} – ${maxW} × 1000 LB`;
+  pitchCalc();
+}
+
+/* ── PITCH main calc ── */
+function pitchCalc() {
+  const tbl    = pitchTable();
+  const weight = parseFloat($('weight').value);
+  const ci     = condIndex();
+  const palt   = parseFloat($('palt').value) || 0;
+  const ac     = $('ac').value;
+  const resEl  = $('resVal');
+  const bdEl   = $('breakdown');
+  const msgEl  = $('msgArea');
+
+  msgEl.innerHTML    = '';
+  bdEl.style.display = 'none';
+
+  if (isNaN(weight)) {
+    resEl.className = 'res-val idle'; resEl.textContent = '--.-'; return;
+  }
+  const minW = Math.min(...tbl.weights), maxW = Math.max(...tbl.weights);
+  if (weight < minW || weight > maxW) {
+    resEl.className = 'res-val err'; resEl.textContent = 'RANGE';
+    msgEl.innerHTML = `<div class="msg error">Weight out of range for this configuration<br>Valid: <strong>${minW} – ${maxW}</strong> × 1000 LB</div>`;
+    return;
+  }
+
+  const basePitch = interp(tbl.weights, tbl.pitch[ci], weight);
+  if (basePitch === null) {
+    resEl.className = 'res-val na'; resEl.textContent = 'N/A';
+    msgEl.innerHTML = `<div class="msg warn">⚠ Shaded area — this AT/OAT condition is not applicable at this weight<br>(performance limit exceeded)</div>`;
+    return;
+  }
+
+  const paltRate = interp(tbl.weights, tbl.palt, weight) ?? -0.2;
+  const paltCorr = (palt / 500) * paltRate;
+  let acCorr = 0;
+  if (ac === 'OFF') acCorr = interp(tbl.weights, tbl.acOff, weight) ?? 0.2;
+
+  const final = basePitch + paltCorr + acCorr;
+  resEl.className = 'res-val ok'; resEl.textContent = final.toFixed(1);
+
+  bdEl.style.display = 'block';
+  let html = `<div class="brow"><span>Base pitch  (Sea Level)</span><span class="v">${fmt(basePitch)}°</span></div>`;
+  if (palt !== 0) {
+    const sign = palt >= 0 ? '+' : '';
+    html += `<div class="brow"><span>P.ALT (${sign}${palt} ft &times; ${fmt(paltRate)}/500 ft)</span><span class="v">${fmt(paltCorr, true)}°</span></div>`;
+  }
+  if (ac === 'OFF') {
+    html += `<div class="brow"><span>A/C OFF correction</span><span class="v">+${acCorr.toFixed(1)}°</span></div>`;
+  }
+  if (palt !== 0 || ac === 'OFF') {
+    html += `<div class="brow total"><span>FINAL</span><span class="v">${fmt(final)}°</span></div>`;
+  }
+  bdEl.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════
+   CREW — DATA
+══════════════════════════════════════════ */
+const CREW_CFG = {
+  CAP: { cls:'cap', restCls:'seg-rest-cap', color:'#60a5fa', bg:'#1d4ed8' },
+  COP: { cls:'cop', restCls:'seg-rest-cop', color:'#34d399', bg:'#065f46' },
+  CPM: { cls:'cpm', restCls:'seg-rest-cpm', color:'#fbbf24', bg:'#92400e' },
+};
+const ALL_CREW = ['CAP','COP','CPM'];
+
+/* ── Crew buffer ── */
+function getToBuf() {
+  const active = document.querySelector('#to-buf-ctrl .seg-btn.active');
+  return active ? parseInt(active.dataset.val) : 30;
+}
+function selectToBuf(btn) {
+  document.querySelectorAll('#to-buf-ctrl .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  crewCalc();
+}
+function getLandBuf() {
+  const active = document.querySelector('#buf-ctrl .seg-btn.active');
+  return active ? parseInt(active.dataset.val) : 60;
+}
+function selectBuf(btn) {
+  document.querySelectorAll('#buf-ctrl .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  crewCalc();
+}
+
+/* ── Crew order ── */
+function onCrewChange(changed) {
+  const selects = [0,1,2].map(i => document.getElementById('slot' + i));
+  const vals    = selects.map(s => s.value);
+  const newVal  = vals[changed];
+  for (let i = 0; i < 3; i++) {
+    if (i !== changed && vals[i] === newVal) {
+      const missing = ALL_CREW.find(c => !vals.includes(c));
+      selects[i].value = missing !== undefined ? missing
+        : ALL_CREW.find(c => c !== newVal && c !== vals[(changed+1)%3 === i ? (changed+2)%3 : (changed+1)%3]);
+      break;
+    }
+  }
+  updateCrewSelectColors();
+  crewCalc();
+}
+function updateCrewSelectColors() {
+  for (let i = 0; i < 3; i++) {
+    const sel = document.getElementById('slot' + i);
+    sel.className = 'crew-select color-' + sel.value.toLowerCase();
+  }
+}
+
+/* ── Drum picker ── */
+const ITEM_H = 44;
+
+function buildCol(colEl, count, pad, initVal) {
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement('div');
+    d.className = 'drum-item';
+    d.textContent = String(i).padStart(pad, '0');
+    colEl.appendChild(d);
+  }
+  colEl._skipNotify = true;
+  colEl.scrollTop   = initVal * ITEM_H;
+  requestAnimationFrame(() => { colEl._skipNotify = false; });
+}
+function getColVal(colEl) {
+  return Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl.children.length - 1);
+}
+function onColScroll(colEl, onChange) {
+  let tid;
+  colEl.addEventListener('scroll', () => {
+    if (colEl._skipNotify) return;
+    clearTimeout(tid);
+    tid = setTimeout(() => {
+      colEl.scrollTop = Math.round(colEl.scrollTop / ITEM_H) * ITEM_H;
+      onChange();
+    }, 80);
+  }, { passive: true });
+}
+function updateDrumDisplay(hEl, mEl, dispEl) {
+  const h = getColVal(hEl), m = getColVal(mEl);
+  dispEl.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+function wireUp(hId, mId, dispId) {
+  const hEl    = document.getElementById(hId);
+  const mEl    = document.getElementById(mId);
+  const dispEl = document.getElementById(dispId);
+  const upd = () => { updateDrumDisplay(hEl, mEl, dispEl); crewCalc(); };
+  onColScroll(hEl, upd);
+  onColScroll(mEl, upd);
+  updateDrumDisplay(hEl, mEl, dispEl);
+}
+function getPickerVal(hId, mId) {
+  return getColVal(document.getElementById(hId)) * 60
+       + getColVal(document.getElementById(mId));
+}
+
+/* ── Crew time helpers ── */
+function toTimeStr(min) {
+  const m = ((min % 1440) + 1440) % 1440;
+  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+}
+function toTimeHTML(min, base) {
+  const str = toTimeStr(min);
+  const day = Math.floor((min - base) / 1440);
+  return str + (day > 0 ? ` <span style="font-size:.65rem;color:#4a6a99">+${day}</span>` : '');
+}
+function fmtDur(min) {
+  const t = Math.round(min), h = Math.floor(t/60), m = t%60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h 00m`;
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+function makeSeg(left, width, cls, label) {
+  const w = parseFloat(width);
+  return `<div class="g-seg ${cls}" style="left:${left};width:${width};">${label && w > 3 ? label : ''}</div>`;
+}
+function getCrewOrder() {
+  return [0,1,2].map(i => document.getElementById('slot'+i).value);
+}
+
+/* ── Crew main calc ── */
+function crewCalc() {
+  const errEl = document.getElementById('error-msg');
+  errEl.style.display = 'none';
+
+  let toM  = getPickerVal('to-h', 'to-m');
+  let etaM = getPickerVal('eta-h', 'eta-m');
+  if (etaM <= toM) etaM += 1440;
+
+  const flightDur = etaM - toM;
+  const toBuf     = getToBuf();
+  const landBuf   = getLandBuf();
+  const winStart  = toM + toBuf;
+  const winEnd    = etaM - landBuf;
+  const winDur    = winEnd - winStart;
+
+  if (winDur <= 0) {
+    document.getElementById('crew-results').style.display = 'none';
+    showCrewErr('フライト時間が短すぎます。最低 1h 30m 以上のフライト時間が必要です。');
+    return;
+  }
+
+  const baseSlot  = Math.floor(winDur / 3);
+  const remainder = winDur % 3;
+  const slotDurs  = [baseSlot + remainder, baseSlot, baseSlot];
+
+  const order = getCrewOrder();
+  let cursor  = winStart;
+  const slots = order.map((name, i) => {
+    const dur = slotDurs[i], start = cursor, end = cursor + dur;
+    cursor = end;
+    return { name, ...CREW_CFG[name], start, end, dur };
+  });
+
+  document.getElementById('legend').innerHTML = [
+    { label:'Duty', bg:'#111e36' },
+    ...slots.map(s => ({ label:`${s.name} Rest`, bg:s.bg })),
+  ].map(x => `<div class="legend-item"><div class="legend-dot" style="background:${x.bg}"></div>${x.label}</div>`).join('');
+
+  document.getElementById('summary-grid').innerHTML = `
+    <div class="summary-item"><div class="s-label">Total Flight</div><div class="s-value">${fmtDur(flightDur)}</div></div>
+    <div class="summary-item"><div class="s-label">Rest Window</div><div class="s-value">${fmtDur(winDur)}</div><div class="s-sub">${toTimeStr(winStart)} → ${toTimeStr(winEnd)}</div></div>
+    <div class="summary-item"><div class="s-label">Each Slot ≈</div><div class="s-value">${fmtDur(baseSlot)}</div></div>
+    <div class="summary-item"><div class="s-label">½ Slot ≈</div><div class="s-value">${fmtDur(baseSlot/2)}</div></div>`;
+
+  document.getElementById('schedule-tbody').innerHTML = slots.map(s => `
+    <tr>
+      <td class="c-${s.cls}">${s.name}</td>
+      <td>${toTimeHTML(s.start, toM)}</td>
+      <td>${toTimeHTML(s.end, toM)}</td>
+      <td style="font-weight:700">${fmtDur(s.dur)}</td>
+      <td style="color:#4a6a99">${fmtDur(s.dur/2)}</td>
+    </tr>`).join('');
+
+  buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur);
+
+  const res = document.getElementById('crew-results');
+  const wasHidden = getComputedStyle(res).display === 'none';
+  res.style.display = 'block';
+  if (wasHidden) res.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
+  const g       = document.getElementById('gantt');
+  const MIN_GAP = 8; // % — minimum spacing between axis labels to avoid overlap
+
+  const uniqMain = [...new Set([toM, winStart, ...slots.slice(1).map(s=>s.start), winEnd, etaM])]
+    .sort((a,b)=>a-b);
+
+  let lastLabelPct = -Infinity;
+  const mainTickData = uniqMain.map(m => {
+    const pct = (m-toM)/flightDur*100;
+    const showLabel = (pct - lastLabelPct) >= MIN_GAP;
+    if (showLabel) lastLabelPct = pct;
+    return { m, pct, showLabel };
+  });
+
+  const labeledPcts = mainTickData.filter(t => t.showLabel).map(t => t.pct);
+  const halfTickData = slots.map(s => {
+    const m   = s.start + Math.floor(s.dur / 2);
+    const pct = (m-toM)/flightDur*100;
+    const ok  = labeledPcts.every(p => Math.abs(pct - p) >= MIN_GAP);
+    return ok ? { m, pct } : null;
+  }).filter(Boolean);
+
+  let html = `<div class="g-axis-row"><div class="g-axis-spacer"></div><div class="g-axis">`;
+  mainTickData.forEach(({ m, pct, showLabel }) => {
+    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%">
+      <div class="g-tick-line"></div>
+      ${showLabel ? `<div class="g-tick-label">${toTimeStr(m)}</div>` : ''}
+    </div>`;
+  });
+  halfTickData.forEach(({ m, pct }) => {
+    html += `<div class="g-tick" style="left:${pct.toFixed(2)}%">
+      <div class="g-tick-line" style="background:#2a4060;height:4px;"></div>
+      <div class="g-tick-label" style="font-size:.55rem;color:#2a4a6a;">½ ${toTimeStr(m)}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  const bL = ((winStart-toM)/flightDur*100).toFixed(2);
+  const wW = (winDur/flightDur*100).toFixed(2);
+  const bR = ((etaM-winEnd)/flightDur*100).toFixed(2);
+  html += `<div class="g-row">
+    <div class="g-label" style="color:#4a6a99;font-size:.7rem">FLT</div>
+    <div class="g-bar-wrap">
+      ${makeSeg('0%', bL+'%', 'seg-buffer')}
+      ${makeSeg(bL+'%', wW+'%', 'seg-ref-window', 'REST WINDOW')}
+      ${makeSeg((+bL + +wW)+'%', bR+'%', 'seg-buffer')}
+    </div></div>`;
+  html += `<div style="height:1px;background:#1a3055;margin:6px 0 10px 58px;"></div>`;
+
+  slots.forEach(s => {
+    const dL  = ((s.start-toM)/flightDur*100).toFixed(2);
+    const rW  = (s.dur/flightDur*100).toFixed(2);
+    const dR  = ((etaM-s.end)/flightDur*100).toFixed(2);
+    const rWn = parseFloat(rW);
+
+    const restInner = rWn > 5
+      ? `<span style="font-size:.7rem;font-weight:700;line-height:1.25;z-index:1;">${fmtDur(s.dur)}</span>
+         <span style="font-size:.55rem;opacity:.75;line-height:1.25;z-index:1;">½ ${fmtDur(Math.floor(s.dur/2))}</span>`
+      : '';
+    const restSeg = `<div class="g-seg ${s.restCls}" style="left:${dL}%;width:${rW}%;flex-direction:column;gap:0px;">
+        ${restInner}
+        <div class="g-half-line"></div>
+      </div>`;
+
+    html += `<div class="g-row">
+      <div class="g-label c-${s.cls}">${s.name}</div>
+      <div class="g-bar-wrap">
+        ${makeSeg('0%', dL+'%', 'seg-duty', 'DUTY')}
+        ${restSeg}
+        ${makeSeg((+dL + +rW)+'%', dR+'%', 'seg-duty', 'DUTY')}
+      </div></div>`;
+  });
+  g.innerHTML = html;
+}
+
+function showCrewErr(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+/* XWIND */
+(function() {
+  const sel = $('rwyNum');
+  for (let i = 1; i <= 36; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `RWY ${String(i).padStart(2,'0')}  (${String(i*10).padStart(3,'0')}°)`;
+    sel.appendChild(opt);
+  }
+})();
+toggleMagVar();
+updateGustOptions();
+
+/* PITCH */
+onThrustChange();
+
+/* CREW */
+buildCol(document.getElementById('to-h'),  24, 2, 10);
+buildCol(document.getElementById('to-m'),  60, 2, 0);
+buildCol(document.getElementById('eta-h'), 24, 2, 20);
+buildCol(document.getElementById('eta-m'), 60, 2, 0);
+wireUp('to-h', 'to-m', 'disp-to');
+wireUp('eta-h', 'eta-m', 'disp-eta');
+updateCrewSelectColors();
+crewCalc();
+</script>
+</body>
+</html>
