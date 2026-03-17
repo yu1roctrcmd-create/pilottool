@@ -233,6 +233,7 @@
     .xwft-cell.xwft-cur              { border-color: #00c8ff; background: rgba(0,200,255,0.08); }
     .xwft-cell.xwft-cur  .xwft-d { color: #00c8ff; }
     .xwft-cell.xwft-cur  .xwft-s { color: #00c8ff; }
+    .xwft-lim  { font-size: 0.5rem; color: #4a6a99; letter-spacing: 0.8px; text-transform: uppercase; margin-top: 1px; }
 
     /* ── DIAGRAM ── */
     #diagram { display: block; margin: 0 auto 14px; }
@@ -712,7 +713,14 @@
   <div class="card-title">Max Wind per Direction
     <span id="xwftLimTag" style="float:right;font-size:1rem;font-weight:700;color:var(--accent)">—</span>
   </div>
-  <div class="xwft-sub">風向ごとに Crosswind Limit 以内となる最大風速</div>
+  <div class="xwft-sub">風向ごとに XW / TW 制限以内となる最大風速</div>
+  <div class="fg" style="margin:6px 0 10px">
+    <label>Tailwind Limit</label>
+    <div class="tgl-group">
+      <button id="btnTw10" class="tgl on" onclick="setTwLimit(10)">10 KT</button>
+      <button id="btnTw15" class="tgl"    onclick="setTwLimit(15)">15 KT</button>
+    </div>
+  </div>
   <div class="xwft-hdr"><span>◄ L</span><span>R ►</span></div>
   <div class="xwft-grid" id="xwftGrid"></div>
 </div>
@@ -1341,6 +1349,15 @@ function updateGustOptions() {
   calc();
 }
 
+/* ── TW limit toggle ── */
+let twLimit = 10;
+function setTwLimit(v) {
+  twLimit = v;
+  $('btnTw10').className = v === 10 ? 'tgl on' : 'tgl';
+  $('btnTw15').className = v === 15 ? 'tgl on' : 'tgl';
+  buildXwTable();
+}
+
 /* ── Crosswind fan table ── */
 function buildXwTable() {
   const card = $('xwftCard');
@@ -1348,7 +1365,7 @@ function buildXwTable() {
   const xwLimit = getXwLimit();
   if (xwLimit === null) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  $('xwftLimTag').textContent = `${xwLimit} KT`;
+  $('xwftLimTag').textContent = `XW: ${xwLimit} KT`;
 
   const rwyHdgEl   = document.getElementById('xd-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
@@ -1368,18 +1385,26 @@ function buildXwTable() {
 
   for (let i = 1; i <= 17; i++) {
     [norm360(rwyHdg - i * 10), norm360(rwyHdg + i * 10)].forEach(dir => {
-      const sinAbs = Math.abs(Math.sin(normPM180(dir - norm360(rwyHdg)) * Math.PI / 180));
-      const maxSpd = sinAbs < 0.001 ? null : Math.min(99, Math.ceil(xwLimit / sinAbs));
-      const spdTxt = maxSpd === null ? '—' : String(maxSpd);
-      const isCur  = dir === curDir10;
+      const relRad = normPM180(dir - norm360(rwyHdg)) * Math.PI / 180;
+      const sinAbs = Math.abs(Math.sin(relRad));
+      const cosNeg = -Math.cos(relRad);                    // > 0 on tailwind side (>90° offset)
+      const xwSpd  = sinAbs < 0.001 ? Infinity : Math.ceil(xwLimit / sinAbs);
+      const twSpd  = cosNeg < 0.001 ? Infinity : Math.ceil(twLimit / cosNeg);
+      const binding   = Math.min(xwSpd, twSpd);
+      const isLimited = binding <= 99;
+      const spdTxt    = isLimited ? String(binding) : '>99';
+      const limLbl    = isLimited ? (twSpd < xwSpd ? `TW${twLimit}` : 'XW') : '';
+      const cmpSpd    = isLimited ? binding : 100;
+      const isCur     = dir === curDir10;
       let cls = 'xwft-ok';
-      if      (isCur)                                       cls = 'xwft-cur';
-      else if (maxSpd !== null && windData > maxSpd)        cls = 'xwft-exc';
-      else if (maxSpd !== null && windData >= maxSpd - 4)   cls = 'xwft-warn';
+      if      (isCur)                    cls = 'xwft-cur';
+      else if (windData > cmpSpd)        cls = 'xwft-exc';
+      else if (windData >= cmpSpd - 4)   cls = 'xwft-warn';
       const cell = document.createElement('div');
       cell.className = `xwft-cell ${cls}`;
       cell.innerHTML = `<div class="xwft-d">${String(dir).padStart(3,'0')}°</div>`
-                     + `<div class="xwft-s">${spdTxt}<span class="xwft-u"> KT</span></div>`;
+                     + `<div class="xwft-s">${spdTxt}<span class="xwft-u"> KT</span></div>`
+                     + `<div class="xwft-lim">${limLbl}</div>`;
       grid.appendChild(cell);
     });
   }
