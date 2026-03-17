@@ -395,6 +395,18 @@
     .g-tick-line  { width: 1px; height: 6px; background: #2a4060; }
     .g-tick-label { font-size: 0.65rem; color: #4a6a99; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+    /* Two-column responsive layout (iPad landscape) */
+    .xw-layout { display: flex; flex-direction: column; }
+    .xw-col    { width: 100%; }
+    @media (min-width: 768px) {
+      .xw-layout { flex-direction: row; align-items: flex-start; gap: 16px; }
+      .xw-col    { flex: 1; min-width: 0; }
+    }
+
+    /* XWIND single-drum wrapper */
+    .xd-drum-wrap { text-align: center; margin-top: 10px; }
+    .xd-drum-solo { max-width: 130px; margin: 0 auto; }
+
     /* Table */
     .rest-table { width: 100%; border-collapse: collapse; }
     .rest-table th { background: #070c18; padding: 9px 14px; text-align: left; font-size: 0.7rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #1a3055; }
@@ -459,59 +471,94 @@
   <div class="hdr-rev">NCA 運航規程<br>S-3-5</div>
 </div>
 
+<div class="xw-layout">
+
+<!-- ── Left column: inputs ── -->
+<div class="xw-col">
+
 <div class="card">
   <div class="card-title">Runway</div>
-  <div class="row2">
-    <div class="fg">
-      <label>RW</label>
-      <select id="rwyNum" onchange="onRwySelect()">
-        <option value="">選択...</option>
-      </select>
+  <div class="fg">
+    <label>RW</label>
+    <select id="rwyNum" onchange="onRwySelect()">
+      <option value="">選択...</option>
+    </select>
+  </div>
+  <div class="xd-drum-wrap">
+    <div class="picker-group-label">RW HDG (°MAG)</div>
+    <div class="drum xd-drum-solo">
+      <div class="drum-col" id="xd-rwyhdg"></div>
+      <div class="drum-sel"></div>
     </div>
-    <div class="fg">
-      <label>RW HDG (°MAG)</label>
-      <input type="number" id="rwyHdg" value="" min="1" max="360" step="1"
-             inputmode="numeric" placeholder="---" oninput="calc()">
-      <span class="hint">実際の磁方位で微修正</span>
-    </div>
+    <div class="drum-display" id="disp-xd-rwyhdg">270°</div>
   </div>
 </div>
 
 <div class="card">
   <div class="card-title">Wind</div>
-  <div class="row2">
-    <div class="fg">
-      <label>Direction Type</label>
-      <select id="windType" onchange="toggleMagVar(); calc()">
-        <option value="MAG">Magnetic</option>
-        <option value="TRUE">True (気象テレタイプ)</option>
-      </select>
-    </div>
-    <div class="fg">
-      <label>Direction (°)</label>
-      <input type="number" id="windDir" value="270" min="0" max="360" step="1"
-             inputmode="numeric" oninput="calc()">
-    </div>
+  <div class="fg">
+    <label>Direction Type</label>
+    <select id="windType" onchange="toggleMagVar(); calc()">
+      <option value="MAG">Magnetic</option>
+      <option value="TRUE">True (気象テレタイプ)</option>
+    </select>
   </div>
   <div class="fg" id="magVarGroup" style="display:none">
     <label>Magnetic Variation (East +, West −)</label>
     <input type="number" id="magVar" value="-8" step="0.5" inputmode="decimal" oninput="calc()">
     <span class="hint">日本 ≈ −7〜−9°（磁偏西）</span>
   </div>
-  <div class="row2">
-    <div class="fg">
-      <label>Steady (KT)</label>
-      <input type="number" id="steady" value="20" min="0" max="99" step="1"
-             inputmode="numeric" oninput="updateGustOptions()">
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1;text-align:center">
+      <div class="picker-group-label">Direction (°)</div>
+      <div class="drum">
+        <div class="drum-col" id="xd-winddir"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-xd-winddir">270°</div>
     </div>
-    <div class="fg">
-      <label>Gust / Max Wind (KT)</label>
-      <select id="gust" onchange="calc()">
-        <option value="">なし</option>
-      </select>
+    <div style="flex:1;text-align:center">
+      <div class="picker-group-label">Steady (KT)</div>
+      <div class="drum">
+        <div class="drum-col" id="xd-steady"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-xd-steady">20 KT</div>
     </div>
   </div>
+  <div class="fg" style="margin-top:12px">
+    <label>Gust / Max Wind (KT)</label>
+    <select id="gust" onchange="calc()">
+      <option value="">なし</option>
+    </select>
+  </div>
 </div>
+
+<div class="card" id="tasCard">
+  <div class="card-title">Target Approach Speed</div>
+  <div class="row2">
+    <div class="fg">
+      <label>VREF (KT)</label>
+      <input type="number" id="vref" value="" min="100" max="200" step="1"
+             inputmode="numeric" placeholder="---" oninput="calc()">
+    </div>
+    <div class="fg">
+      <label>Autothrottle</label>
+      <div class="tgl-group">
+        <button id="btnAtOn"  class="tgl on" onclick="setAt(true)">ENGAGED</button>
+        <button id="btnAtOff" class="tgl"    onclick="setAt(false)">NOT ENG</button>
+      </div>
+    </div>
+  </div>
+  <div class="tas-box" id="tasBox">
+    <span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>
+  </div>
+</div>
+
+</div><!-- /xw-col left -->
+
+<!-- ── Right column: conditions + results ── -->
+<div class="xw-col">
 
 <div class="card">
   <div class="card-title">Runway Condition &amp; Limits</div>
@@ -569,27 +616,6 @@
   </div>
 </div>
 
-<div class="card" id="tasCard">
-  <div class="card-title">Target Approach Speed</div>
-  <div class="row2">
-    <div class="fg">
-      <label>VREF (KT)</label>
-      <input type="number" id="vref" value="" min="100" max="200" step="1"
-             inputmode="numeric" placeholder="---" oninput="calc()">
-    </div>
-    <div class="fg">
-      <label>Autothrottle</label>
-      <div class="tgl-group">
-        <button id="btnAtOn"  class="tgl on" onclick="setAt(true)">ENGAGED</button>
-        <button id="btnAtOff" class="tgl"    onclick="setAt(false)">NOT ENG</button>
-      </div>
-    </div>
-  </div>
-  <div class="tas-box" id="tasBox">
-    <span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>
-  </div>
-</div>
-
 <div class="card">
   <div class="card-title">Wind Data 算出</div>
   <div class="formula-box" id="formulaBox">—</div>
@@ -631,6 +657,9 @@
   <li>Autoland 制限は AFM による</li>
 </ul>
 
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
+
 </div><!-- /tab-content -->
 </div><!-- /tab-xwind -->
 
@@ -645,6 +674,11 @@
   </div>
   <div class="hdr-rev">PH Rev.17<br>MAR 03, 2026</div>
 </div>
+
+<div class="xw-layout">
+
+<!-- ── Left: inputs ── -->
+<div class="xw-col">
 
 <div class="card">
   <div class="card-title">Configuration</div>
@@ -697,6 +731,11 @@
   </div>
 </div>
 
+</div><!-- /xw-col left -->
+
+<!-- ── Right: results ── -->
+<div class="xw-col">
+
 <div class="result-card">
   <div class="res-label">Takeoff Reference Initial Pitch</div>
   <div class="res-val idle" id="resVal">--.-</div>
@@ -711,6 +750,9 @@
   <li>Engine A/I effect ≈ −0.02° — negligible, ignored</li>
   <li>CG effect &lt; 0.1° — negligible, ignored</li>
 </ul>
+
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
 
 </div><!-- /tab-content -->
 </div><!-- /tab-pitch -->
@@ -925,8 +967,11 @@ function toggleMagVar() {
 }
 function onRwySelect() {
   const n = parseInt($('rwyNum').value);
-  if (!isNaN(n) && n >= 1 && n <= 36) $('rwyHdg').value = n * 10;
-  calc();
+  if (!isNaN(n) && n >= 1 && n <= 36) {
+    scrollXwindDrum('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
+  } else {
+    calc();
+  }
 }
 function setOp(op) {
   currentOp = op;
@@ -1056,10 +1101,13 @@ function alRow(label, val, limit) {
 
 /* ── XWIND main calc ── */
 function calc() {
-  const rwyHdg  = parseFloat($('rwyHdg').value);
-  const windDir = parseFloat($('windDir').value);
+  const rwyHdgEl  = document.getElementById('xd-rwyhdg');
+  const windDirEl = document.getElementById('xd-winddir');
+  const steadyEl  = document.getElementById('xd-steady');
+  const rwyHdg  = rwyHdgEl  ? getColRangeVal(rwyHdgEl)  : NaN;
+  const windDir = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const steady  = steadyEl  ? getColRangeVal(steadyEl)  : 0;
   const magVar  = parseFloat($('magVar').value) || 0;
-  const steady  = parseFloat($('steady').value) || 0;
   const gustRaw = $('gust').value.trim();
   const gust    = gustRaw !== '' ? parseFloat(gustRaw) : null;
 
@@ -1185,7 +1233,8 @@ function renderTas(relRad, gust, steady) {
 
 /* ── Gust dropdown ── */
 function updateGustOptions() {
-  const steady  = parseFloat($('steady').value) || 0;
+  const steadyEl = document.getElementById('xd-steady');
+  const steady   = steadyEl ? getColRangeVal(steadyEl) : 0;
   const sel     = $('gust');
   const prevVal = sel.value;
   sel.innerHTML = '<option value="">なし</option>';
@@ -1433,6 +1482,45 @@ function updateCrewSelectColors() {
 /* ── Drum picker ── */
 const ITEM_H = 44;
 
+/* Range-based drum (for XWIND: values start at `from`, not 0) */
+function buildColRange(colEl, from, to, pad, initVal) {
+  for (let i = from; i <= to; i++) {
+    const d = document.createElement('div');
+    d.className = 'drum-item';
+    d.textContent = String(i).padStart(pad, '0');
+    colEl.appendChild(d);
+  }
+  colEl._from = from;
+  colEl._skipNotify = true;
+  colEl.scrollTop = (initVal - from) * ITEM_H;
+  requestAnimationFrame(() => { colEl._skipNotify = false; });
+}
+function getColRangeVal(colEl) {
+  return colEl._from + Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl.children.length - 1);
+}
+function wireXwindDrum(colId, dispId, suffix, onChange) {
+  const colEl  = document.getElementById(colId);
+  const dispEl = document.getElementById(dispId);
+  const pad    = colEl.children[0] ? colEl.children[0].textContent.length : 1;
+  const upd = () => {
+    const v = getColRangeVal(colEl);
+    dispEl.textContent = String(v).padStart(pad, '0') + suffix;
+    onChange();
+  };
+  onColScroll(colEl, upd);
+  const v = getColRangeVal(colEl);
+  dispEl.textContent = String(v).padStart(pad, '0') + suffix;
+}
+function scrollXwindDrum(colId, dispId, suffix, value) {
+  const colEl  = document.getElementById(colId);
+  const dispEl = document.getElementById(dispId);
+  const pad    = colEl.children[0] ? colEl.children[0].textContent.length : 1;
+  colEl._skipNotify = true;
+  colEl.scrollTop = (value - colEl._from) * ITEM_H;
+  dispEl.textContent = String(value).padStart(pad, '0') + suffix;
+  requestAnimationFrame(() => { colEl._skipNotify = false; calc(); });
+}
+
 function buildCol(colEl, count, pad, initVal) {
   for (let i = 0; i < count; i++) {
     const d = document.createElement('div');
@@ -1659,6 +1747,14 @@ function showCrewErr(msg) {
   }
 })();
 toggleMagVar();
+
+/* XWIND drums — init at page load (XWIND is the default active tab) */
+buildColRange(document.getElementById('xd-rwyhdg'),  1, 360, 3, 270);
+buildColRange(document.getElementById('xd-winddir'), 0, 360, 3, 270);
+buildColRange(document.getElementById('xd-steady'),  0,  99, 2,  20);
+wireXwindDrum('xd-rwyhdg',  'disp-xd-rwyhdg',  '°',   calc);
+wireXwindDrum('xd-winddir', 'disp-xd-winddir', '°',   calc);
+wireXwindDrum('xd-steady',  'disp-xd-steady',  ' KT', updateGustOptions);
 updateGustOptions();
 
 /* PITCH */
