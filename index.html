@@ -205,6 +205,18 @@
       background: linear-gradient(90deg, transparent, rgba(0,200,255,0.4), transparent);
     }
 
+    /* ── WIND STRIP (input summary inside result-card) ── */
+    .wind-strip {
+      display: flex; align-items: center; justify-content: space-around;
+      background: #060d16; border: 1px solid #1a3055; border-radius: 9px;
+      padding: 10px 8px; margin-bottom: 14px; gap: 4px;
+    }
+    .ws-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+    .ws-lbl  { font-size: 0.52rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1.2px; }
+    .ws-val  { font-size: 1.05rem; font-weight: 700; color: #d4e4ff; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; white-space: nowrap; }
+    .ws-val.ws-accent { color: #00c8ff; }
+    .ws-divider { width: 1px; height: 34px; background: #1a3055; flex-shrink: 0; }
+
     /* ── DIAGRAM ── */
     #diagram { display: block; margin: 0 auto 14px; }
 
@@ -629,6 +641,28 @@
 </div>
 
 <div class="result-card">
+  <!-- Wind input summary strip -->
+  <div class="wind-strip" id="windStrip" style="display:none">
+    <div class="ws-cell">
+      <span class="ws-lbl">RW HDG</span>
+      <span class="ws-val" id="wsRwy">—</span>
+    </div>
+    <div class="ws-divider"></div>
+    <div class="ws-cell">
+      <span class="ws-lbl">Wind Dir</span>
+      <span class="ws-val ws-accent" id="wsDir">—</span>
+    </div>
+    <div class="ws-divider"></div>
+    <div class="ws-cell">
+      <span class="ws-lbl">Steady</span>
+      <span class="ws-val ws-accent" id="wsStd">—</span>
+    </div>
+    <div class="ws-divider" id="wsGustDivider" style="display:none"></div>
+    <div class="ws-cell" id="wsGustCell" style="display:none">
+      <span class="ws-lbl">Gust</span>
+      <span class="ws-val" style="color:#f59e0b" id="wsGust">—</span>
+    </div>
+  </div>
   <svg id="diagram" viewBox="-115 -115 230 230" width="190" height="190"></svg>
   <div class="comp3">
     <div class="comp-item">
@@ -1127,7 +1161,9 @@ function calc() {
     const diff = gust - steady;
     if (diff >= 10) {
       windData = steady + diff / 2;
-      formulaHTML = `<span>Maximum Wind 通報あり　(Gust − Steady = ${diff.toFixed(0)} KT ≥ 10 KT)</span><br>Wind Data = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span>`;
+      formulaHTML = `<span>Maximum Wind 通報あり　(Gust − Steady = ${diff.toFixed(0)} KT ≥ 10 KT)</span><br>`
+        + `Wind Data (Cross/Tail) = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span>`
+        + `<br><span style="color:#4a6a99">Headwind 成分は Steady Wind のみ (${steady} KT) で算出</span>`;
     } else {
       windData = steady;
       formulaHTML = `<span>Gust − Steady = ${diff.toFixed(0)} KT &lt; 10 KT → Maximum Wind に非該当</span><br>Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`;
@@ -1138,6 +1174,22 @@ function calc() {
   }
   $('formulaBox').innerHTML = formulaHTML;
 
+  // Update wind input summary strip
+  const wsEl = $('windStrip');
+  wsEl.style.display = 'flex';
+  const windTypeTag = $('windType').value === 'TRUE' ? '<span style="font-size:.65rem;color:#4a6a99"> T</span>' : '';
+  $('wsRwy').innerHTML = String(norm360(rwyHdg)).padStart(3,'0') + '°';
+  $('wsDir').innerHTML = String(norm360(windDir)).padStart(3,'0') + '°' + windTypeTag;
+  $('wsStd').textContent = steady + ' KT';
+  if (gust !== null && !isNaN(gust)) {
+    $('wsGustCell').style.display  = 'flex';
+    $('wsGustDivider').style.display = 'block';
+    $('wsGust').textContent = gust + ' KT';
+  } else {
+    $('wsGustCell').style.display  = 'none';
+    $('wsGustDivider').style.display = 'none';
+  }
+
   if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
     ['hwVal','xwVal','twVal'].forEach(id => { $(id).className = 'comp-val'; $(id).textContent = '--'; });
     $('xwDir').textContent = ''; $('limitBars').innerHTML = ''; $('alSection').style.display = 'none';
@@ -1147,11 +1199,15 @@ function calc() {
 
   const relAngle    = normPM180(windDirMag - norm360(rwyHdg));
   const relRad      = relAngle * Math.PI / 180;
-  const headComp    = windData * Math.cos(relRad);
+  // Crosswind: Wind Data (includes Gust correction per NCA S-3-5)
   const crossSigned = windData * Math.sin(relRad);
   const crossAbs    = Math.abs(crossSigned);
+  // Headwind/Tailwind DISPLAY: Steady wind only (no Gust — NCA S-3-5)
+  const headComp    = steady   * Math.cos(relRad);
   const headPos     = Math.max(0, headComp);
   const tailPos     = Math.max(0, -headComp);
+  // Diagram uses windData for both components (physically consistent vector)
+  const headCompDiag = windData * Math.cos(relRad);
 
   const hwEl = $('hwVal');
   hwEl.className   = headPos > 0.05 ? 'comp-val head' : 'comp-val zero';
@@ -1183,7 +1239,7 @@ function calc() {
   if (autolandOn && currentOp === 'LDG') {
     alSec.style.display = 'block';
     $('alRows').innerHTML =
-      alRow('HEAD', headPos, AUTOLAND.hw) +
+      alRow('HEAD', headPos, AUTOLAND.hw) +  // headPos = Steady-based
       alRow('XW',   crossAbs, AUTOLAND.xw) +
       alRow('TAIL', tailPos, AUTOLAND.tw);
   } else {
@@ -1191,7 +1247,7 @@ function calc() {
   }
 
   renderTas(relRad, gust, steady);
-  drawDiagram(norm360(rwyHdg), windDirMag, windData, headComp, crossSigned);
+  drawDiagram(norm360(rwyHdg), windDirMag, windData, headCompDiag, crossSigned);
 }
 
 /* ── Target Approach Speed ── */
