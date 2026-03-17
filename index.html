@@ -9,6 +9,53 @@
   <title>NCA Tools</title>
   <style>
     /* ══════════════════════════════════════════
+       LOCK SCREEN
+    ══════════════════════════════════════════ */
+    #lock-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #060d16;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 32px;
+    }
+    #lock-screen.hidden { display: none; }
+    .lock-logo { font-size: 1.4em; font-weight: 700; color: #00c8ff; letter-spacing: 4px; margin-bottom: 4px; }
+    .lock-sub  { font-size: 0.7em; color: #4a6880; letter-spacing: 2px; margin-bottom: 48px; }
+    .lock-icon { font-size: 2.4em; margin-bottom: 24px; opacity: 0.6; }
+    .lock-input {
+      width: 100%; max-width: 300px;
+      background: #0b1624; border: 1px solid #162840;
+      border-radius: 10px; color: #b8cce0;
+      padding: 14px 18px; font-size: 1.2em; font-family: inherit;
+      text-align: center; letter-spacing: 4px;
+      -webkit-appearance: none; outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 14px;
+    }
+    .lock-input:focus { border-color: #00c8ff; }
+    .lock-input.shake {
+      animation: shake 0.35s ease;
+      border-color: #ff4560;
+    }
+    @keyframes shake {
+      0%,100%{ transform:translateX(0); }
+      20%    { transform:translateX(-8px); }
+      40%    { transform:translateX( 8px); }
+      60%    { transform:translateX(-6px); }
+      80%    { transform:translateX( 6px); }
+    }
+    .lock-btn {
+      width: 100%; max-width: 300px;
+      padding: 13px; background: #00c8ff; border: none;
+      border-radius: 10px; color: #060d16;
+      font-size: 0.9em; font-weight: 700; letter-spacing: 2px;
+      font-family: inherit; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .lock-btn:active { opacity: 0.8; }
+    .lock-err { font-size: 0.72em; color: #ff4560; margin-top: 12px; min-height: 1em; letter-spacing: 1px; }
+
+    /* ══════════════════════════════════════════
        ROOT / RESET
     ══════════════════════════════════════════ */
     :root {
@@ -379,6 +426,19 @@
   </style>
 </head>
 <body>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <div class="lock-logo">NCA TOOLS</div>
+  <div class="lock-sub">B747-8F FLIGHT OPERATIONS</div>
+  <div class="lock-icon">🔒</div>
+  <input class="lock-input" id="lock-input" type="password"
+         placeholder="PASSWORD" autocomplete="off" autocorrect="off"
+         inputmode="text" spellcheck="false"
+         onkeydown="if(event.key==='Enter')unlockApp()">
+  <button class="lock-btn" onclick="unlockApp()">UNLOCK</button>
+  <div class="lock-err" id="lock-err"></div>
+</div>
 
 <!-- TAB BAR -->
 <div class="tab-bar" id="main-tab-bar">
@@ -762,6 +822,34 @@
 </div><!-- /tab-crew -->
 
 <script>
+/* ══════════════════════════════════════════
+   LOCK SCREEN  (パスワード変更はここ ↓)
+══════════════════════════════════════════ */
+const _PW = 'NCA747';
+
+(function() {
+  if (sessionStorage.getItem('nca_auth') === '1') {
+    document.getElementById('lock-screen').classList.add('hidden');
+  }
+})();
+
+function unlockApp() {
+  const input = document.getElementById('lock-input');
+  const errEl = document.getElementById('lock-err');
+  if (input.value === _PW) {
+    sessionStorage.setItem('nca_auth', '1');
+    document.getElementById('lock-screen').classList.add('hidden');
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = 'パスワードが違います';
+    input.classList.remove('shake');
+    void input.offsetWidth; // reflow to restart animation
+    input.classList.add('shake');
+    input.value = '';
+    setTimeout(() => input.classList.remove('shake'), 400);
+  }
+}
+
 /* ══════════════════════════════════════════
    TAB SWITCHING
 ══════════════════════════════════════════ */
