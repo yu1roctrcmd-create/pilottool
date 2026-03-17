@@ -569,7 +569,7 @@
   </div>
 </div>
 
-<div class="card" id="tasCard" style="display:none">
+<div class="card" id="tasCard">
   <div class="card-title">Target Approach Speed</div>
   <div class="row2">
     <div class="fg">
@@ -933,7 +933,6 @@ function setOp(op) {
   $('btnTO').classList.toggle('on', op === 'TO');
   $('btnLDG').classList.toggle('on', op === 'LDG');
   $('autolandGroup').style.display = op === 'LDG' ? 'block' : 'none';
-  $('tasCard').style.display       = op === 'LDG' ? 'block' : 'none';
   if (op === 'TO') { autolandOn = false; updateAutolandBtn(); }
   onCondChange();
 }
@@ -1087,7 +1086,7 @@ function calc() {
   if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
     ['hwVal','xwVal','twVal'].forEach(id => { $(id).className = 'comp-val'; $(id).textContent = '--'; });
     $('xwDir').textContent = ''; $('limitBars').innerHTML = ''; $('alSection').style.display = 'none';
-    if (currentOp === 'LDG') renderTas(null, null, null);
+    renderTas(null, null, null);
     drawDiagram(NaN, NaN, 0, 0, 0); return;
   }
 
@@ -1136,7 +1135,7 @@ function calc() {
     alSec.style.display = 'none';
   }
 
-  if (currentOp === 'LDG') renderTas(relRad, gust, steady);
+  renderTas(relRad, gust, steady);
   drawDiagram(norm360(rwyHdg), windDirMag, windData, headComp, crossSigned);
 }
 
