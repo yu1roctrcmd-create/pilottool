@@ -111,6 +111,10 @@
     .tab-content {
       max-width: 480px; margin: 0 auto; padding: 16px 16px 40px;
     }
+    @media (min-width: 768px) {
+      #tab-xwind .tab-content,
+      #tab-pitch .tab-content { max-width: 960px; padding: 20px 24px 48px; }
+    }
 
     /* ══════════════════════════════════════════
        SHARED: XWIND + PITCH
@@ -399,8 +403,11 @@
     .xw-layout { display: flex; flex-direction: column; }
     .xw-col    { width: 100%; }
     @media (min-width: 768px) {
-      .xw-layout { flex-direction: row; align-items: flex-start; gap: 16px; }
+      .xw-layout { flex-direction: row; align-items: flex-start; gap: 20px; }
       .xw-col    { flex: 1; min-width: 0; }
+      /* drum items slightly larger on wide screen */
+      #tab-xwind .drum-item { font-size: 2.2rem; }
+      #tab-xwind .picker-group-label { font-size: 0.8rem; }
     }
 
     /* XWIND single-drum wrapper */
