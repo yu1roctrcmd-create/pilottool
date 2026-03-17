@@ -1383,16 +1383,19 @@ function buildXwTable() {
   const grid = $('xwftGrid');
   grid.innerHTML = '';
 
+  // Snap to nearest 10° so all displayed directions are multiples of 10
+  const rwyHdg10 = norm360(Math.round(norm360(rwyHdg) / 10) * 10);
+
   for (let i = 1; i <= 17; i++) {
-    [norm360(rwyHdg - i * 10), norm360(rwyHdg + i * 10)].forEach(dir => {
-      const relRad = normPM180(dir - norm360(rwyHdg)) * Math.PI / 180;
+    [norm360(rwyHdg10 - i * 10), norm360(rwyHdg10 + i * 10)].forEach(dir => {
+      const relRad = normPM180(dir - rwyHdg10) * Math.PI / 180;
       const sinAbs = Math.abs(Math.sin(relRad));
       const cosNeg = -Math.cos(relRad);                    // > 0 on tailwind side (>90° offset)
-      const xwSpd  = sinAbs < 0.001 ? Infinity : Math.ceil(xwLimit / sinAbs);
-      const twSpd  = cosNeg < 0.001 ? Infinity : Math.ceil(twLimit / cosNeg);
+      const xwSpd  = sinAbs < 0.001 ? Infinity : xwLimit / sinAbs;
+      const twSpd  = cosNeg < 0.001 ? Infinity : twLimit / cosNeg;
       const binding   = Math.min(xwSpd, twSpd);
-      const isLimited = binding <= 99;
-      const spdTxt    = isLimited ? String(binding) : '>99';
+      const isLimited = binding < 100;
+      const spdTxt    = isLimited ? binding.toFixed(1) : '>99';
       const limLbl    = isLimited ? (twSpd < xwSpd ? `TW${twLimit}` : 'XW') : '';
       const cmpSpd    = isLimited ? binding : 100;
       const isCur     = dir === curDir10;
