@@ -1156,21 +1156,24 @@ function calc() {
     ? norm360(windDir - magVar)
     : norm360(windDir);
 
+  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1a3055;font-size:0.7rem;color:#4a6a99;line-height:1.7">`
+    + `注1. Maximum Wind とは、平均風速を 10 KT 以上上回る最大瞬間風速をいう。<br>`
+    + `注2. 気象テレタイプの風向はすべて真方位。その他は磁方位。`
+    + `</div>`;
+
   let windData, formulaHTML = '';
   if (gust !== null && !isNaN(gust)) {
     const diff = gust - steady;
-    if (diff >= 10) {
-      windData = steady + diff / 2;
-      formulaHTML = `<span>Maximum Wind 通報あり　(Gust − Steady = ${diff.toFixed(0)} KT ≥ 10 KT)</span><br>`
-        + `Wind Data (Cross/Tail) = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span>`
-        + `<br><span style="color:#4a6a99">Headwind 成分は Steady Wind のみ (${steady} KT) で算出</span>`;
-    } else {
-      windData = steady;
-      formulaHTML = `<span>Gust − Steady = ${diff.toFixed(0)} KT &lt; 10 KT → Maximum Wind に非該当</span><br>Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`;
-    }
+    windData = steady + diff / 2;
+    formulaHTML = `<span>Maximum Wind 通報あり</span><br>`
+      + `Wind Data (横風) = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span><br>`
+      + `<span style="color:#4a6a99">Headwind 成分は Steady Wind のみ (${steady} KT)</span>`
+      + NOTES;
   } else {
     windData = steady;
-    formulaHTML = `<span>Maximum Wind 通報なし</span><br>Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`;
+    formulaHTML = `<span>Maximum Wind 通報なし</span><br>`
+      + `Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`
+      + NOTES;
   }
   $('formulaBox').innerHTML = formulaHTML;
 
@@ -1301,10 +1304,10 @@ function updateGustOptions() {
   const sel     = $('gust');
   const prevVal = sel.value;
   sel.innerHTML = '<option value="">なし</option>';
-  const min = Math.ceil(steady) + 5;
-  for (let v = min; v <= 50; v++) {
+  const min = Math.ceil(steady) + 10; // Maximum Wind ≥ Steady + 10 KT（NCA S-3-5 注1）
+  for (let v = min; v <= 60; v++) {
     const opt = document.createElement('option');
-    opt.value = v; opt.textContent = `${v} KT`;
+    opt.value = v; opt.textContent = `${v} KT  (G+${v - steady})`;
     sel.appendChild(opt);
   }
   if (prevVal !== '' && parseInt(prevVal) >= min && parseInt(prevVal) <= 50) sel.value = prevVal;
