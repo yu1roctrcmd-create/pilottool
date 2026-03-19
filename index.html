@@ -428,13 +428,36 @@
     @media (min-width: 768px) {
       .xw-layout { flex-direction: row; align-items: flex-start; gap: 20px; }
       .xw-col    { flex: 1; min-width: 0; }
-      #tab-to .drum-item { font-size: 2.2rem; }
-      #tab-to .picker-group-label { font-size: 0.8rem; }
+      #tab-to  .drum-item { font-size: 2.2rem; }
+      #tab-to  .picker-group-label { font-size: 0.8rem; }
+      #tab-ldg .tab-content { max-width: 960px; padding: 20px 24px 48px; }
+      #tab-ldg .drum-item { font-size: 2.2rem; }
+      #tab-ldg .picker-group-label { font-size: 0.8rem; }
     }
 
     /* XWIND single-drum wrapper */
     .xd-drum-wrap { text-align: center; margin-top: 10px; }
     .xd-drum-solo { max-width: 130px; margin: 0 auto; }
+
+    /* ── TAS result box ── */
+    .tas-box { background: #060d16; border: 1px solid #1a3055; border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
+    .tas-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 0.82em; }
+    .tas-lbl { color: var(--muted); }
+    .tas-target { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a3055; text-align: center; }
+    .tas-target-lbl  { font-size: 0.55rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .tas-target-val  { font-size: 2.8em; font-weight: 700; color: #00e5ff; line-height: 1; }
+    .tas-target-unit { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
+
+    /* ── Approach Pitch & N1 ── */
+    .appr-grid { display: grid; grid-template-columns: 28px repeat(5, 1fr); gap: 3px; margin-top: 4px; }
+    .appr-hdr  { font-size: 0.52rem; color: #4a6a99; letter-spacing: 0.3px; text-align: center; padding: 5px 2px; border-radius: 5px; }
+    .appr-hdr.appr-cur { background: rgba(0,229,255,0.1); border: 1px solid #00e5ff; color: #00e5ff; }
+    .appr-lbl  { font-size: 0.48rem; color: #4a6a99; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; white-space: nowrap; }
+    .appr-cell { background: #060d16; border: 1px solid #1a3055; border-radius: 5px; padding: 7px 3px; text-align: center; }
+    .appr-cell.appr-cur { border-color: #00e5ff; background: rgba(0,229,255,0.08); }
+    .appr-val  { font-size: 0.95rem; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+    .appr-cell.appr-cur .appr-val { color: #00e5ff; }
+    .appr-sub  { font-size: 0.45rem; color: var(--muted); margin-top: 1px; }
 
     /* Table */
     .rest-table { width: 100%; border-collapse: collapse; }
@@ -484,6 +507,7 @@
 <!-- TAB BAR -->
 <div class="tab-bar" id="main-tab-bar">
   <button class="tab-btn active" onclick="switchTab('to',this)">TO</button>
+  <button class="tab-btn"        onclick="switchTab('ldg',this)">LDG</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
 </div>
 
@@ -766,6 +790,280 @@
 </div><!-- /tab-content -->
 </div><!-- /tab-to -->
 
+<!-- ═══════════════════════════ TAB: LDG ═══════════════════════════ -->
+<div class="tab-panel" id="tab-ldg">
+<div class="tab-content">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <span class="hdr-ac">B747-8F</span>
+    <span class="hdr-sub">LANDING</span>
+  </div>
+  <div class="hdr-rev">NCA S-3-5<br>PH Rev.17</div>
+</div>
+
+<div class="xw-layout">
+
+<!-- ── Left column ── -->
+<div class="xw-col">
+
+<!-- Runway (LDG) -->
+<div class="card">
+  <div class="card-title">Runway</div>
+  <div class="fg">
+    <label>RW</label>
+    <select id="ldg-rwyNum" onchange="onLdgRwySelect()">
+      <option value="">選択...</option>
+    </select>
+  </div>
+  <div class="xd-drum-wrap">
+    <div class="picker-group-label">RW HDG (°MAG)</div>
+    <div class="drum xd-drum-solo">
+      <div class="drum-col" id="ldg-rwyhdg"></div>
+      <div class="drum-sel"></div>
+    </div>
+    <div class="drum-display" id="disp-ldg-rwyhdg">270°</div>
+  </div>
+</div>
+
+<!-- Wind (LDG) -->
+<div class="card">
+  <div class="card-title">Wind</div>
+  <div class="fg">
+    <label>Direction Type</label>
+    <select id="ldg-windType" onchange="ldgToggleMagVar(); calcLdg()">
+      <option value="MAG">Magnetic</option>
+      <option value="TRUE">True (気象テレタイプ)</option>
+    </select>
+  </div>
+  <div class="fg" id="ldg-magVarGroup" style="display:none">
+    <label>Magnetic Variation (East +, West −)</label>
+    <input type="number" id="ldg-magVar" value="-8" step="0.5" inputmode="decimal" oninput="calcLdg()">
+    <span class="hint">日本 ≈ −7〜−9°（磁偏西）</span>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:12px">
+    <div style="flex:1;text-align:center">
+      <div class="picker-group-label">Direction (°)</div>
+      <div class="drum">
+        <div class="drum-col" id="ldg-winddir"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-ldg-winddir">270°</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div class="picker-group-label">Steady (KT)</div>
+      <div class="drum">
+        <div class="drum-col" id="ldg-steady"></div>
+        <div class="drum-sel"></div>
+      </div>
+      <div class="drum-display" id="disp-ldg-steady">20 KT</div>
+    </div>
+  </div>
+  <div class="fg" style="margin-top:12px">
+    <label>Gust / Max Wind (KT)</label>
+    <select id="ldg-gust" onchange="calcLdg()">
+      <option value="">なし</option>
+    </select>
+  </div>
+</div>
+
+<!-- Runway Condition & Limits (LDG) -->
+<div class="card">
+  <div class="card-title">Runway Condition &amp; Limits</div>
+  <div class="fg">
+    <label>Runway Condition</label>
+    <select id="ldg-rwyCond" onchange="onCondChangeLdg()">
+      <option value="">選択...</option>
+      <optgroup label="── DRY ──">
+        <option value="dry">Dry</option>
+      </optgroup>
+      <optgroup label="── WET ──">
+        <option value="wet_grv">Wet — Grooved / PFC</option>
+        <option value="wet_ngrv">Wet — Non Grooved</option>
+      </optgroup>
+      <optgroup label="── CONTAMINATED ──">
+        <option value="rwycc5">RWYCC 5  /  Braking Good</option>
+        <option value="rwycc4">RWYCC 4  /  Good to Medium</option>
+        <option value="rwycc3">RWYCC 3  /  Medium</option>
+        <option value="rwycc2">RWYCC 2  /  Medium to Poor</option>
+        <option value="rwycc1">RWYCC 1  /  Poor</option>
+      </optgroup>
+    </select>
+  </div>
+  <div id="ldg-rwyLenGroup" style="display:none;margin-top:10px">
+    <label style="margin-bottom:6px;display:block">Runway Length</label>
+    <div class="tgl-group">
+      <button id="ldg-btnLong"  class="tgl on"  onclick="setLenLdg('LONG')">LONG</button>
+      <button id="ldg-btnShort" class="tgl"     onclick="setLenLdg('SHORT')">★ SHORT</button>
+    </div>
+  </div>
+  <div style="margin-top:10px">
+    <label style="margin-bottom:6px;display:block">Autoland</label>
+    <div class="tgl-group">
+      <button id="ldg-btnAlOff" class="tgl on"  onclick="setAutolandLdg(false)">OFF</button>
+      <button id="ldg-btnAlOn"  class="tgl"     onclick="setAutolandLdg(true)">AUTO LAND</button>
+    </div>
+  </div>
+  <div class="xwl-box" id="ldg-xwlBox" style="display:none">
+    <div class="xwl-left">
+      <span class="xwl-label">Crosswind Limit</span>
+      <span class="xwl-cond" id="ldg-xwlCond">—</span>
+    </div>
+    <div class="xwl-right">
+      <span class="xwl-val" id="ldg-xwlVal">--</span>
+      <span class="xwl-unit">KT</span>
+    </div>
+  </div>
+</div>
+
+<!-- Landing Configuration -->
+<div class="card">
+  <div class="card-title">Landing Configuration</div>
+  <div class="fg">
+    <label>Landing Weight (× 1000 LB)</label>
+    <input type="number" id="ldg-weight" value="600" step="1" inputmode="decimal"
+           oninput="apprCalcLdg(); ldgFlapSpdCalc()">
+    <span class="hint">Approach Pitch valid: 460 – 763 × 1000 LB</span>
+  </div>
+  <div class="fg">
+    <label>Landing Flaps</label>
+    <div class="tgl-group">
+      <button id="ldg-btnF25" class="tgl"    onclick="setApprFlapLdg('F25')">F25</button>
+      <button id="ldg-btnF30" class="tgl on" onclick="setApprFlapLdg('F30')">F30</button>
+    </div>
+  </div>
+</div>
+
+<!-- Target Approach Speed -->
+<div class="card">
+  <div class="card-title">Target Approach Speed</div>
+  <div class="row2">
+    <div class="fg">
+      <label>VREF (KT)</label>
+      <input type="number" id="ldg-vref" value="160" step="1" inputmode="numeric" oninput="renderTasLdg()">
+    </div>
+    <div class="fg">
+      <label>Auto Throttle</label>
+      <div class="tgl-group">
+        <button id="ldg-btnAtOn"  class="tgl on-green" onclick="setAtLdg(true)">ON</button>
+        <button id="ldg-btnAtOff" class="tgl"          onclick="setAtLdg(false)">OFF</button>
+      </div>
+    </div>
+  </div>
+  <div id="ldg-tasBox" class="tas-box" style="display:none"></div>
+</div>
+
+</div><!-- /xw-col left -->
+
+<!-- ── Right column ── -->
+<div class="xw-col">
+
+<!-- Wind Data (LDG) -->
+<div class="card">
+  <div class="card-title">Wind Data 算出</div>
+  <div class="formula-box" id="ldg-formulaBox">—</div>
+</div>
+
+<!-- Wind result (LDG) -->
+<div class="result-card">
+  <div class="wind-strip" id="ldg-windStrip" style="display:none">
+    <div class="ws-cell">
+      <span class="ws-lbl">RW HDG</span>
+      <span class="ws-val" id="ldg-wsRwy">—</span>
+    </div>
+    <div class="ws-divider"></div>
+    <div class="ws-cell">
+      <span class="ws-lbl">Wind Dir</span>
+      <span class="ws-val ws-accent" id="ldg-wsDir">—</span>
+    </div>
+    <div class="ws-divider"></div>
+    <div class="ws-cell">
+      <span class="ws-lbl">Steady</span>
+      <span class="ws-val ws-accent" id="ldg-wsStd">—</span>
+    </div>
+    <div class="ws-divider" id="ldg-wsGustDivider" style="display:none"></div>
+    <div class="ws-cell" id="ldg-wsGustCell" style="display:none">
+      <span class="ws-lbl">Gust</span>
+      <span class="ws-val" style="color:#f59e0b" id="ldg-wsGust">—</span>
+    </div>
+  </div>
+  <svg id="ldg-diagram" viewBox="-115 -115 230 230" width="190" height="190"></svg>
+  <div class="comp3">
+    <div class="comp-item">
+      <div class="comp-label">Headwind</div>
+      <div class="comp-val" id="ldg-hwVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir">↑ HEAD</div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Crosswind</div>
+      <div class="comp-val" id="ldg-xwVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir" id="ldg-xwDir"></div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Tailwind</div>
+      <div class="comp-val" id="ldg-twVal">--</div>
+      <div class="comp-unit">KT</div>
+      <div class="comp-dir">↓ TAIL</div>
+    </div>
+  </div>
+  <div id="ldg-limitBars"></div>
+  <div id="ldg-alSection" style="display:none">
+    <div style="margin:10px 0 6px;font-size:0.58rem;color:#b48aff;letter-spacing:2px;text-transform:uppercase">AUTO LAND Limits</div>
+    <div id="ldg-alBars"></div>
+  </div>
+</div>
+
+<!-- Max Wind per Direction (LDG) -->
+<div class="card" id="ldg-xwftCard" style="display:none">
+  <div class="card-title">Max Wind per Direction
+    <span id="ldg-xwftLimTag" style="float:right;font-size:1rem;font-weight:700;color:var(--accent)">—</span>
+  </div>
+  <div class="xwft-sub">風向ごとに XW / TW 制限以内となる最大風速</div>
+  <div class="fg" style="margin:6px 0 10px">
+    <label>Tailwind Limit</label>
+    <div class="tgl-group">
+      <button id="ldg-btnTw10" class="tgl on" onclick="setTwLimitLdg(10)">10 KT</button>
+      <button id="ldg-btnTw15" class="tgl"    onclick="setTwLimitLdg(15)">15 KT</button>
+    </div>
+  </div>
+  <div class="xwft-hdr"><span>◄ L</span><span>R ►</span></div>
+  <div class="xwft-grid" id="ldg-xwftGrid"></div>
+</div>
+
+<!-- Approach Pitch & N1 -->
+<div class="sec-div"><span>Approach Pitch &amp; N1</span></div>
+<div class="card">
+  <div class="card-title">Approach Reference Pitch &amp; N1
+    <span style="float:right;font-size:0.85rem;font-weight:400;color:var(--muted)" id="ldg-apprFlapTag">F30</span>
+  </div>
+  <div id="ldg-apprGrid" style="font-size:0.8em;color:var(--muted);padding:4px 0">Landing Weight を入力してください</div>
+</div>
+
+<!-- Flap Maneuvering Speed (LDG) -->
+<div class="sec-div"><span>Flap Maneuvering Speed</span></div>
+<div class="card">
+  <div class="card-title">Flap Maneuvering Speed
+    <span style="float:right;font-size:0.85rem;font-weight:400;color:var(--muted)">Sea Level P.ALT</span>
+  </div>
+  <div id="ldg-fmsGrid" style="font-size:0.8em;color:var(--muted);padding:4px 0">Landing Weight を入力してください</div>
+</div>
+
+<ul class="footnote">
+  <li>Maximum Wind = Steady を 10KT 以上上回る最大瞬間風速</li>
+  <li>気象テレタイプの風向は真方位 / ATIS 等は磁方位</li>
+  <li>★ Short Runway — RWYCC 4/3: XW 15KT, RWYCC 2: XW 10KT</li>
+  <li>Approach Pitch &amp; N1 — Sea Level P.ALT, A/C ON, A/I OFF</li>
+  <li>TAS Wind Addition = 1/3 HW (min 5, max 20 KT); AT OFF +5 KT</li>
+</ul>
+
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
+
+</div><!-- /tab-content -->
+</div><!-- /tab-ldg -->
+
 <!-- ═══════════════════════════ TAB: CREW ═══════════════════════════ -->
 <div class="tab-panel" id="tab-crew">
 <div class="tab-content">
@@ -911,6 +1209,7 @@ function switchTab(name, btn) {
   if (btn) btn.classList.add('active');
   window.scrollTo(0, 0);
   if (name === 'crew') requestAnimationFrame(initCrewDrums);
+  if (name === 'ldg')  requestAnimationFrame(initLdgDrums);
 }
 
 let _crewDrumReady = false;
@@ -987,9 +1286,9 @@ function onCondChange() {
 }
 
 /* ── XWIND diagram ── */
-function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned) {
+function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId) {
   const R   = 88;
-  const svg = $('diagram');
+  const svg = $(svgId || 'diagram');
   if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
     svg.innerHTML = `<circle cx="0" cy="0" r="${R+14}" fill="#060d16" stroke="#162840"/>
       <text x="0" y="5" text-anchor="middle" fill="#2a4860" font-size="12">—</text>`;
@@ -1461,6 +1760,455 @@ function flapSpdCalc() {
 }
 
 /* ══════════════════════════════════════════
+   LDG — STATE & DATA
+══════════════════════════════════════════ */
+let ldgLen        = 'LONG';
+let ldgAutoland   = false;
+let ldgAtEngaged  = true;
+let ldgApprFlap   = 'F30';
+let twLimitLdg    = 10;
+let _ldgDrumReady = false;
+let _ldgLastTarget = null;
+let _ldgLastVref   = 160;
+
+const AUTOLAND_XW = {
+  dry:      15, wet_grv:  15, wet_ngrv: 10,
+  rwycc5:   10, rwycc4:   10, rwycc3:   10,
+  rwycc2: null, rwycc1: null,
+};
+
+const APPR_DATA = {
+  f25: [
+    { w: 460, pitch: [2.8, 1.7, 0.8, -0.1, -0.9], n1: [47.9, 48.6, 50.3, 52.2, 53.5] },
+    { w: 500, pitch: [2.8, 1.8, 0.8,  0.0, -0.8], n1: [50.1, 50.7, 52.2, 54.0, 55.4] },
+    { w: 540, pitch: [2.8, 1.8, 0.9,  0.1, -0.7], n1: [51.9, 52.4, 53.9, 55.7, 57.2] },
+    { w: 580, pitch: [2.8, 1.8, 0.9,  0.1, -0.6], n1: [53.6, 54.1, 55.6, 57.4, 58.9] },
+    { w: 620, pitch: [2.7, 1.8, 0.9,  0.2, -0.5], n1: [55.3, 55.9, 57.4, 59.1, 60.6] },
+    { w: 660, pitch: [2.6, 1.7, 0.9,  0.2, -0.5], n1: [57.0, 57.6, 59.0, 60.7, 62.3] },
+    { w: 700, pitch: [2.6, 1.8, 1.0,  0.2, -0.5], n1: [58.5, 59.1, 60.5, 62.2, 63.8] },
+    { w: 740, pitch: [2.6, 1.8, 1.0,  0.3, -0.4], n1: [59.9, 60.5, 61.9, 63.6, 65.2] },
+    { w: 763, pitch: [2.5, 1.6, 0.9,  0.2, -0.5], n1: [60.7, 61.2, 62.6, 64.3, 66.0] },
+  ],
+  f30: [
+    { w: 460, pitch: [2.7, 1.5, 0.4, -0.5, -1.3], n1: [50.9, 51.6, 53.2, 54.9, 56.2] },
+    { w: 500, pitch: [2.7, 1.5, 0.5, -0.4, -1.2], n1: [52.9, 53.5, 55.1, 56.9, 58.1] },
+    { w: 540, pitch: [2.7, 1.6, 0.6, -0.3, -1.1], n1: [54.9, 55.4, 57.0, 58.6, 60.0] },
+    { w: 580, pitch: [2.6, 1.6, 0.7, -0.2, -1.0], n1: [56.7, 57.2, 58.7, 60.3, 61.9] },
+    { w: 620, pitch: [2.6, 1.6, 0.7, -0.1, -0.9], n1: [58.4, 58.9, 60.4, 62.1, 63.6] },
+    { w: 660, pitch: [2.5, 1.6, 0.7, -0.1, -0.8], n1: [60.1, 60.6, 62.2, 63.7, 65.3] },
+    { w: 700, pitch: [2.6, 1.6, 0.7,  0.0, -0.8], n1: [61.7, 62.2, 63.6, 65.2, 66.8] },
+    { w: 740, pitch: [2.6, 1.6, 0.8,  0.0, -0.7], n1: [63.2, 63.6, 65.1, 66.6, 68.2] },
+    { w: 763, pitch: [2.6, 1.6, 0.8,  0.0, -0.7], n1: [63.9, 64.3, 65.6, 67.1, 68.7] },
+  ],
+};
+
+/* ── LDG drum lazy init ── */
+function initLdgDrums() {
+  if (_ldgDrumReady) return;
+  _ldgDrumReady = true;
+  buildColRange(document.getElementById('ldg-rwyhdg'),  1, 360, 3, 270);
+  buildColRange(document.getElementById('ldg-winddir'), 0, 360, 3, 270);
+  buildColRange(document.getElementById('ldg-steady'),  0,  99, 2,  20);
+  wireXwindDrum('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°',   calcLdg);
+  wireXwindDrum('ldg-winddir', 'disp-ldg-winddir', '°',   calcLdg);
+  wireXwindDrum('ldg-steady',  'disp-ldg-steady',  ' KT', updateLdgGustOptions);
+  updateLdgGustOptions();
+  renderTasLdg();
+}
+
+/* ── LDG helpers ── */
+function ldgToggleMagVar() {
+  $('ldg-magVarGroup').style.display = $('ldg-windType').value === 'TRUE' ? 'block' : 'none';
+}
+function onLdgRwySelect() {
+  const n = parseInt($('ldg-rwyNum').value);
+  if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
+    scrollXwindDrum('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
+  } else {
+    calcLdg();
+  }
+}
+function getLdgCond()   { return RWY_COND.find(c => c.key === $('ldg-rwyCond').value) || null; }
+function getXwLimitLdg() {
+  const cond = getLdgCond();
+  if (!cond) return null;
+  return ldgLen === 'SHORT' && cond.star ? cond.xwShort : cond.xw;
+}
+function setLenLdg(v) {
+  ldgLen = v;
+  $('ldg-btnLong').className  = v === 'LONG'  ? 'tgl on' : 'tgl';
+  $('ldg-btnShort').className = v === 'SHORT' ? 'tgl on' : 'tgl';
+  onCondChangeLdg();
+}
+function setAutolandLdg(v) {
+  ldgAutoland = v;
+  $('ldg-btnAlOff').className = !v ? 'tgl on'        : 'tgl';
+  $('ldg-btnAlOn').className  =  v ? 'tgl on-purple' : 'tgl';
+  calcLdg();
+}
+function setAtLdg(v) {
+  ldgAtEngaged = v;
+  $('ldg-btnAtOn').className  =  v ? 'tgl on-green' : 'tgl';
+  $('ldg-btnAtOff').className = !v ? 'tgl on'       : 'tgl';
+  renderTasLdg();
+}
+function setApprFlapLdg(v) {
+  ldgApprFlap = v;
+  $('ldg-btnF25').className = v === 'F25' ? 'tgl on' : 'tgl';
+  $('ldg-btnF30').className = v === 'F30' ? 'tgl on' : 'tgl';
+  $('ldg-apprFlapTag').textContent = v;
+  apprCalcLdg();
+}
+function setTwLimitLdg(v) {
+  twLimitLdg = v;
+  $('ldg-btnTw10').className = v === 10 ? 'tgl on' : 'tgl';
+  $('ldg-btnTw15').className = v === 15 ? 'tgl on' : 'tgl';
+  buildXwTableLdg();
+}
+function onCondChangeLdg() {
+  const cond = getLdgCond();
+  if (cond) {
+    const starGroup = $('ldg-rwyLenGroup');
+    starGroup.style.display = cond.star ? 'block' : 'none';
+    if (!cond.star) ldgLen = 'LONG';
+    const lim = getXwLimitLdg();
+    $('ldg-xwlBox').style.display = 'flex';
+    $('ldg-xwlVal').textContent   = lim;
+    $('ldg-xwlCond').textContent  = cond.label + (ldgLen === 'SHORT' && cond.star ? ' ★' : '');
+  } else {
+    $('ldg-rwyLenGroup').style.display = 'none';
+    $('ldg-xwlBox').style.display      = 'none';
+  }
+  calcLdg();
+}
+
+/* ── LDG gust dropdown ── */
+function updateLdgGustOptions() {
+  const steadyEl = document.getElementById('ldg-steady');
+  const steady   = steadyEl ? getColRangeVal(steadyEl) : 0;
+  const sel      = $('ldg-gust');
+  const prevVal  = sel.value;
+  sel.innerHTML  = '<option value="">なし</option>';
+  const min = isNaN(steady) ? 10 : Math.ceil(steady) + 10;
+  for (let v = min; v <= 60; v++) {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = `${v} KT  (G+${v - (isNaN(steady) ? 0 : steady)})`;
+    sel.appendChild(opt);
+  }
+  if (prevVal !== '' && parseInt(prevVal) >= min && parseInt(prevVal) <= 60) sel.value = prevVal;
+  calcLdg();
+}
+
+/* ── LDG main xwind calc ── */
+function calcLdg() {
+  const rwyHdgEl  = document.getElementById('ldg-rwyhdg');
+  const windDirEl = document.getElementById('ldg-winddir');
+  const steadyEl  = document.getElementById('ldg-steady');
+  const rwyHdg    = rwyHdgEl  ? getColRangeVal(rwyHdgEl)  : NaN;
+  const windDir   = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const steady    = steadyEl  ? getColRangeVal(steadyEl)  : 0;
+  const magVar    = parseFloat($('ldg-magVar').value) || 0;
+  const gustRaw   = $('ldg-gust').value.trim();
+  const gust      = gustRaw !== '' ? parseFloat(gustRaw) : null;
+
+  const windDirMag = $('ldg-windType').value === 'TRUE'
+    ? norm360(windDir - magVar) : norm360(windDir);
+
+  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1a3055;font-size:0.7rem;color:#4a6a99;line-height:1.7">`
+    + `注1. Maximum Wind とは、平均風速を 10 KT 以上上回る最大瞬間風速をいう。<br>`
+    + `注2. 気象テレタイプの風向はすべて真方位。その他は磁方位。`
+    + `</div>`;
+
+  let windData, formulaHTML = '';
+  if (gust !== null && !isNaN(gust) && !isNaN(steady)) {
+    const diff = gust - steady;
+    windData = steady + diff / 2;
+    formulaHTML = `<span>Maximum Wind 通報あり</span><br>`
+      + `Wind Data (横風) = ${steady} + (${gust} − ${steady}) ÷ 2 = <span class="big">${windData.toFixed(1)} KT</span><br>`
+      + `<span style="color:#4a6a99">Headwind 成分は Steady Wind のみ (${steady} KT)</span>`
+      + NOTES;
+  } else {
+    windData = isNaN(steady) ? 0 : steady;
+    formulaHTML = `<span>Maximum Wind 通報なし</span><br>`
+      + `Wind Data = Steady = <span class="big">${windData.toFixed(1)} KT</span>`
+      + NOTES;
+  }
+  $('ldg-formulaBox').innerHTML = formulaHTML;
+
+  /* Wind strip */
+  const wsEl = $('ldg-windStrip');
+  wsEl.style.display = 'flex';
+  const windTypeTag = $('ldg-windType').value === 'TRUE' ? '<span style="font-size:.65rem;color:#4a6a99"> T</span>' : '';
+  $('ldg-wsRwy').innerHTML  = String(norm360(isNaN(rwyHdg) ? 0 : rwyHdg)).padStart(3,'0') + '°';
+  $('ldg-wsDir').innerHTML  = String(norm360(isNaN(windDir)? 0 : windDir)).padStart(3,'0') + '°' + windTypeTag;
+  $('ldg-wsStd').textContent = (isNaN(steady) ? '--' : steady) + ' KT';
+  if (gust !== null && !isNaN(gust)) {
+    $('ldg-wsGustCell').style.display    = 'flex';
+    $('ldg-wsGustDivider').style.display = 'block';
+    $('ldg-wsGust').textContent = gust + ' KT';
+  } else {
+    $('ldg-wsGustCell').style.display    = 'none';
+    $('ldg-wsGustDivider').style.display = 'none';
+  }
+
+  if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
+    ['ldg-hwVal','ldg-xwVal','ldg-twVal'].forEach(id => { $(id).className = 'comp-val'; $(id).textContent = '--'; });
+    $('ldg-xwDir').textContent  = '';
+    $('ldg-limitBars').innerHTML = '';
+    $('ldg-alSection').style.display = 'none';
+    drawDiagram(NaN, NaN, 0, 0, 0, 'ldg-diagram');
+    buildXwTableLdg();
+    renderTasLdg();
+    return;
+  }
+
+  const relAngle     = normPM180(windDirMag - norm360(rwyHdg));
+  const relRad       = relAngle * Math.PI / 180;
+  const crossSigned  = windData * Math.sin(relRad);
+  const crossAbs     = Math.abs(crossSigned);
+  const headComp     = steady  * Math.cos(relRad);
+  const headPos      = Math.max(0, headComp);
+  const tailPos      = Math.max(0, -headComp);
+  const headCompDiag = windData * Math.cos(relRad);
+
+  const hwEl = $('ldg-hwVal');
+  hwEl.className   = headPos > 0.05 ? 'comp-val head' : 'comp-val zero';
+  hwEl.textContent = headPos.toFixed(1);
+  $('ldg-xwVal').className   = 'comp-val cross';
+  $('ldg-xwVal').textContent = crossAbs.toFixed(1);
+  $('ldg-xwDir').textContent = crossSigned > 0.05 ? '→ R' : crossSigned < -0.05 ? '← L' : '—';
+  const twEl = $('ldg-twVal');
+  twEl.className   = tailPos > 0.05 ? 'comp-val tail' : 'comp-val zero';
+  twEl.textContent = tailPos.toFixed(1);
+
+  /* XW limit bars */
+  const xwLimit = getXwLimitLdg();
+  const lbEl    = $('ldg-limitBars');
+  if (xwLimit !== null) {
+    const ok   = crossAbs <= xwLimit;
+    const over = (crossAbs - xwLimit).toFixed(1);
+    lbEl.innerHTML = `<div class="lbar ${ok ? 'ok' : 'exceed'}">
+      <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
+      <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
+    </div>`;
+  } else {
+    lbEl.innerHTML = '';
+  }
+
+  /* Autoland section */
+  const alSection = $('ldg-alSection');
+  const alBars    = $('ldg-alBars');
+  if (ldgAutoland) {
+    alSection.style.display = 'block';
+    const condKey = $('ldg-rwyCond').value;
+    const alXwLim = AUTOLAND_XW[condKey];
+    if (alXwLim !== null && alXwLim !== undefined) {
+      const alOk   = crossAbs <= alXwLim;
+      const alOver = (crossAbs - alXwLim).toFixed(1);
+      alBars.innerHTML = `<div class="lbar ${alOk ? 'ok' : 'exceed'}" style="border-color:rgba(180,138,255,0.4)">
+        <span>AL XWind ${crossAbs.toFixed(1)} KT ${alOk ? '≤' : '>'} AL Limit ${alXwLim} KT ${!alOk ? `(+${alOver})`:''}</span>
+        <span class="lval">${alOk ? '✓ OK' : '✗ EXCEED'}</span>
+      </div>`;
+    } else {
+      alBars.innerHTML = `<div class="lbar exceed" style="border-color:rgba(180,138,255,0.4)"><span>Autoland NOT available for this condition</span><span class="lval">✗ N/A</span></div>`;
+    }
+  } else {
+    alSection.style.display = 'none';
+    alBars.innerHTML = '';
+  }
+
+  drawDiagram(norm360(rwyHdg), windDirMag, windData, headCompDiag, crossSigned, 'ldg-diagram');
+  buildXwTableLdg();
+  renderTasLdg();
+}
+
+/* ── LDG crosswind fan table ── */
+function buildXwTableLdg() {
+  const card = $('ldg-xwftCard');
+  if (!card) return;
+  const xwLimit = getXwLimitLdg();
+  if (xwLimit === null) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  $('ldg-xwftLimTag').textContent = `XW: ${xwLimit} KT`;
+
+  const rwyHdgEl   = document.getElementById('ldg-rwyhdg');
+  const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
+  const windDirEl  = document.getElementById('ldg-winddir');
+  const windDirRaw = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const magVar     = parseFloat($('ldg-magVar').value) || 0;
+  const windDirMag = $('ldg-windType').value === 'TRUE' ? norm360(windDirRaw - magVar) : norm360(windDirRaw);
+  const curDir10   = isNaN(windDirMag) ? -1 : norm360(Math.round(windDirMag / 10) * 10);
+  const steadyEl   = document.getElementById('ldg-steady');
+  const steady     = steadyEl ? getColRangeVal(steadyEl) : 0;
+  const gustRaw    = $('ldg-gust').value.trim();
+  const gust       = gustRaw !== '' ? parseFloat(gustRaw) : null;
+  const windData   = (gust !== null && !isNaN(gust) && !isNaN(steady)) ? steady + (gust - steady) / 2 : (isNaN(steady) ? 0 : steady);
+
+  const grid     = $('ldg-xwftGrid');
+  grid.innerHTML = '';
+  if (isNaN(rwyHdg)) return;
+
+  const rwyHdg10 = norm360(Math.round(norm360(rwyHdg) / 10) * 10);
+  for (let i = 1; i <= 17; i++) {
+    [norm360(rwyHdg10 - i * 10), norm360(rwyHdg10 + i * 10)].forEach(dir => {
+      const relRad    = normPM180(dir - rwyHdg10) * Math.PI / 180;
+      const sinAbs    = Math.abs(Math.sin(relRad));
+      const cosNeg    = -Math.cos(relRad);
+      const xwSpd     = sinAbs < 0.001 ? Infinity : xwLimit / sinAbs;
+      const twSpd     = cosNeg < 0.001 ? Infinity : twLimitLdg / cosNeg;
+      const binding   = Math.min(xwSpd, twSpd);
+      const isLimited = binding < 100;
+      const spdTxt    = isLimited ? binding.toFixed(1) : '>99';
+      const limLbl    = isLimited ? (twSpd < xwSpd ? `TW${twLimitLdg}` : 'XW') : '';
+      const cmpSpd    = isLimited ? binding : 100;
+      const isCur     = dir === curDir10;
+      let cls = 'xwft-ok';
+      if      (isCur)                  cls = 'xwft-cur';
+      else if (windData > cmpSpd)      cls = 'xwft-exc';
+      else if (windData >= cmpSpd - 4) cls = 'xwft-warn';
+      const cell = document.createElement('div');
+      cell.className = `xwft-cell ${cls}`;
+      cell.innerHTML = `<div class="xwft-d">${String(dir).padStart(3,'0')}°</div>`
+                     + `<div class="xwft-s">${spdTxt}<span class="xwft-u"> KT</span></div>`
+                     + `<div class="xwft-lim">${limLbl}</div>`;
+      grid.appendChild(cell);
+    });
+  }
+}
+
+/* ── LDG Target Approach Speed ── */
+function renderTasLdg() {
+  const vref = parseFloat($('ldg-vref').value);
+  const box  = $('ldg-tasBox');
+  if (isNaN(vref)) { box.style.display = 'none'; return; }
+
+  let hwPos = 0;
+  if (_ldgDrumReady) {
+    const rwyHdgEl  = document.getElementById('ldg-rwyhdg');
+    const windDirEl = document.getElementById('ldg-winddir');
+    const steadyEl  = document.getElementById('ldg-steady');
+    const rwyHdg    = getColRangeVal(rwyHdgEl);
+    const windDir   = getColRangeVal(windDirEl);
+    const steady    = getColRangeVal(steadyEl);
+    if (!isNaN(rwyHdg) && !isNaN(windDir) && !isNaN(steady)) {
+      const magVar     = parseFloat($('ldg-magVar').value) || 0;
+      const windDirMag = $('ldg-windType').value === 'TRUE' ? norm360(windDir - magVar) : norm360(windDir);
+      const relAngle   = normPM180(windDirMag - norm360(rwyHdg));
+      const headComp   = steady * Math.cos(relAngle * Math.PI / 180);
+      hwPos = Math.max(0, headComp);
+    }
+  }
+
+  const windAdd  = Math.max(5, Math.min(20, Math.round(hwPos / 3)));
+  const totalAdd = ldgAtEngaged ? windAdd : Math.max(10, windAdd + 5);
+  const target   = vref + totalAdd;
+  _ldgLastTarget = target;
+  _ldgLastVref   = vref;
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="tas-row"><span class="tas-lbl">VREF</span><span style="font-weight:700">${vref} KT</span></div>
+    <div class="tas-row"><span class="tas-lbl">HW Component</span><span>${hwPos.toFixed(1)} KT</span></div>
+    <div class="tas-row"><span class="tas-lbl">Wind Addition (1/3 HW, min 5, max 20)</span><span>+${windAdd} KT</span></div>
+    ${!ldgAtEngaged ? `<div class="tas-row"><span class="tas-lbl">A/T OFF Addition</span><span>+5 KT</span></div>` : ''}
+    <div class="tas-target">
+      <div class="tas-target-lbl">${ldgAtEngaged ? 'AT ON TARGET' : 'AT OFF TARGET'}</div>
+      <div class="tas-target-val">${target}</div>
+      <div class="tas-target-unit">KNOTS</div>
+    </div>`;
+
+  apprCalcLdg();
+}
+
+/* ── LDG Approach Pitch & N1 ── */
+function apprCalcLdg() {
+  const grid   = $('ldg-apprGrid');
+  const weight = parseFloat($('ldg-weight').value);
+  const data   = ldgApprFlap === 'F25' ? APPR_DATA.f25 : APPR_DATA.f30;
+
+  if (isNaN(weight)) {
+    grid.innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Landing Weight を入力してください</span>';
+    return;
+  }
+  const ws = data.map(d => d.w);
+  const minW = ws[0], maxW = ws[ws.length - 1];
+  if (weight < minW || weight > maxW) {
+    grid.innerHTML = `<span style="font-size:0.8em;color:var(--warn)">範囲外 — ${minW}〜${maxW} × 1000 LB</span>`;
+    return;
+  }
+
+  const spdAdds   = [0, 5, 10, 15, 20];
+  const pitchVals = spdAdds.map((_, si) => interp(ws, data.map(d => d.pitch[si]), weight));
+  const n1Vals    = spdAdds.map((_, si) => interp(ws, data.map(d => d.n1[si]),   weight));
+
+  /* Which column matches current target? */
+  let curCol = -1;
+  if (_ldgLastTarget !== null && _ldgLastVref !== null) {
+    const diff = _ldgLastTarget - _ldgLastVref;
+    const idx  = Math.round(Math.max(0, Math.min(20, diff)) / 5);
+    curCol = Math.min(4, Math.max(0, idx));
+  }
+
+  let html = `<div class="appr-grid">`;
+  /* Header row */
+  html += `<div class="appr-lbl"></div>`;
+  spdAdds.forEach((add, i) => {
+    const cur = i === curCol;
+    html += `<div class="appr-hdr${cur ? ' appr-cur' : ''}">VREF${add > 0 ? '+'+add : ''}</div>`;
+  });
+  /* Pitch row */
+  html += `<div class="appr-lbl">PTH</div>`;
+  pitchVals.forEach((v, i) => {
+    const cur = i === curCol;
+    html += `<div class="appr-cell${cur ? ' appr-cur' : ''}">
+      <div class="appr-val">${v !== null ? v.toFixed(1) : '—'}</div>
+      <div class="appr-sub">DEG</div>
+    </div>`;
+  });
+  /* N1 row */
+  html += `<div class="appr-lbl">N1</div>`;
+  n1Vals.forEach((v, i) => {
+    const cur = i === curCol;
+    html += `<div class="appr-cell${cur ? ' appr-cur' : ''}">
+      <div class="appr-val" style="color:var(--gold)">${v !== null ? v.toFixed(1) : '—'}</div>
+      <div class="appr-sub">%</div>
+    </div>`;
+  });
+  html += `</div>`;
+  grid.innerHTML = html;
+}
+
+/* ── LDG Flap Maneuvering Speed ── */
+function ldgFlapSpdCalc() {
+  const grid   = $('ldg-fmsGrid');
+  const weight = parseFloat($('ldg-weight').value);
+  const ws     = FLAP_SPD_DATA.weights;
+  if (isNaN(weight)) {
+    grid.className = '';
+    grid.innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Landing Weight を入力してください</span>';
+    return;
+  }
+  if (weight < ws[0] || weight > ws[ws.length - 1]) {
+    grid.className = '';
+    grid.innerHTML = `<span style="font-size:0.8em;color:var(--warn)">範囲外 — ${ws[0]}〜${ws[ws.length-1]} × 1000 LB</span>`;
+    return;
+  }
+  const labels = FLAP_SPD_DATA.flaps;
+  const cells  = labels.map((lbl, fi) => {
+    const vals = FLAP_SPD_DATA.speeds.map(row => row[fi]);
+    const v    = interp(ws, vals, weight);
+    const disp = v !== null ? Math.round(v) : '—';
+    return `<div class="fms-cell">
+      <div class="fms-lbl">${lbl}</div>
+      <div class="fms-val">${disp}</div>
+      <div class="fms-unit">KT</div>
+    </div>`;
+  }).join('');
+  grid.className = 'fms-grid';
+  grid.innerHTML = cells;
+}
+
+/* ══════════════════════════════════════════
    CREW — DATA
 ══════════════════════════════════════════ */
 const CREW_CFG = {
@@ -1799,6 +2547,21 @@ updateGustOptions();
 /* PITCH */
 onThrustChange();
 flapSpdCalc();
+
+/* LDG — Runway select */
+(function() {
+  const sel = $('ldg-rwyNum');
+  for (let i = 1; i <= 36; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `RWY ${String(i).padStart(2,'0')}  (${String(i*10).padStart(3,'0')}°)`;
+    sel.appendChild(opt);
+  }
+})();
+ldgToggleMagVar();
+setApprFlapLdg('F30');
+apprCalcLdg();
+ldgFlapSpdCalc();
 
 /* CREW */
 buildCol(document.getElementById('to-h'),  24, 2, 10);
