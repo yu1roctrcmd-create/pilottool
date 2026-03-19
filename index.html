@@ -112,12 +112,11 @@
       max-width: 480px; margin: 0 auto; padding: 16px 16px 40px;
     }
     @media (min-width: 768px) {
-      #tab-xwind .tab-content,
-      #tab-pitch .tab-content { max-width: 960px; padding: 20px 24px 48px; }
+      #tab-to .tab-content { max-width: 960px; padding: 20px 24px 48px; }
     }
 
     /* ══════════════════════════════════════════
-       SHARED: XWIND + PITCH
+       SHARED
     ══════════════════════════════════════════ */
 
     /* ── HEADER ── */
@@ -185,7 +184,6 @@
     .xwl-right { display: flex; align-items: baseline; gap: 5px; }
     .xwl-val   { font-size: 2.4em; font-weight: 700; color: var(--accent); line-height: 1; }
     .xwl-unit  { font-size: 0.8em; color: var(--muted); letter-spacing: 1px; }
-    .xwl-star  { font-size: 0.62em; color: var(--warn); margin-top: 2px; }
 
     /* ── FORMULA BOX ── */
     .formula-box {
@@ -261,36 +259,11 @@
     .lbar.warn-y { background: rgba(255,140,66,0.1);  border: 1px solid rgba(255,140,66,0.3); color: var(--warn); }
     .lbar .lval  { font-size: 1.2em; letter-spacing: 1px; }
 
-    /* ── AUTOLAND SECTION ── */
-    .al-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-    .al-title   { font-size: 0.6em; color: var(--purple); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-    .al-badge   { background: rgba(180,138,255,0.15); border: 1px solid rgba(180,138,255,0.35); border-radius: 4px; padding: 2px 6px; font-size: 0.9em; color: var(--purple); }
-    .al-row     { display: grid; grid-template-columns: 52px 1fr 60px 48px; align-items: center; gap: 8px; padding: 5px 0; font-size: 0.8em; border-bottom: 1px solid var(--border); }
-    .al-row:last-child { border-bottom: none; }
-    .al-lbl  { color: var(--muted); font-size: 0.9em; letter-spacing: 1px; }
-    .al-bar  { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
-    .al-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-    .al-lim  { color: var(--muted); font-size: 0.85em; text-align: right; }
-    .al-stat { font-weight: 700; font-size: 0.9em; text-align: right; }
-    .al-stat.ok { color: var(--green); }
-    .al-stat.ng { color: var(--error); }
-
-    /* ── TAS BOX ── */
-    .tas-box {
-      background: #060d16; border: 1px solid rgba(0,230,152,0.4); border-radius: 8px;
-      padding: 12px 16px; margin-top: 10px; min-height: 44px;
-      display: flex; flex-direction: column; justify-content: center;
-    }
-    .tas-formula { font-size: 0.75em; color: var(--muted); line-height: 1.9; }
-    .tas-total   { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
-    .tas-label   { font-size: 0.6em; color: var(--green); letter-spacing: 2px; text-transform: uppercase; }
-    .tas-val     { font-size: 2.4em; font-weight: 700; color: var(--green); line-height: 1; }
-    .tas-unit    { font-size: 0.8em; color: var(--muted); letter-spacing: 1px; }
-
-    /* ── PITCH: result-card override ── */
-    #tab-pitch .result-card {
-      border: 1px solid var(--accent);
-      padding: 22px 20px 20px; text-align: center; overflow: hidden;
+    /* ── PITCH RESULT ── */
+    .pitch-result {
+      border: 1px solid var(--accent) !important;
+      padding: 22px 20px 20px !important;
+      text-align: center; overflow: hidden;
     }
     .res-label { font-size: 0.6em; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
     .res-val   { font-size: 5em; font-weight: 700; line-height: 1; letter-spacing: 1px; transition: color 0.25s, opacity 0.25s; }
@@ -306,6 +279,26 @@
     .msg        { font-size: 0.75em; padding: 10px 14px; border-radius: 8px; margin-top: 12px; line-height: 1.5; text-align: left; }
     .msg.error  { background: rgba(255,69,96,0.1);  border: 1px solid rgba(255,69,96,0.3);  color: #ff8090; }
     .msg.warn   { background: rgba(255,140,66,0.1); border: 1px solid rgba(255,140,66,0.3); color: #ffa060; }
+
+    /* ── FLAP MANEUVER SPEED ── */
+    .fms-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 4px; }
+    .fms-cell { background: #060d16; border: 1px solid #1a3055; border-radius: 5px; padding: 7px 3px; text-align: center; }
+    .fms-lbl  { font-size: 0.55rem; color: #4a6a99; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 3px; }
+    .fms-val  { font-size: 1.0rem; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+    .fms-unit { font-size: 0.48rem; color: var(--muted); margin-top: 1px; }
+
+    /* ── SECTION DIVIDER ── */
+    .sec-div {
+      display: flex; align-items: center; gap: 10px;
+      margin: 16px 0 14px;
+    }
+    .sec-div::before, .sec-div::after {
+      content: ''; flex: 1; height: 1px; background: #1a3055;
+    }
+    .sec-div span {
+      font-size: 0.56em; color: #2a4a70; letter-spacing: 2px;
+      text-transform: uppercase; white-space: nowrap;
+    }
 
     /* ── FOOTNOTE ── */
     .footnote { font-size: 0.62em; color: #1e3450; line-height: 1.7; padding: 4px 4px 0; }
@@ -429,15 +422,14 @@
     .g-tick-line  { width: 1px; height: 6px; background: #2a4060; }
     .g-tick-label { font-size: 0.65rem; color: #4a6a99; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-    /* Two-column responsive layout (iPad landscape) */
+    /* Two-column responsive layout */
     .xw-layout { display: flex; flex-direction: column; }
     .xw-col    { width: 100%; }
     @media (min-width: 768px) {
       .xw-layout { flex-direction: row; align-items: flex-start; gap: 20px; }
       .xw-col    { flex: 1; min-width: 0; }
-      /* drum items slightly larger on wide screen */
-      #tab-xwind .drum-item { font-size: 2.2rem; }
-      #tab-xwind .picker-group-label { font-size: 0.8rem; }
+      #tab-to .drum-item { font-size: 2.2rem; }
+      #tab-to .picker-group-label { font-size: 0.8rem; }
     }
 
     /* XWIND single-drum wrapper */
@@ -491,21 +483,20 @@
 
 <!-- TAB BAR -->
 <div class="tab-bar" id="main-tab-bar">
-  <button class="tab-btn active" onclick="switchTab('xwind',this)">XWIND</button>
-  <button class="tab-btn"        onclick="switchTab('pitch',this)">PITCH</button>
-  <button class="tab-btn"        onclick="switchTab('crew', this)">CREW</button>
+  <button class="tab-btn active" onclick="switchTab('to',this)">TO</button>
+  <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
 </div>
 
-<!-- ═══════════════════════════ TAB: XWIND ═══════════════════════════ -->
-<div class="tab-panel active" id="tab-xwind">
+<!-- ═══════════════════════════ TAB: TO ═══════════════════════════ -->
+<div class="tab-panel active" id="tab-to">
 <div class="tab-content">
 
 <div class="hdr">
-  <div>
+  <div class="hdr-left">
     <span class="hdr-ac">B747-8F</span>
-    <span class="hdr-sub">CROSSWIND CALCULATOR</span>
+    <span class="hdr-sub">TAKEOFF</span>
   </div>
-  <div class="hdr-rev">NCA 運航規程<br>S-3-5</div>
+  <div class="hdr-rev">NCA S-3-5<br>PH Rev.17</div>
 </div>
 
 <div class="xw-layout">
@@ -513,6 +504,7 @@
 <!-- ── Left column: inputs ── -->
 <div class="xw-col">
 
+<!-- Runway -->
 <div class="card">
   <div class="card-title">Runway</div>
   <div class="fg">
@@ -531,6 +523,7 @@
   </div>
 </div>
 
+<!-- Wind -->
 <div class="card">
   <div class="card-title">Wind</div>
   <div class="fg">
@@ -571,41 +564,9 @@
   </div>
 </div>
 
-<div class="card" id="tasCard">
-  <div class="card-title">Target Approach Speed</div>
-  <div class="row2">
-    <div class="fg">
-      <label>VREF (KT)</label>
-      <input type="number" id="vref" value="160" min="100" max="200" step="1"
-             inputmode="numeric" placeholder="---" oninput="calc()">
-    </div>
-    <div class="fg">
-      <label>Autothrottle</label>
-      <div class="tgl-group">
-        <button id="btnAtOn"  class="tgl on" onclick="setAt(true)">ENGAGED</button>
-        <button id="btnAtOff" class="tgl"    onclick="setAt(false)">NOT ENG</button>
-      </div>
-    </div>
-  </div>
-  <div class="tas-box" id="tasBox">
-    <span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>
-  </div>
-</div>
-
-</div><!-- /xw-col left -->
-
-<!-- ── Right column: conditions + results ── -->
-<div class="xw-col">
-
+<!-- Runway Condition & Limits (TO only) -->
 <div class="card">
   <div class="card-title">Runway Condition &amp; Limits</div>
-  <div class="fg">
-    <label>Operation</label>
-    <div class="tgl-group">
-      <button id="btnTO"  class="tgl on" onclick="setOp('TO')">TO</button>
-      <button id="btnLDG" class="tgl"    onclick="setOp('LDG')">LDG</button>
-    </div>
-  </div>
   <div class="fg">
     <label>Runway Condition</label>
     <select id="rwyCond" onchange="onCondChange()">
@@ -619,47 +580,96 @@
       </optgroup>
       <optgroup label="── CONTAMINATED ──">
         <option value="rwycc5">RWYCC 5  /  Braking Good</option>
-        <option value="rwycc4">RWYCC 4  /  Good to Medium  ★</option>
-        <option value="rwycc3">RWYCC 3  /  Medium  ★</option>
-        <option value="rwycc2">RWYCC 2  /  Medium to Poor  ★</option>
+        <option value="rwycc4">RWYCC 4  /  Good to Medium</option>
+        <option value="rwycc3">RWYCC 3  /  Medium</option>
+        <option value="rwycc2">RWYCC 2  /  Medium to Poor</option>
         <option value="rwycc1">RWYCC 1  /  Poor</option>
       </optgroup>
     </select>
-  </div>
-  <div class="fg" id="rwyLenGroup" style="display:none">
-    <label>Runway Length  <span style="color:var(--warn)">★ 適用条件</span></label>
-    <div class="tgl-group">
-      <button id="btnLong"  class="tgl on" onclick="setLen('long')">≥ 3,000 m</button>
-      <button id="btnShort" class="tgl"    onclick="setLen('short')">&lt; 3,000 m</button>
-    </div>
   </div>
   <div class="xwl-box" id="xwlBox" style="display:none">
     <div class="xwl-left">
       <span class="xwl-label">Crosswind Limit</span>
       <span class="xwl-cond" id="xwlCond">—</span>
-      <span class="xwl-star" id="xwlStar" style="display:none">★ &lt;3000m LDG 適用値</span>
     </div>
     <div class="xwl-right">
       <span class="xwl-val" id="xwlVal">--</span>
       <span class="xwl-unit">KT</span>
     </div>
   </div>
-  <div class="fg" id="autolandGroup" style="display:none">
-    <label>Autoland (AFM)</label>
-    <div class="tgl-group">
-      <button id="btnAlOff" class="tgl on"        onclick="setAutoland(false)">OFF</button>
-      <button id="btnAlOn"  class="tgl on-purple" style="background:#060d16;color:var(--muted)" onclick="setAutoland(true)">ON</button>
+</div>
+
+<!-- ── Section divider ── -->
+<div class="sec-div"><span>Takeoff Reference Pitch</span></div>
+
+<!-- Pitch: Configuration -->
+<div class="card">
+  <div class="card-title">Configuration</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Thrust Rating</label>
+      <select id="thrust" onchange="onThrustChange()">
+        <option value="TO">TO</option>
+        <option value="TO1">TO1</option>
+        <option value="TO2">TO2</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Flaps</label>
+      <select id="flaps" onchange="onFlapsChange()">
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Takeoff Weight (× 1000 LB)</label>
+    <input type="number" id="weight" value="800" step="1" inputmode="decimal"
+           oninput="pitchCalc(); flapSpdCalc()">
+    <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
+  </div>
+</div>
+
+<!-- Pitch: Temperature / AT Condition -->
+<div class="card">
+  <div class="card-title">Temperature / AT Condition</div>
+  <div class="fg">
+    <label>OAT or Assumed Temperature</label>
+    <select id="condition" onchange="pitchCalc()"></select>
+  </div>
+</div>
+
+<!-- Pitch: Corrections -->
+<div class="card">
+  <div class="card-title">Corrections</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Pressure Altitude (FT)</label>
+      <input type="number" id="palt" value="0" step="100" inputmode="numeric" oninput="pitchCalc()">
+    </div>
+    <div class="fg">
+      <label>Air Conditioning</label>
+      <select id="ac" onchange="pitchCalc()">
+        <option value="ON">ON</option>
+        <option value="OFF">OFF</option>
+      </select>
     </div>
   </div>
 </div>
 
+</div><!-- /xw-col left -->
+
+<!-- ── Right column: results ── -->
+<div class="xw-col">
+
+<!-- Wind Data -->
 <div class="card">
   <div class="card-title">Wind Data 算出</div>
   <div class="formula-box" id="formulaBox">—</div>
 </div>
 
+<!-- Wind result -->
 <div class="result-card">
-  <!-- Wind input summary strip -->
   <div class="wind-strip" id="windStrip" style="display:none">
     <div class="ws-cell">
       <span class="ws-lbl">RW HDG</span>
@@ -703,12 +713,9 @@
     </div>
   </div>
   <div id="limitBars"></div>
-  <div class="al-section" id="alSection" style="display:none">
-    <div class="al-title"><span>Autoland Limits</span><span class="al-badge">AFM</span></div>
-    <div id="alRows"></div>
-  </div>
 </div>
 
+<!-- Max Wind per Direction -->
 <div class="card" id="xwftCard" style="display:none">
   <div class="card-title">Max Wind per Direction
     <span id="xwftLimTag" style="float:right;font-size:1rem;font-weight:700;color:var(--accent)">—</span>
@@ -725,93 +732,11 @@
   <div class="xwft-grid" id="xwftGrid"></div>
 </div>
 
-<ul class="footnote">
-  <li>Maximum Wind = Steady を 10KT 以上上回る最大瞬間風速</li>
-  <li>気象テレタイプの風向は真方位 / ATIS 等は磁方位</li>
-  <li>★ &lt;3000m 値は LDG のみ適用（TO には適用しない）</li>
-  <li>Autoland 制限は AFM による</li>
-</ul>
+<!-- ── Section divider ── -->
+<div class="sec-div"><span>Takeoff Reference Pitch</span></div>
 
-</div><!-- /xw-col right -->
-</div><!-- /xw-layout -->
-
-</div><!-- /tab-content -->
-</div><!-- /tab-xwind -->
-
-<!-- ═══════════════════════════ TAB: PITCH ═══════════════════════════ -->
-<div class="tab-panel" id="tab-pitch">
-<div class="tab-content">
-
-<div class="hdr">
-  <div class="hdr-left">
-    <span class="hdr-ac">B747-8F</span>
-    <span class="hdr-sub">TAKEOFF REFERENCE INITIAL PITCH</span>
-  </div>
-  <div class="hdr-rev">PH Rev.17<br>MAR 03, 2026</div>
-</div>
-
-<div class="xw-layout">
-
-<!-- ── Left: inputs ── -->
-<div class="xw-col">
-
-<div class="card">
-  <div class="card-title">Configuration</div>
-  <div class="row2">
-    <div class="fg">
-      <label>Thrust Rating</label>
-      <select id="thrust" onchange="onThrustChange()">
-        <option value="TO">TO</option>
-        <option value="TO1">TO1</option>
-        <option value="TO2">TO2</option>
-      </select>
-    </div>
-    <div class="fg">
-      <label>Flaps</label>
-      <select id="flaps" onchange="onFlapsChange()">
-        <option value="10">10</option>
-        <option value="20">20</option>
-      </select>
-    </div>
-  </div>
-  <div class="fg">
-    <label>Takeoff Weight (× 1000 LB)</label>
-    <input type="number" id="weight" value="800" step="1" inputmode="decimal" oninput="pitchCalc()">
-    <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-title">Temperature / AT Condition</div>
-  <div class="fg">
-    <label>OAT or Assumed Temperature</label>
-    <select id="condition" onchange="pitchCalc()"></select>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-title">Corrections</div>
-  <div class="row2">
-    <div class="fg">
-      <label>Pressure Altitude (FT)</label>
-      <input type="number" id="palt" value="0" step="100" inputmode="numeric" oninput="pitchCalc()">
-    </div>
-    <div class="fg">
-      <label>Air Conditioning</label>
-      <select id="ac" onchange="pitchCalc()">
-        <option value="ON">ON</option>
-        <option value="OFF">OFF</option>
-      </select>
-    </div>
-  </div>
-</div>
-
-</div><!-- /xw-col left -->
-
-<!-- ── Right: results ── -->
-<div class="xw-col">
-
-<div class="result-card">
+<!-- Pitch result -->
+<div class="result-card pitch-result">
   <div class="res-label">Takeoff Reference Initial Pitch</div>
   <div class="res-val idle" id="resVal">--.-</div>
   <div class="res-unit">DEGREES</div>
@@ -819,18 +744,30 @@
   <div id="msgArea"></div>
 </div>
 
+<!-- ── Section divider ── -->
+<div class="sec-div"><span>Flap Maneuvering Speed</span></div>
+
+<!-- Flap Maneuvering Speed -->
+<div class="card">
+  <div class="card-title">Flap Maneuvering Speed
+    <span style="float:right;font-size:0.85rem;font-weight:400;color:var(--muted)">Sea Level P.ALT</span>
+  </div>
+  <div id="fmsGrid" style="font-size:0.8em;color:var(--muted);padding:4px 0">Takeoff Weight を入力してください</div>
+</div>
+
 <ul class="footnote">
-  <li>Base values: A/C ON, A/I OFF, Gear Up, V2+10KT, Sea Level P.ALT</li>
+  <li>Maximum Wind = Steady を 10KT 以上上回る最大瞬間風速</li>
+  <li>気象テレタイプの風向は真方位 / ATIS 等は磁方位</li>
+  <li>Pitch — Base: A/C ON, A/I OFF, Gear Up, V2+10KT, Sea Level P.ALT</li>
   <li>Interpolation applied between table values</li>
-  <li>Engine A/I effect ≈ −0.02° — negligible, ignored</li>
-  <li>CG effect &lt; 0.1° — negligible, ignored</li>
+  <li>Flap Maneuvering Speed — Sea Level P.ALT 値</li>
 </ul>
 
 </div><!-- /xw-col right -->
 </div><!-- /xw-layout -->
 
 </div><!-- /tab-content -->
-</div><!-- /tab-pitch -->
+</div><!-- /tab-to -->
 
 <!-- ═══════════════════════════ TAB: CREW ═══════════════════════════ -->
 <div class="tab-panel" id="tab-crew">
@@ -940,7 +877,7 @@
 
 <script>
 /* ══════════════════════════════════════════
-   LOCK SCREEN  (パスワード変更はここ ↓)
+   LOCK SCREEN
 ══════════════════════════════════════════ */
 const _PW = 'NCA747';
 
@@ -960,7 +897,7 @@ function unlockApp() {
   } else {
     errEl.textContent = 'パスワードが違います';
     input.classList.remove('shake');
-    void input.offsetWidth; // reflow to restart animation
+    void input.offsetWidth;
     input.classList.add('shake');
     input.value = '';
     setTimeout(() => input.classList.remove('shake'), 400);
@@ -987,7 +924,6 @@ function initCrewDrums() {
   const toM  = document.getElementById('to-m');
   const etaH = document.getElementById('eta-h');
   const etaM = document.getElementById('eta-m');
-  // Set scroll positions now that the tab is visible
   toH._skipNotify  = true; toH.scrollTop  = 10 * ITEM_H;
   toM._skipNotify  = true; toM.scrollTop  = 0  * ITEM_H;
   etaH._skipNotify = true; etaH.scrollTop = 20 * ITEM_H;
@@ -1010,7 +946,7 @@ const $ = id => document.getElementById(id);
    XWIND — DATA
 ══════════════════════════════════════════ */
 const RWY_COND = [
-  { key:'dry',      label:'Dry',                    xw:30, xwShort:30, star:false },
+  { key:'dry',      label:'Dry',                   xw:30, xwShort:30, star:false },
   { key:'wet_grv',  label:'Wet — Grooved / PFC',   xw:25, xwShort:25, star:false },
   { key:'wet_ngrv', label:'Wet — Non Grooved',      xw:20, xwShort:20, star:false },
   { key:'rwycc5',   label:'RWYCC 5 / Good',         xw:20, xwShort:20, star:false },
@@ -1019,12 +955,6 @@ const RWY_COND = [
   { key:'rwycc2',   label:'RWYCC 2 / Med to Poor',  xw:15, xwShort:10, star:true  },
   { key:'rwycc1',   label:'RWYCC 1 / Poor',         xw:10, xwShort:10, star:false },
 ];
-const AUTOLAND = { hw:25, tw:15, xw:25 };
-
-let currentOp  = 'TO';
-let currentLen = 'long';
-let autolandOn = false;
-let atEngaged  = true;
 
 /* ── XWIND helpers ── */
 function norm360(a)  { a %= 360; return a < 0 ? a + 360 : a; }
@@ -1032,9 +962,7 @@ function normPM180(a){ a %= 360; if (a > 180) a -= 360; if (a < -180) a += 360; 
 function getCond()   { return RWY_COND.find(c => c.key === $('rwyCond').value) || null; }
 function getXwLimit() {
   const cond = getCond();
-  if (!cond) return null;
-  if (currentOp === 'LDG' && currentLen === 'short' && cond.star) return cond.xwShort;
-  return cond.xw;
+  return cond ? cond.xw : null;   // TO always uses .xw (no short-runway reduction)
 }
 
 function toggleMagVar() {
@@ -1048,52 +976,15 @@ function onRwySelect() {
     calc();
   }
 }
-function setOp(op) {
-  currentOp = op;
-  $('btnTO').classList.toggle('on', op === 'TO');
-  $('btnLDG').classList.toggle('on', op === 'LDG');
-  $('autolandGroup').style.display = op === 'LDG' ? 'block' : 'none';
-  if (op === 'TO') { autolandOn = false; updateAutolandBtn(); }
-  onCondChange();
-}
-function setAt(on) {
-  atEngaged = on;
-  $('btnAtOn').classList.toggle('on', on);
-  $('btnAtOff').classList.toggle('on', !on);
-  calc();
-}
-function setLen(len) {
-  currentLen = len;
-  $('btnLong').classList.toggle('on',  len === 'long');
-  $('btnShort').classList.toggle('on', len === 'short');
-  onCondChange();
-}
-function setAutoland(on) {
-  autolandOn = on;
-  updateAutolandBtn();
-  calc();
-}
-function updateAutolandBtn() {
-  $('btnAlOff').classList.toggle('on', !autolandOn);
-  $('btnAlOff').style.background = autolandOn ? '#060d16' : '';
-  $('btnAlOff').style.color      = autolandOn ? 'var(--muted)' : '';
-  $('btnAlOn').classList.toggle('on-purple', autolandOn);
-  $('btnAlOn').style.background  = autolandOn ? '' : '#060d16';
-  $('btnAlOn').style.color       = autolandOn ? '' : 'var(--muted)';
-}
 function onCondChange() {
   const cond = getCond();
-  const showStar = cond && cond.star && currentOp === 'LDG';
-  $('rwyLenGroup').style.display = showStar ? 'block' : 'none';
   if (cond) {
     const lim = getXwLimit();
-    const isShort = currentOp === 'LDG' && currentLen === 'short' && cond.star;
-    $('xwlBox').style.display  = 'flex';
-    $('xwlVal').textContent    = lim;
-    $('xwlCond').textContent   = cond.label;
-    $('xwlStar').style.display = isShort ? 'block' : 'none';
+    $('xwlBox').style.display = 'flex';
+    $('xwlVal').textContent   = lim;
+    $('xwlCond').textContent  = cond.label;
   } else {
-    $('xwlBox').style.display  = 'none';
+    $('xwlBox').style.display = 'none';
   }
   calc();
 }
@@ -1161,19 +1052,6 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned) {
     <circle cx="0" cy="0" r="4" fill="#e0e0e0" opacity="0.2"/>`;
 }
 
-/* ── XWIND autoland row ── */
-function alRow(label, val, limit) {
-  const pct = Math.min(100, (val / limit) * 100).toFixed(1);
-  const ok  = val <= limit;
-  return `
-    <div class="al-row">
-      <span class="al-lbl">${label}</span>
-      <div class="al-bar"><div class="al-fill" style="width:${pct}%;background:${ok ? 'var(--green)' : 'var(--error)'}"></div></div>
-      <span class="al-lim">${val.toFixed(1)} / ${limit}</span>
-      <span class="al-stat ${ok ? 'ok' : 'ng'}">${ok ? '✓' : '✗'}</span>
-    </div>`;
-}
-
 /* ── XWIND main calc ── */
 function calc() {
   const rwyHdgEl  = document.getElementById('xd-rwyhdg');
@@ -1211,7 +1089,7 @@ function calc() {
   }
   $('formulaBox').innerHTML = formulaHTML;
 
-  // Update wind input summary strip
+  // Wind strip
   const wsEl = $('windStrip');
   wsEl.style.display = 'flex';
   const windTypeTag = $('windType').value === 'TRUE' ? '<span style="font-size:.65rem;color:#4a6a99"> T</span>' : '';
@@ -1219,31 +1097,27 @@ function calc() {
   $('wsDir').innerHTML = String(norm360(windDir)).padStart(3,'0') + '°' + windTypeTag;
   $('wsStd').textContent = steady + ' KT';
   if (gust !== null && !isNaN(gust)) {
-    $('wsGustCell').style.display  = 'flex';
+    $('wsGustCell').style.display    = 'flex';
     $('wsGustDivider').style.display = 'block';
     $('wsGust').textContent = gust + ' KT';
   } else {
-    $('wsGustCell').style.display  = 'none';
+    $('wsGustCell').style.display    = 'none';
     $('wsGustDivider').style.display = 'none';
   }
 
   if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
     ['hwVal','xwVal','twVal'].forEach(id => { $(id).className = 'comp-val'; $(id).textContent = '--'; });
-    $('xwDir').textContent = ''; $('limitBars').innerHTML = ''; $('alSection').style.display = 'none';
-    renderTas(null, null, null);
+    $('xwDir').textContent = ''; $('limitBars').innerHTML = '';
     drawDiagram(NaN, NaN, 0, 0, 0); buildXwTable(); return;
   }
 
   const relAngle    = normPM180(windDirMag - norm360(rwyHdg));
   const relRad      = relAngle * Math.PI / 180;
-  // Crosswind: Wind Data (includes Gust correction per NCA S-3-5)
   const crossSigned = windData * Math.sin(relRad);
   const crossAbs    = Math.abs(crossSigned);
-  // Headwind/Tailwind DISPLAY: Steady wind only (no Gust — NCA S-3-5)
   const headComp    = steady   * Math.cos(relRad);
   const headPos     = Math.max(0, headComp);
   const tailPos     = Math.max(0, -headComp);
-  // Diagram uses windData for both components (physically consistent vector)
   const headCompDiag = windData * Math.cos(relRad);
 
   const hwEl = $('hwVal');
@@ -1261,7 +1135,7 @@ function calc() {
   const xwLimit = getXwLimit();
   const lbEl = $('limitBars');
   if (xwLimit !== null) {
-    const ok = crossAbs <= xwLimit;
+    const ok  = crossAbs <= xwLimit;
     const over = (crossAbs - xwLimit).toFixed(1);
     lbEl.innerHTML = `
       <div class="lbar ${ok ? 'ok' : 'exceed'}">
@@ -1272,64 +1146,8 @@ function calc() {
     lbEl.innerHTML = '';
   }
 
-  const alSec = $('alSection');
-  if (autolandOn && currentOp === 'LDG') {
-    alSec.style.display = 'block';
-    $('alRows').innerHTML =
-      alRow('HEAD', headPos, AUTOLAND.hw) +  // headPos = Steady-based
-      alRow('XW',   crossAbs, AUTOLAND.xw) +
-      alRow('TAIL', tailPos, AUTOLAND.tw);
-  } else {
-    alSec.style.display = 'none';
-  }
-
-  renderTas(relRad, gust, steady);
   drawDiagram(norm360(rwyHdg), windDirMag, windData, headCompDiag, crossSigned);
   buildXwTable();
-}
-
-/* ── Target Approach Speed ── */
-function renderTas(relRad, gust, steady) {
-  const vref = parseFloat($('vref').value);
-  if (isNaN(vref)) {
-    $('tasBox').innerHTML = '<span style="font-size:0.8em;color:var(--muted)">VREF を入力してください</span>';
-    return;
-  }
-  if (atEngaged) {
-    const tas = vref + 5;
-    $('tasBox').innerHTML = `
-      <div class="tas-formula">Autothrottle <b style="color:var(--green)">ENGAGED</b> &nbsp;→&nbsp; VREF + 5 KT</div>
-      <div class="tas-total">
-        <span class="tas-label">IAS</span>
-        <span class="tas-val">${tas}</span>
-        <span class="tas-unit">KT</span>
-      </div>`;
-    return;
-  }
-  if (relRad === null) {
-    $('tasBox').innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Autothrottle NOT ENGAGED — RW / Wind を入力してください</span>';
-    return;
-  }
-  const st    = steady || 0;
-  const sHead = Math.max(0, st * Math.cos(relRad));
-  const gIncr = (gust !== null && !isNaN(gust)) ? Math.max(0, gust - st) : 0;
-  const raw   = 0.5 * sHead + gIncr;
-  const add   = Math.max(5, Math.min(20, raw));
-  const tas   = Math.round(vref + add);
-  const note  = raw < 5  ? ' <span style="color:var(--warn)">→ Min 5 KT 適用</span>'
-              : raw > 20 ? ' <span style="color:var(--warn)">→ Max 20 KT 適用</span>'
-              : '';
-  $('tasBox').innerHTML = `
-    <div class="tas-formula">
-      Autothrottle <b style="color:var(--warn)">NOT ENGAGED</b> &nbsp;→&nbsp; VREF + (½ Wind + Gust)*<br>
-      Steady Head = ${sHead.toFixed(1)} KT &emsp; Gust = ${gIncr.toFixed(1)} KT<br>
-      ½ × ${sHead.toFixed(1)} + ${gIncr.toFixed(1)} = <b>${raw.toFixed(1)} KT</b>${note}&ensp;<span style="opacity:0.5;font-size:0.9em">*Min 5 / Max 20</span>
-    </div>
-    <div class="tas-total">
-      <span class="tas-label">IAS</span>
-      <span class="tas-val">${tas}</span>
-      <span class="tas-unit">KT</span>
-    </div>`;
 }
 
 /* ── Gust dropdown ── */
@@ -1339,7 +1157,7 @@ function updateGustOptions() {
   const sel     = $('gust');
   const prevVal = sel.value;
   sel.innerHTML = '<option value="">なし</option>';
-  const min = Math.ceil(steady) + 10; // Maximum Wind ≥ Steady + 10 KT（NCA S-3-5 注1）
+  const min = Math.ceil(steady) + 10;
   for (let v = min; v <= 60; v++) {
     const opt = document.createElement('option');
     opt.value = v; opt.textContent = `${v} KT  (G+${v - steady})`;
@@ -1383,14 +1201,13 @@ function buildXwTable() {
   const grid = $('xwftGrid');
   grid.innerHTML = '';
 
-  // Snap to nearest 10° so all displayed directions are multiples of 10
   const rwyHdg10 = norm360(Math.round(norm360(rwyHdg) / 10) * 10);
 
   for (let i = 1; i <= 17; i++) {
     [norm360(rwyHdg10 - i * 10), norm360(rwyHdg10 + i * 10)].forEach(dir => {
       const relRad = normPM180(dir - rwyHdg10) * Math.PI / 180;
       const sinAbs = Math.abs(Math.sin(relRad));
-      const cosNeg = -Math.cos(relRad);                    // > 0 on tailwind side (>90° offset)
+      const cosNeg = -Math.cos(relRad);
       const xwSpd  = sinAbs < 0.001 ? Infinity : xwLimit / sinAbs;
       const twSpd  = cosNeg < 0.001 ? Infinity : twLimit / cosNeg;
       const binding   = Math.min(xwSpd, twSpd);
@@ -1400,9 +1217,9 @@ function buildXwTable() {
       const cmpSpd    = isLimited ? binding : 100;
       const isCur     = dir === curDir10;
       let cls = 'xwft-ok';
-      if      (isCur)                    cls = 'xwft-cur';
-      else if (windData > cmpSpd)        cls = 'xwft-exc';
-      else if (windData >= cmpSpd - 4)   cls = 'xwft-warn';
+      if      (isCur)                  cls = 'xwft-cur';
+      else if (windData > cmpSpd)      cls = 'xwft-exc';
+      else if (windData >= cmpSpd - 4) cls = 'xwft-warn';
       const cell = document.createElement('div');
       cell.className = `xwft-cell ${cls}`;
       cell.innerHTML = `<div class="xwft-d">${String(dir).padStart(3,'0')}°</div>`
@@ -1592,6 +1409,61 @@ function pitchCalc() {
 }
 
 /* ══════════════════════════════════════════
+   FLAP MANEUVERING SPEED
+══════════════════════════════════════════ */
+const FLAP_SPD_DATA = {
+  weights: [450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000],
+  flaps:   ['UP', 'F1', 'F5', 'F10', 'F20', 'F25', 'F30'],
+  // [UP, F1, F5, F10, F20, F25, F30]
+  speeds: [
+    [205, 185, 164, 144, 134, 125, 122],  // 450
+    [209, 189, 169, 151, 140, 132, 129],  // 500
+    [216, 196, 175, 158, 147, 138, 136],  // 550
+    [222, 202, 182, 166, 153, 145, 142],  // 600
+    [228, 208, 188, 173, 160, 152, 148],  // 650
+    [234, 214, 193, 180, 166, 158, 154],  // 700
+    [239, 219, 199, 186, 172, 163, 160],  // 750
+    [243, 223, 203, 190, 174, 168, 165],  // 800
+    [249, 228, 208, 193, 178, 173, 170],  // 850
+    [254, 233, 213, 196, 183, 179, 175],  // 900
+    [258, 238, 218, 200, 188, 184, 181],  // 950
+    [264, 243, 223, 203, 193, 190, 186],  // 1000
+  ],
+};
+
+function flapSpdCalc() {
+  const grid   = $('fmsGrid');
+  const weight = parseFloat($('weight').value);
+  const ws     = FLAP_SPD_DATA.weights;
+
+  if (isNaN(weight)) {
+    grid.className = '';
+    grid.innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Takeoff Weight を入力してください</span>';
+    return;
+  }
+  if (weight < ws[0] || weight > ws[ws.length - 1]) {
+    grid.className = '';
+    grid.innerHTML = `<span style="font-size:0.8em;color:var(--warn)">範囲外 — ${ws[0]}〜${ws[ws.length-1]} × 1000 LB</span>`;
+    return;
+  }
+
+  const labels = FLAP_SPD_DATA.flaps;
+  const cells  = labels.map((lbl, fi) => {
+    const vals = FLAP_SPD_DATA.speeds.map(row => row[fi]);
+    const v    = interp(ws, vals, weight);
+    const disp = v !== null ? Math.round(v) : '—';
+    return `<div class="fms-cell">
+      <div class="fms-lbl">${lbl}</div>
+      <div class="fms-val">${disp}</div>
+      <div class="fms-unit">KT</div>
+    </div>`;
+  }).join('');
+
+  grid.className = 'fms-grid';
+  grid.innerHTML = cells;
+}
+
+/* ══════════════════════════════════════════
    CREW — DATA
 ══════════════════════════════════════════ */
 const CREW_CFG = {
@@ -1647,7 +1519,6 @@ function updateCrewSelectColors() {
 /* ── Drum picker ── */
 const ITEM_H = 44;
 
-/* Range-based drum (for XWIND: values start at `from`, not 0) */
 function buildColRange(colEl, from, to, pad, initVal) {
   for (let i = from; i <= to; i++) {
     const d = document.createElement('div');
@@ -1817,11 +1688,9 @@ function crewCalc() {
 
 function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
   const g       = document.getElementById('gantt');
-  const MIN_GAP = 8; // % — minimum spacing between axis labels to avoid overlap
+  const MIN_GAP = 8;
 
-  // T/O, each rest start, ETA are always labeled (never suppressed)
   const alwaysLabelMs = new Set([toM, ...slots.map(s => s.start), etaM]);
-
   const uniqMain = [...new Set([toM, ...slots.map(s => s.start), winEnd, etaM])]
     .sort((a,b) => a-b);
 
@@ -1909,7 +1778,7 @@ function showCrewErr(msg) {
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
-/* XWIND */
+/* XWIND — Runway select */
 (function() {
   const sel = $('rwyNum');
   for (let i = 1; i <= 36; i++) {
@@ -1921,7 +1790,7 @@ function showCrewErr(msg) {
 })();
 toggleMagVar();
 
-/* XWIND drums — init at page load (XWIND is the default active tab) */
+/* XWIND drums */
 buildColRange(document.getElementById('xd-rwyhdg'),  1, 360, 3, 270);
 buildColRange(document.getElementById('xd-winddir'), 0, 360, 3, 270);
 buildColRange(document.getElementById('xd-steady'),  0,  99, 2,  20);
@@ -1932,6 +1801,7 @@ updateGustOptions();
 
 /* PITCH */
 onThrustChange();
+flapSpdCalc();
 
 /* CREW */
 buildCol(document.getElementById('to-h'),  24, 2, 10);
