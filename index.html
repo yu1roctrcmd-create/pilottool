@@ -473,6 +473,21 @@
     .fdp-end { text-align: center; margin-top: 10px; padding: 12px 8px; background: rgba(255,209,102,0.07); border: 1px solid rgba(255,209,102,0.25); border-radius: 8px; }
     .fdp-end-lbl { font-size: 0.55rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
     .fdp-end-val { font-size: 2.5em; font-weight: 700; color: var(--gold); line-height: 1; }
+    /* duration H+M input */
+    .dur-input { display: flex; align-items: center; gap: 5px; }
+    .dur-sep   { color: var(--muted); font-size: 1.1em; font-weight: 700; flex-shrink: 0; }
+    .dur-input input { flex: 1; }
+    /* FDP limit rows */
+    .fdp-lims { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .fdp-lim  { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 8px; background: #060d16; border: 1px solid #1a3055; }
+    .fdp-lim.fdp-lim-tof { border-color: rgba(0,230,152,0.4); background: rgba(0,230,152,0.06); }
+    .fdp-lim.fdp-lim-ldg { border-color: rgba(255,140,66,0.35); background: rgba(255,140,66,0.06); }
+    .fdp-lim.fdp-lim-blk { border-color: rgba(255,209,102,0.3); }
+    .fdp-lim-left  { display: flex; flex-direction: column; gap: 3px; }
+    .fdp-lim-name  { font-size: 0.55rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+    .fdp-lim-sub   { font-size: 0.58rem; color: #2a4060; margin-top: 1px; }
+    .fdp-lim-time  { font-size: 1.9em; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+    .fdp-lim-day   { font-size: 0.55em; color: #4a6a99; margin-left: 3px; }
 
     /* Table */
     .rest-table { width: 100%; border-collapse: collapse; }
@@ -1112,6 +1127,28 @@
       <button id="fdp-c2" class="tgl on" onclick="setFdpCrew(2)">2 Crew</button>
       <button id="fdp-c3" class="tgl"    onclick="setFdpCrew(3)">3 Crew</button>
       <button id="fdp-c4" class="tgl"    onclick="setFdpCrew(4)">4 Crew</button>
+    </div>
+  </div>
+  <div class="row2" style="margin-top:10px">
+    <div class="fg">
+      <label>Flight Time (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-flt-h" min="0" max="24" step="1" value="7"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-flt-m" min="0" max="59" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Taxi Time at Dest. (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-tax-h" min="0" max="2" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-tax-m" min="0" max="59" step="1" value="25"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
     </div>
   </div>
   <div id="fdp-result"></div>
@@ -2647,6 +2684,15 @@ function setFdpCrew(n) {
   fdpCalc();
 }
 
+function fdpDayTag(min) {
+  const d = Math.floor(min / 1440);
+  return d > 0 ? `<span class="fdp-lim-day">+${d}</span>` : '';
+}
+function fdpDurStr(totalMin) {
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  return `${hh}+${String(mm).padStart(2,'0')}`;
+}
+
 function fdpCalc() {
   const timeVal = $('fdp-report').value;
   const result  = $('fdp-result');
@@ -2656,7 +2702,7 @@ function fdpCalc() {
   const h          = parseInt(hStr, 10);
   const m          = parseInt(mStr, 10);
   const reportMin  = h * 60 + m;
-  const si         = Math.min(fdpSectors, 4) - 1;  // index 0–3
+  const si         = Math.min(fdpSectors, 4) - 1;
 
   let maxFdpH;
   if (fdpCrew === 2) {
@@ -2667,26 +2713,65 @@ function fdpCalc() {
     maxFdpH = fdpSectors <= 2 ? 18 : 17;
   }
 
-  const maxFdpMin = Math.round(maxFdpH * 60);
-  const endMin    = reportMin + maxFdpMin;
-  const endStr    = toTimeStr(endMin);
-  const dayPlus   = Math.floor(endMin / 1440);
-  const dayTag    = dayPlus > 0 ? `<span style="font-size:0.6em;color:#4a6a99;margin-left:4px">+${dayPlus}</span>` : '';
+  const maxFdpMin  = Math.round(maxFdpH * 60);
+  const fdpHH      = Math.floor(maxFdpH);
+  const fdpMM      = Math.round((maxFdpH - fdpHH) * 60);
+  const durStr     = `${fdpHH}+${String(fdpMM).padStart(2,'0')}`;
+  const crewLbl    = fdpCrew === 2 ? '2 Crew ★' : `${fdpCrew} Crew`;
+  const secLbl     = fdpSectors <= 3 ? `${fdpSectors} SEC` : '4+ SEC';
 
-  const hh     = Math.floor(maxFdpH);
-  const mm     = Math.round((maxFdpH - hh) * 60);
-  const durStr = mm > 0 ? `${hh}h ${String(mm).padStart(2,'0')}m` : `${hh}h 00m`;
-  const crewLbl = fdpCrew === 2 ? '2 Crew ★' : `${fdpCrew} Crew (Augmented)`;
-  const secLbl  = fdpSectors <= 3 ? `${fdpSectors} sector${fdpSectors > 1 ? 's' : ''}` : '4+ sectors';
+  /* Flight time & Taxi time */
+  const fltH   = parseInt($('fdp-flt-h').value) || 0;
+  const fltM   = parseInt($('fdp-flt-m').value) || 0;
+  const taxH   = parseInt($('fdp-tax-h').value) || 0;
+  const taxM   = parseInt($('fdp-tax-m').value) || 0;
+  const fltMin = fltH * 60 + fltM;
+  const taxMin = taxH * 60 + taxM;
+
+  /* Three limits */
+  const blkInMin  = reportMin + maxFdpMin;           // Block-In Limit
+  const ldgLimMin = blkInMin  - taxMin;              // Landing Limit
+  const tofLimMin = ldgLimMin - fltMin;              // T/O (Block-Out) Limit
+
+  const blkInStr  = toTimeStr(blkInMin);
+  const ldgLimStr = toTimeStr(ldgLimMin);
+  const tofLimStr = toTimeStr(tofLimMin);
+
+  const taxSubLbl = taxMin > 0 ? `−${fdpDurStr(taxMin)} taxi` : '';
+  const fltSubLbl = fltMin > 0 ? `−${fdpDurStr(fltMin)} flight` : '';
 
   result.innerHTML = `
     <div class="fdp-box">
-      <div class="fdp-row"><span class="fdp-lbl">Configuration</span><span>${crewLbl} / ${secLbl}</span></div>
-      <div class="fdp-row"><span class="fdp-lbl">Report Time</span><span style="font-weight:700">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span></div>
-      <div class="fdp-row"><span class="fdp-lbl">Max FDP</span><span style="font-weight:700;color:var(--gold)">${durStr}</span></div>
-      <div class="fdp-end">
-        <div class="fdp-end-lbl">FDP End (Latest)</div>
-        <div class="fdp-end-val">${endStr}${dayTag}</div>
+      <div class="fdp-row">
+        <span class="fdp-lbl">Report</span>
+        <span style="font-weight:700">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span>
+      </div>
+      <div class="fdp-row">
+        <span class="fdp-lbl">Max FDP (${crewLbl} / ${secLbl})</span>
+        <span style="font-weight:700;color:var(--gold)">${durStr}</span>
+      </div>
+    </div>
+    <div class="fdp-lims">
+      <div class="fdp-lim fdp-lim-tof">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">▶ T/O Limit (Block Out)</div>
+          ${fltSubLbl ? `<div class="fdp-lim-sub">${fltSubLbl}</div>` : ''}
+        </div>
+        <div class="fdp-lim-time" style="color:var(--green)">${tofLimStr}${fdpDayTag(tofLimMin)}</div>
+      </div>
+      <div class="fdp-lim fdp-lim-ldg">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Landing Limit</div>
+          ${taxSubLbl ? `<div class="fdp-lim-sub">${taxSubLbl}</div>` : ''}
+        </div>
+        <div class="fdp-lim-time" style="color:var(--warn)">${ldgLimStr}${fdpDayTag(ldgLimMin)}</div>
+      </div>
+      <div class="fdp-lim fdp-lim-blk">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Block-In Limit</div>
+          <div class="fdp-lim-sub">Report + ${durStr}</div>
+        </div>
+        <div class="fdp-lim-time" style="color:var(--gold)">${blkInStr}${fdpDayTag(blkInMin)}</div>
       </div>
     </div>`;
 }
