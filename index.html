@@ -1055,7 +1055,7 @@
   <li>気象テレタイプの風向は真方位 / ATIS 等は磁方位</li>
   <li>★ Short Runway — RWYCC 4/3: XW 15KT, RWYCC 2: XW 10KT</li>
   <li>Approach Pitch &amp; N1 — Sea Level P.ALT, A/C ON, A/I OFF</li>
-  <li>TAS Wind Addition = 1/3 HW (min 5, max 20 KT); AT OFF +5 KT</li>
+  <li>AT ON: VREF+5 / AT OFF: VREF+(½ Wind+Gust) ※Min 5, Max 20 KT</li>
 </ul>
 
 </div><!-- /xw-col right -->
@@ -2082,7 +2082,29 @@ function renderTasLdg() {
   const box  = $('ldg-tasBox');
   if (isNaN(vref)) { box.style.display = 'none'; return; }
 
-  let hwPos = 0;
+  if (ldgAtEngaged) {
+    /* AT ON: VREF + 5 (fixed) */
+    const target = vref + 5;
+    _ldgLastTarget = target;
+    _ldgLastVref   = vref;
+    box.style.display = 'block';
+    box.innerHTML = `
+      <div class="tas-row"><span class="tas-lbl">VREF</span><span style="font-weight:700">${vref} KT</span></div>
+      <div class="tas-row"><span class="tas-lbl">Autothrottle Addition</span><span style="font-weight:700;color:var(--accent)">+5 KT</span></div>
+      <div class="tas-target">
+        <div class="tas-target-lbl">AT ON TARGET</div>
+        <div class="tas-target-val">${target}</div>
+        <div class="tas-target-unit">KNOTS</div>
+      </div>`;
+    apprCalcLdg();
+    return;
+  }
+
+  /* AT OFF: VREF + (½ Wind + Gust)  Min 5 / Max 20
+     Wind = Steady Head Wind Component
+     Gust = Maximum Wind − Steady Wind              */
+  let hwPos    = 0;
+  let gustIncr = 0;
   if (_ldgDrumReady) {
     const rwyHdgEl  = document.getElementById('ldg-rwyhdg');
     const windDirEl = document.getElementById('ldg-winddir');
@@ -2096,23 +2118,33 @@ function renderTasLdg() {
       const relAngle   = normPM180(windDirMag - norm360(rwyHdg));
       const headComp   = steady * Math.cos(relAngle * Math.PI / 180);
       hwPos = Math.max(0, headComp);
+      const gustRaw = $('ldg-gust').value.trim();
+      if (gustRaw !== '') {
+        const gust = parseFloat(gustRaw);
+        if (!isNaN(gust)) gustIncr = Math.max(0, gust - steady);
+      }
     }
   }
 
-  const windAdd  = Math.max(5, Math.min(20, Math.round(hwPos / 3)));
-  const totalAdd = ldgAtEngaged ? windAdd : Math.max(10, windAdd + 5);
-  const target   = vref + totalAdd;
+  const rawAdd   = 0.5 * hwPos + gustIncr;
+  const addition = Math.max(5, Math.min(20, rawAdd));
+  const addRnd   = Math.round(addition);
+  const target   = vref + addRnd;
   _ldgLastTarget = target;
   _ldgLastVref   = vref;
 
   box.style.display = 'block';
   box.innerHTML = `
     <div class="tas-row"><span class="tas-lbl">VREF</span><span style="font-weight:700">${vref} KT</span></div>
-    <div class="tas-row"><span class="tas-lbl">HW Component</span><span>${hwPos.toFixed(1)} KT</span></div>
-    <div class="tas-row"><span class="tas-lbl">Wind Addition (1/3 HW, min 5, max 20)</span><span>+${windAdd} KT</span></div>
-    ${!ldgAtEngaged ? `<div class="tas-row"><span class="tas-lbl">A/T OFF Addition</span><span>+5 KT</span></div>` : ''}
+    <div class="tas-row"><span class="tas-lbl">Steady HW Component (Wind)</span><span>${hwPos.toFixed(1)} KT</span></div>
+    <div class="tas-row"><span class="tas-lbl">½ Wind</span><span>${(hwPos / 2).toFixed(1)} KT</span></div>
+    ${gustIncr > 0 ? `<div class="tas-row"><span class="tas-lbl">Gust (Max Wind − Steady)</span><span>+${gustIncr.toFixed(0)} KT</span></div>` : ''}
+    <div class="tas-row" style="border-top:1px solid #1a3055;margin-top:4px;padding-top:6px">
+      <span class="tas-lbl">Addition (½W+G, min 5, max 20)</span>
+      <span style="font-weight:700;color:var(--accent)">+${addRnd} KT</span>
+    </div>
     <div class="tas-target">
-      <div class="tas-target-lbl">${ldgAtEngaged ? 'AT ON TARGET' : 'AT OFF TARGET'}</div>
+      <div class="tas-target-lbl">AT OFF TARGET</div>
       <div class="tas-target-val">${target}</div>
       <div class="tas-target-unit">KNOTS</div>
     </div>`;
