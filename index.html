@@ -1346,7 +1346,13 @@
 <!-- FDP Calculator -->
 <div class="card">
   <div class="card-title">Flight Duty Period (FDP)</div>
-  <div class="row2">
+  <div class="fg">
+    <label>Route</label>
+    <select id="fdp-route" onchange="setFdpRoute()">
+      <option value="">— Select Route —</option>
+    </select>
+  </div>
+  <div class="row2" style="margin-top:10px">
     <div class="fg">
       <label>Flight Date</label>
       <input type="date" id="fdp-date" oninput="fdpDateChange()">
@@ -2869,6 +2875,75 @@ function fdpDateChange() {
   fdpCalc();
 }
 
+/* ── Route presets (dep timezone / flt time / taxi in / taxi out) ── */
+const ROUTES = [
+  // From ANC
+  { g:'From ANC', label:'ANC → NRT', dep:'America/Anchorage',   fltH:9,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → ORD', dep:'America/Anchorage',   fltH:5,  fltM:0,  taxH:0, taxM:30, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → JFK', dep:'America/Anchorage',   fltH:7,  fltM:0,  taxH:0, taxM:30, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → LAX', dep:'America/Anchorage',   fltH:5,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → AMS', dep:'America/Anchorage',   fltH:9,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → MXP', dep:'America/Anchorage',   fltH:10, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'From ANC', label:'ANC → FRA', dep:'America/Anchorage',   fltH:9,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
+  // From NRT
+  { g:'From NRT', label:'NRT → ANC', dep:'Asia/Tokyo',          fltH:6,  fltM:30, taxH:0, taxM:20, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → ORD', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → JFK', dep:'Asia/Tokyo',          fltH:13, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → LAX', dep:'Asia/Tokyo',          fltH:10, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → DFW', dep:'Asia/Tokyo',          fltH:13, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → AMS', dep:'Asia/Tokyo',          fltH:11, fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → MXP', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → FRA', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → SIN', dep:'Asia/Tokyo',          fltH:7,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → HKG', dep:'Asia/Tokyo',          fltH:3,  fltM:30, taxH:0, taxM:20, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → TPE', dep:'Asia/Tokyo',          fltH:2,  fltM:45, taxH:0, taxM:20, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → PVG', dep:'Asia/Tokyo',          fltH:2,  fltM:15, taxH:0, taxM:20, txoH:0, txoM:25 },
+  { g:'From NRT', label:'NRT → BKK', dep:'Asia/Tokyo',          fltH:6,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  // To NRT
+  { g:'To NRT',   label:'ORD → NRT', dep:'America/Chicago',     fltH:13, fltM:30, taxH:0, taxM:25, txoH:0, txoM:30 },
+  { g:'To NRT',   label:'JFK → NRT', dep:'America/New_York',    fltH:14, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:30 },
+  { g:'To NRT',   label:'LAX → NRT', dep:'America/Los_Angeles', fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'To NRT',   label:'DFW → NRT', dep:'America/Chicago',     fltH:14, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:30 },
+  { g:'To NRT',   label:'AMS → NRT', dep:'Europe/Amsterdam',    fltH:11, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'To NRT',   label:'MXP → NRT', dep:'Europe/Rome',         fltH:11, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'To NRT',   label:'FRA → NRT', dep:'Europe/Berlin',       fltH:11, fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'To NRT',   label:'SIN → NRT', dep:'Asia/Singapore',      fltH:6,  fltM:45, taxH:0, taxM:25, txoH:0, txoM:25 },
+  { g:'To NRT',   label:'HKG → NRT', dep:'Asia/Hong_Kong',      fltH:4,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'To NRT',   label:'TPE → NRT', dep:'Asia/Taipei',         fltH:3,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'To NRT',   label:'PVG → NRT', dep:'Asia/Shanghai',       fltH:2,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
+  { g:'To NRT',   label:'BKK → NRT', dep:'Asia/Bangkok',        fltH:6,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
+];
+function buildRouteSelect() {
+  const sel = $('fdp-route');
+  const groups = {};
+  ROUTES.forEach((r, i) => { (groups[r.g] = groups[r.g] || []).push({ r, i }); });
+  Object.entries(groups).forEach(([grpName, entries]) => {
+    const grp = document.createElement('optgroup');
+    grp.label = grpName;
+    entries.forEach(({ r, i }) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${r.label}  (${r.fltH}+${String(r.fltM).padStart(2,'0')})`;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  });
+}
+function setFdpRoute() {
+  const idx = $('fdp-route').value;
+  if (idx === '') return;
+  const r = ROUTES[parseInt(idx, 10)];
+  if (!r) return;
+  $('fdp-airport').value = r.dep;
+  $('fdp-flt-h').value   = r.fltH;
+  $('fdp-flt-m').value   = r.fltM;
+  $('fdp-tax-h').value   = r.taxH;
+  $('fdp-tax-m').value   = r.taxM;
+  $('fdp-txo-h').value   = r.txoH;
+  $('fdp-txo-m').value   = r.txoM;
+  fdpCalc();
+}
+
 /* 2-Crew max FDP — Table 8-7-3 (NCA SOP)
    Time bands: 0-4:59 / 5-5:59 / 6-13:59 / 14-15:59 / 16-23:59
    Columns (index): [1-2sec, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -3134,6 +3209,7 @@ crewCalc();
 /* FDP */
 $('fdp-date').value = new Date().toISOString().slice(0, 10);
 buildAirportSelect(new Date());
+buildRouteSelect();
 fdpCalc();
 </script>
 
