@@ -1249,89 +1249,6 @@
   <p>FDP Calculator &nbsp;|&nbsp; 3-Crew Rest Rotation</p>
 </div>
 
-<!-- FDP Calculator -->
-<div class="card">
-  <div class="card-title">Flight Duty Period (FDP)</div>
-  <div class="row2">
-    <div class="fg">
-      <label>Flight Date</label>
-      <input type="date" id="fdp-date" oninput="fdpDateChange()">
-    </div>
-    <div class="fg">
-      <label>Report Time (UTC)</label>
-      <input type="time" id="fdp-report" value="08:00" oninput="fdpCalc()">
-    </div>
-  </div>
-  <div class="fg" style="margin-top:8px">
-    <label>Airport</label>
-    <select id="fdp-airport" onchange="fdpCalc()"></select>
-  </div>
-  <div class="row2" style="margin-top:8px">
-    <div class="fg">
-      <label>Sectors</label>
-      <div class="tgl-group">
-        <button id="fdp-s1" class="tgl on" onclick="setFdpSec(1)">1</button>
-        <button id="fdp-s2" class="tgl"    onclick="setFdpSec(2)">2</button>
-        <button id="fdp-s3" class="tgl"    onclick="setFdpSec(3)">3</button>
-        <button id="fdp-s4" class="tgl"    onclick="setFdpSec(4)">4</button>
-        <button id="fdp-s5" class="tgl"    onclick="setFdpSec(5)">5</button>
-        <button id="fdp-s6" class="tgl"    onclick="setFdpSec(6)">6+</button>
-      </div>
-    </div>
-    <div class="fg">
-      <label>Crew Complement</label>
-      <div class="tgl-group">
-        <button id="fdp-c2" class="tgl on" onclick="setFdpCrew(2)">2 Crew</button>
-        <button id="fdp-c3" class="tgl"    onclick="setFdpCrew(3)">3 Crew</button>
-        <button id="fdp-c4" class="tgl"    onclick="setFdpCrew(4)">4 Crew</button>
-      </div>
-    </div>
-  </div>
-  <div class="row2" style="margin-top:10px">
-    <div class="fg">
-      <label>Flight Time (h + m)</label>
-      <div class="dur-input">
-        <input type="number" id="fdp-flt-h" min="0" max="24" step="1" value="7"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-        <span class="dur-sep">+</span>
-        <input type="number" id="fdp-flt-m" min="0" max="59" step="1" value="0"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-      </div>
-    </div>
-    <div class="fg">
-      <label>Taxi In at Dest. (h + m)</label>
-      <div class="dur-input">
-        <input type="number" id="fdp-tax-h" min="0" max="2" step="1" value="0"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-        <span class="dur-sep">+</span>
-        <input type="number" id="fdp-tax-m" min="0" max="59" step="1" value="25"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-      </div>
-    </div>
-  </div>
-  <div class="row2" style="margin-top:8px">
-    <div class="fg">
-      <label>Taxi Out (h + m)</label>
-      <div class="dur-input">
-        <input type="number" id="fdp-txo-h" min="0" max="2" step="1" value="0"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-        <span class="dur-sep">+</span>
-        <input type="number" id="fdp-txo-m" min="0" max="59" step="1" value="20"
-               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
-      </div>
-    </div>
-    <div class="fg">
-      <label>Local Time at Airport</label>
-      <div id="fdp-local-disp" style="font-size:1.35em;font-weight:700;padding:10px 12px;color:var(--text);font-variant-numeric:tabular-nums">--:-- L</div>
-    </div>
-  </div>
-  <div id="fdp-result"></div>
-  <p style="font-size:0.55rem;color:#1e3450;margin-top:10px;line-height:1.6">
-    ★ 2 Crew: Table 8-7-3 参照値 — 必ず現行 SOP で確認すること<br>
-    3 Crew: ≤2 sectors=17h / ≥3 sectors=16h &nbsp;|&nbsp; 4 Crew: ≤2 sectors=18h / ≥3 sectors=17h
-  </p>
-</div>
-
 <div class="card">
   <div class="card-title">Flight Times</div>
   <div class="picker-row">
@@ -1424,6 +1341,85 @@
       <tbody id="schedule-tbody"></tbody>
     </table>
   </div>
+</div>
+
+<!-- FDP Calculator -->
+<div class="card">
+  <div class="card-title">Flight Duty Period (FDP)</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Flight Date</label>
+      <input type="date" id="fdp-date" oninput="fdpDateChange()">
+    </div>
+    <div class="fg">
+      <label>Report Time (UTC)</label>
+      <input type="time" id="fdp-report" value="08:00" oninput="fdpCalc()">
+    </div>
+  </div>
+  <div class="fg" style="margin-top:8px">
+    <label>Airport</label>
+    <select id="fdp-airport" onchange="fdpCalc()"></select>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Sectors</label>
+      <div class="tgl-group">
+        <button id="fdp-s1" class="tgl on" onclick="setFdpSec(1)">1</button>
+        <button id="fdp-s2" class="tgl"    onclick="setFdpSec(2)">2</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Crew Complement</label>
+      <div class="tgl-group">
+        <button id="fdp-c2" class="tgl on" onclick="setFdpCrew(2)">2 Crew</button>
+        <button id="fdp-c3" class="tgl"    onclick="setFdpCrew(3)">3 Crew</button>
+        <button id="fdp-c4" class="tgl"    onclick="setFdpCrew(4)">4 Crew</button>
+      </div>
+    </div>
+  </div>
+  <div class="row2" style="margin-top:10px">
+    <div class="fg">
+      <label>Flight Time (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-flt-h" min="0" max="24" step="1" value="7"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-flt-m" min="0" max="59" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Taxi In at Dest. (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-tax-h" min="0" max="2" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-tax-m" min="0" max="59" step="1" value="25"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Taxi Out (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-txo-h" min="0" max="2" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-txo-m" min="0" max="59" step="1" value="20"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Local Time at Airport</label>
+      <div id="fdp-local-disp" style="font-size:1.35em;font-weight:700;padding:10px 12px;color:var(--text);font-variant-numeric:tabular-nums">--:-- L</div>
+    </div>
+  </div>
+  <div id="fdp-result"></div>
+  <p style="font-size:0.55rem;color:#1e3450;margin-top:10px;line-height:1.6">
+    ★ 2 Crew: Table 8-7-3 参照値 — 必ず現行 SOP で確認すること<br>
+    3 Crew: ≤2 sectors=17h &nbsp;|&nbsp; 4 Crew: ≤2 sectors=18h
+  </p>
 </div>
 
 </div><!-- /tab-content -->
@@ -2897,7 +2893,7 @@ let fdpCrew    = 2;
 
 function setFdpSec(n) {
   fdpSectors = n;
-  [1,2,3,4,5,6].forEach(i => { $('fdp-s'+i).className = i === n ? 'tgl on' : 'tgl'; });
+  [1,2].forEach(i => { $('fdp-s'+i).className = i === n ? 'tgl on' : 'tgl'; });
   fdpCalc();
 }
 function setFdpCrew(n) {
