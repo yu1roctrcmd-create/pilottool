@@ -488,6 +488,10 @@
     .fdp-lim-sub   { font-size: 0.58rem; color: #2a4060; margin-top: 1px; }
     .fdp-lim-time  { font-size: 1.9em; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
     .fdp-lim-day   { font-size: 0.55em; color: #4a6a99; margin-left: 3px; }
+    .fdp-ext-hdr   { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px;
+                     font-size: 0.55rem; color: #f59e0b; letter-spacing: 2px; text-transform: uppercase; }
+    .fdp-ext-hdr::before, .fdp-ext-hdr::after { content: ''; flex: 1; height: 1px; background: rgba(245,158,11,0.25); }
+    .fdp-ext-note  { font-size: 0.58rem; color: #2a4060; margin-top:5px; line-height:1.5; }
 
     /* Table */
     .rest-table { width: 100%; border-collapse: collapse; }
@@ -1269,7 +1273,9 @@
         <button id="fdp-s1" class="tgl on" onclick="setFdpSec(1)">1</button>
         <button id="fdp-s2" class="tgl"    onclick="setFdpSec(2)">2</button>
         <button id="fdp-s3" class="tgl"    onclick="setFdpSec(3)">3</button>
-        <button id="fdp-s4" class="tgl"    onclick="setFdpSec(4)">4+</button>
+        <button id="fdp-s4" class="tgl"    onclick="setFdpSec(4)">4</button>
+        <button id="fdp-s5" class="tgl"    onclick="setFdpSec(5)">5</button>
+        <button id="fdp-s6" class="tgl"    onclick="setFdpSec(6)">6+</button>
       </div>
     </div>
     <div class="fg">
@@ -2867,42 +2873,31 @@ function fdpDateChange() {
   fdpCalc();
 }
 
-/* 2-Crew max FDP (hours) by Report Time hour [0-23]
-   Columns: [1 sector, 2 sectors, 3 sectors, 4+ sectors]
-   ★ Values based on NCA Table 8-7-3 — verify against current SOP */
-const FDP_2CREW = [
-  /* 00h */ [9.0, 9.0, 9.0, 9.0],
-  /* 01h */ [9.0, 9.0, 9.0, 9.0],
-  /* 02h */ [9.0, 9.0, 9.0, 9.0],
-  /* 03h */ [9.0, 9.0, 9.0, 9.0],
-  /* 04h */ [9.5, 9.0, 9.0, 9.0],
-  /* 05h */ [10.0, 9.5, 9.0, 9.0],
-  /* 06h */ [11.0, 10.5, 10.0, 9.5],
-  /* 07h */ [12.0, 11.5, 11.0, 10.5],
-  /* 08h */ [13.0, 12.5, 12.0, 11.5],
-  /* 09h */ [13.0, 12.5, 12.0, 11.5],
-  /* 10h */ [13.0, 12.5, 12.0, 11.5],
-  /* 11h */ [13.0, 12.5, 12.0, 11.5],
-  /* 12h */ [13.0, 12.5, 12.0, 11.5],
-  /* 13h */ [12.0, 11.5, 11.0, 10.5],
-  /* 14h */ [12.0, 11.5, 11.0, 10.5],
-  /* 15h */ [11.0, 10.5, 10.0, 9.5],
-  /* 16h */ [11.0, 10.5, 10.0, 9.5],
-  /* 17h */ [10.0, 9.5,  9.0, 9.0],
-  /* 18h */ [10.0, 9.5,  9.0, 9.0],
-  /* 19h */ [10.0, 9.5,  9.0, 9.0],
-  /* 20h */ [10.0, 9.5,  9.0, 9.0],
-  /* 21h */ [9.5,  9.0,  9.0, 9.0],
-  /* 22h */ [9.0,  9.0,  9.0, 9.0],
-  /* 23h */ [9.0,  9.0,  9.0, 9.0],
+/* 2-Crew max FDP — Table 8-7-3 (NCA SOP)
+   Time bands: 0-4:59 / 5-5:59 / 6-13:59 / 14-15:59 / 16-23:59
+   Columns (index): [1-2sec, 3, 4, 5, 6, 7, 8, 9, 10]
+   注1: 時差順応している地域の時刻を基準とする */
+const FDP_2CREW_BANDS = [
+  [ 0,  4, [11.0, 10.5, 10.0,  9.5,  9.0,  9.0,  9.0,  9.0,  9.0]],
+  [ 5,  5, [12.0, 11.5, 11.0, 10.5, 10.0,  9.5,  9.0,  9.0,  9.0]],
+  [ 6, 13, [13.0, 12.5, 12.0, 11.5, 11.0, 10.5, 10.0,  9.5,  9.0]],
+  [14, 15, [12.0, 11.5, 11.0, 10.5, 10.0,  9.5,  9.0,  9.0,  9.0]],
+  [16, 23, [11.0, 10.5, 10.0,  9.5,  9.0,  9.0,  9.0,  9.0,  9.0]],
 ];
+function getFdp2Crew(localHour, sectors) {
+  const band = FDP_2CREW_BANDS.find(b => localHour >= b[0] && localHour <= b[1]);
+  if (!band) return 9.0;
+  // 1-2 sec → idx 0 | 3 sec → idx 1 | 4 → idx 2 | … | 10+ → idx 8
+  const sIdx = sectors <= 2 ? 0 : Math.min(sectors - 2, 8);
+  return band[2][sIdx];
+}
 
 let fdpSectors = 1;
 let fdpCrew    = 2;
 
 function setFdpSec(n) {
   fdpSectors = n;
-  [1,2,3,4].forEach(i => { $('fdp-s'+i).className = i === n ? 'tgl on' : 'tgl'; });
+  [1,2,3,4,5,6].forEach(i => { $('fdp-s'+i).className = i === n ? 'tgl on' : 'tgl'; });
   fdpCalc();
 }
 function setFdpCrew(n) {
@@ -2947,11 +2942,10 @@ function fdpCalc() {
     `${String(localHour).padStart(2,'0')}:${String(localMinVal).padStart(2,'0')} L`
     + (dst ? ` <span style="font-size:0.55em;color:#00c8ff;vertical-align:middle">DST</span>` : '');
 
-  /* FDP table lookup using local hour */
-  const si = Math.min(fdpSectors, 4) - 1;
+  /* FDP table lookup using local hour (Table 8-7-3) */
   let maxFdpH;
   if (fdpCrew === 2) {
-    maxFdpH = FDP_2CREW[localHour][si];
+    maxFdpH = getFdp2Crew(localHour, fdpSectors);
   } else if (fdpCrew === 3) {
     maxFdpH = fdpSectors <= 2 ? 17 : 16;
   } else {
@@ -2962,7 +2956,8 @@ function fdpCalc() {
   const fdpMM     = Math.round((maxFdpH - fdpHH) * 60);
   const durStr    = `${fdpHH}+${String(fdpMM).padStart(2,'0')}`;
   const crewLbl   = fdpCrew === 2 ? '2 Crew ★' : `${fdpCrew} Crew`;
-  const secLbl    = fdpSectors <= 3 ? `${fdpSectors} SEC` : '4+ SEC';
+  const tblCol    = fdpSectors <= 2 ? '1-2' : fdpSectors >= 6 ? '6+' : `${fdpSectors}`;
+  const secLbl    = `${fdpSectors >= 6 ? '6+' : fdpSectors} SEC`;
 
   /* Durations */
   const fltH   = parseInt($('fdp-flt-h').value)  || 0;
@@ -3002,6 +2997,15 @@ function fdpCalc() {
   const fltSubLbl = fltMin > 0 ? `−${fdpDurStr(fltMin)} flight`   : '';
   const taxSubLbl = taxMin > 0 ? `−${fdpDurStr(taxMin)} taxi in`   : '';
 
+  /* Unforeseeable circumstances: pre-T/O extension (2-crew +2h / 3-4-crew +3h) */
+  const extH         = fdpCrew === 2 ? 2 : 3;
+  const extMin       = extH * 60;
+  const extBlkInRaw  = blkInRaw  + extMin;
+  const extLdgRaw    = extBlkInRaw - taxMin;
+  const extTofRaw    = extLdgRaw   - fltMin;
+  const extBlkOutRaw = extTofRaw   - txoMin;
+  const extDurStr    = `${fdpHH}+${String(fdpMM).padStart(2,'0')} +${extH}h`;
+
   result.innerHTML = `
     <div class="fdp-box">
       <div class="fdp-row">
@@ -3009,7 +3013,7 @@ function fdpCalc() {
         <span style="font-weight:700">${toTimeStr(reportUtcMin)}Z &nbsp;/&nbsp; ${toTimeStr(reportLocalRaw)} ${apCode}</span>
       </div>
       <div class="fdp-row">
-        <span class="fdp-lbl">Max FDP (${crewLbl} / ${secLbl})</span>
+        <span class="fdp-lbl">Max FDP (${crewLbl} / ${secLbl} / Table col ${tblCol})</span>
         <span style="font-weight:700;color:var(--gold)">${durStr}</span>
       </div>
     </div>
@@ -3042,7 +3046,40 @@ function fdpCalc() {
         </div>
         <div style="color:var(--gold)">${dualTime(blkInRaw)}</div>
       </div>
-    </div>`;
+    </div>
+
+    <div class="fdp-ext-hdr">不測の事態 Pre-T/O Ext. +${extH}h</div>
+    <div class="fdp-lims">
+      <div class="fdp-lim fdp-lim-tof" style="opacity:0.75">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">▶ Block Out Limit (ext.)</div>
+        </div>
+        <div style="color:var(--green)">${dualTime(extBlkOutRaw)}</div>
+      </div>
+      <div class="fdp-lim" style="border-color:rgba(0,200,255,0.25);background:rgba(0,200,255,0.03);opacity:0.75">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">▶ Takeoff Limit (ext.)</div>
+        </div>
+        <div style="color:#00c8ff">${dualTime(extTofRaw)}</div>
+      </div>
+      <div class="fdp-lim fdp-lim-ldg" style="opacity:0.75">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Landing Limit (ext.)</div>
+        </div>
+        <div style="color:var(--warn)">${dualTime(extLdgRaw)}</div>
+      </div>
+      <div class="fdp-lim fdp-lim-blk" style="opacity:0.75">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Block-In Limit (ext.)</div>
+          <div class="fdp-lim-sub">${extDurStr}</div>
+        </div>
+        <div style="color:var(--gold)">${dualTime(extBlkInRaw)}</div>
+      </div>
+    </div>
+    <p class="fdp-ext-note">
+      ★ 離陸後発生の場合：適切な空港到達まで延長可（時間制限なし）<br>
+      ★ 延長する時間は最小限となるよう努めること（機長判断）
+    </p>`;
 }
 
 /* ══════════════════════════════════════════
