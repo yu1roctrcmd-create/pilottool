@@ -2875,72 +2875,40 @@ function fdpDateChange() {
   fdpCalc();
 }
 
-/* ── Route presets (dep timezone / flt time / taxi in / taxi out) ── */
-const ROUTES = [
-  // From ANC
-  { g:'From ANC', label:'ANC → NRT', dep:'America/Anchorage',   fltH:9,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → ORD', dep:'America/Anchorage',   fltH:5,  fltM:0,  taxH:0, taxM:30, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → JFK', dep:'America/Anchorage',   fltH:7,  fltM:0,  taxH:0, taxM:30, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → LAX', dep:'America/Anchorage',   fltH:5,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → AMS', dep:'America/Anchorage',   fltH:9,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → MXP', dep:'America/Anchorage',   fltH:10, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'From ANC', label:'ANC → FRA', dep:'America/Anchorage',   fltH:9,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
-  // From NRT
-  { g:'From NRT', label:'NRT → ANC', dep:'Asia/Tokyo',          fltH:6,  fltM:30, taxH:0, taxM:20, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → ORD', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → JFK', dep:'Asia/Tokyo',          fltH:13, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → LAX', dep:'Asia/Tokyo',          fltH:10, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → DFW', dep:'Asia/Tokyo',          fltH:13, fltM:0,  taxH:0, taxM:30, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → AMS', dep:'Asia/Tokyo',          fltH:11, fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → MXP', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → FRA', dep:'Asia/Tokyo',          fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → SIN', dep:'Asia/Tokyo',          fltH:7,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → HKG', dep:'Asia/Tokyo',          fltH:3,  fltM:30, taxH:0, taxM:20, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → TPE', dep:'Asia/Tokyo',          fltH:2,  fltM:45, taxH:0, taxM:20, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → PVG', dep:'Asia/Tokyo',          fltH:2,  fltM:15, taxH:0, taxM:20, txoH:0, txoM:25 },
-  { g:'From NRT', label:'NRT → BKK', dep:'Asia/Tokyo',          fltH:6,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  // To NRT
-  { g:'To NRT',   label:'ORD → NRT', dep:'America/Chicago',     fltH:13, fltM:30, taxH:0, taxM:25, txoH:0, txoM:30 },
-  { g:'To NRT',   label:'JFK → NRT', dep:'America/New_York',    fltH:14, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:30 },
-  { g:'To NRT',   label:'LAX → NRT', dep:'America/Los_Angeles', fltH:12, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'To NRT',   label:'DFW → NRT', dep:'America/Chicago',     fltH:14, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:30 },
-  { g:'To NRT',   label:'AMS → NRT', dep:'Europe/Amsterdam',    fltH:11, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'To NRT',   label:'MXP → NRT', dep:'Europe/Rome',         fltH:11, fltM:0,  taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'To NRT',   label:'FRA → NRT', dep:'Europe/Berlin',       fltH:11, fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'To NRT',   label:'SIN → NRT', dep:'Asia/Singapore',      fltH:6,  fltM:45, taxH:0, taxM:25, txoH:0, txoM:25 },
-  { g:'To NRT',   label:'HKG → NRT', dep:'Asia/Hong_Kong',      fltH:4,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'To NRT',   label:'TPE → NRT', dep:'Asia/Taipei',         fltH:3,  fltM:0,  taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'To NRT',   label:'PVG → NRT', dep:'Asia/Shanghai',       fltH:2,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:20 },
-  { g:'To NRT',   label:'BKK → NRT', dep:'Asia/Bangkok',        fltH:6,  fltM:30, taxH:0, taxM:25, txoH:0, txoM:25 },
+/* ── Departure airports (timezone / taxi out) ── */
+const DEP_AIRPORTS = [
+  { code:'ANC', tz:'America/Anchorage',   txoM:20 },
+  { code:'NRT', tz:'Asia/Tokyo',          txoM:25 },
+  { code:'ORD', tz:'America/Chicago',     txoM:30 },
+  { code:'JFK', tz:'America/New_York',    txoM:30 },
+  { code:'LAX', tz:'America/Los_Angeles', txoM:25 },
+  { code:'DFW', tz:'America/Chicago',     txoM:30 },
+  { code:'AMS', tz:'Europe/Amsterdam',    txoM:25 },
+  { code:'MXP', tz:'Europe/Rome',         txoM:25 },
+  { code:'FRA', tz:'Europe/Berlin',       txoM:25 },
+  { code:'SIN', tz:'Asia/Singapore',      txoM:25 },
+  { code:'HKG', tz:'Asia/Hong_Kong',      txoM:20 },
+  { code:'TPE', tz:'Asia/Taipei',         txoM:20 },
+  { code:'PVG', tz:'Asia/Shanghai',       txoM:20 },
+  { code:'BKK', tz:'Asia/Bangkok',        txoM:25 },
 ];
 function buildRouteSelect() {
   const sel = $('fdp-route');
-  const groups = {};
-  ROUTES.forEach((r, i) => { (groups[r.g] = groups[r.g] || []).push({ r, i }); });
-  Object.entries(groups).forEach(([grpName, entries]) => {
-    const grp = document.createElement('optgroup');
-    grp.label = grpName;
-    entries.forEach(({ r, i }) => {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = `${r.label}  (${r.fltH}+${String(r.fltM).padStart(2,'0')})`;
-      grp.appendChild(opt);
-    });
-    sel.appendChild(grp);
+  DEP_AIRPORTS.forEach(ap => {
+    const opt = document.createElement('option');
+    opt.value = ap.tz;
+    opt.textContent = ap.code;
+    sel.appendChild(opt);
   });
 }
 function setFdpRoute() {
-  const idx = $('fdp-route').value;
-  if (idx === '') return;
-  const r = ROUTES[parseInt(idx, 10)];
-  if (!r) return;
-  $('fdp-airport').value = r.dep;
-  $('fdp-flt-h').value   = r.fltH;
-  $('fdp-flt-m').value   = r.fltM;
-  $('fdp-tax-h').value   = r.taxH;
-  $('fdp-tax-m').value   = r.taxM;
-  $('fdp-txo-h').value   = r.txoH;
-  $('fdp-txo-m').value   = r.txoM;
+  const tz = $('fdp-route').value;
+  if (!tz) return;
+  const ap = DEP_AIRPORTS.find(a => a.tz === tz);
+  if (!ap) return;
+  $('fdp-airport').value = tz;
+  $('fdp-txo-h').value   = 0;
+  $('fdp-txo-m').value   = ap.txoM;
   fdpCalc();
 }
 
