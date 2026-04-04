@@ -102,6 +102,15 @@
       transition: color 0.15s, border-color 0.15s;
     }
     .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .reset-btn {
+      padding: 8px 10px 8px 6px;
+      border: none; background: transparent;
+      color: #ff4560; font-family: inherit;
+      font-size: 0.62em; font-weight: 700; letter-spacing: 1px;
+      cursor: pointer; opacity: 0.6;
+      transition: opacity 0.15s; white-space: nowrap; flex: none;
+    }
+    .reset-btn:active { opacity: 1; }
 
     /* ══════════════════════════════════════════
        PANELS
@@ -685,6 +694,7 @@
   <button class="tab-btn"        onclick="switchTab('ldg',this)">LDG</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
+  <button class="reset-btn"      onclick="resetAllState()">RESET</button>
 </div>
 
 <!-- ═══════════════════════════ TAB: TO ═══════════════════════════ -->
@@ -3179,6 +3189,127 @@ $('fdp-date').value = new Date().toISOString().slice(0, 10);
 buildAirportSelect(new Date());
 buildRouteSelect();
 fdpCalc();
+
+/* ══════════════════════════════════════════
+   STATE PERSISTENCE (6h)
+══════════════════════════════════════════ */
+const _STATE_TTL = 6 * 3600 * 1000;
+const _STATE_KEY = 'nca_state_v1';
+
+const _INPUT_IDS = [
+  'rwyNum','windType','magVar','rwyCond','flaps','gust','weight','palt',
+  'ldg-rwyNum','ldg-windType','ldg-magVar','ldg-rwyCond','ldg-weight','ldg-vref','ldg-gust',
+  'fdp-route','fdp-date','fdp-report','fdp-airport',
+  'fdp-flt-h','fdp-flt-m','fdp-tax-h','fdp-tax-m','fdp-txo-h','fdp-txo-m',
+];
+const _TO_DRUMS = [
+  { col:'xd-rwyhdg',  disp:'disp-xd-rwyhdg',  sfx:'°'   },
+  { col:'xd-winddir', disp:'disp-xd-winddir',  sfx:'°'   },
+  { col:'xd-steady',  disp:'disp-xd-steady',   sfx:' KT' },
+];
+const _LDG_DRUMS = [
+  { col:'ldg-rwyhdg',  disp:'disp-ldg-rwyhdg',  sfx:'°'   },
+  { col:'ldg-winddir', disp:'disp-ldg-winddir',  sfx:'°'   },
+  { col:'ldg-steady',  disp:'disp-ldg-steady',   sfx:' KT' },
+];
+
+function saveState() {
+  const data = {};
+  _INPUT_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  [..._TO_DRUMS, ..._LDG_DRUMS].forEach(({ col }) => {
+    const el = document.getElementById(col);
+    if (el && el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
+  });
+  data.fdpSectors   = fdpSectors;
+  data.fdpCrew      = fdpCrew;
+  data.ldgLen       = ldgLen;
+  data.ldgAutoland  = ldgAutoland;
+  data.ldgApprFlap  = ldgApprFlap;
+  data.ldgAtEngaged = ldgAtEngaged;
+  localStorage.setItem(_STATE_KEY, JSON.stringify({ ts: Date.now(), data }));
+}
+
+function _restoreDrum(drums) {
+  drums.forEach(({ col, disp, sfx }) => {
+    const val   = _stateData['drum:' + col];
+    if (val === undefined) return;
+    const colEl = document.getElementById(col);
+    const disEl = document.getElementById(disp);
+    if (!colEl || !disEl || colEl._from === undefined) return;
+    const pad = colEl.children[0] ? colEl.children[0].textContent.length : 1;
+    colEl._skipNotify = true;
+    colEl.scrollTop   = (val - colEl._from) * ITEM_H;
+    disEl.textContent = String(val).padStart(pad, '0') + sfx;
+    setTimeout(() => { colEl._skipNotify = false; }, 150);
+  });
+}
+
+let _stateData = {};
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(_STATE_KEY);
+    if (!raw) return;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > _STATE_TTL) { localStorage.removeItem(_STATE_KEY); return; }
+    _stateData = data;
+
+    /* Simple inputs */
+    _INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && data[id] !== undefined) el.value = data[id];
+    });
+
+    /* TO drums (already initialized) */
+    _restoreDrum(_TO_DRUMS);
+
+    /* LDG drums — force init then restore */
+    initLdgDrums();
+    _restoreDrum(_LDG_DRUMS);
+
+    /* Toggle states */
+    if (data.fdpSectors)                 setFdpSec(data.fdpSectors);
+    if (data.fdpCrew)                    setFdpCrew(data.fdpCrew);
+    if (data.ldgLen)                     setLenLdg(data.ldgLen);
+    if (data.ldgAutoland !== undefined)  setAutolandLdg(data.ldgAutoland);
+    if (data.ldgApprFlap)                setApprFlapLdg(data.ldgApprFlap);
+    if (data.ldgAtEngaged !== undefined) setAtLdg(data.ldgAtEngaged);
+
+    /* Dependent UI */
+    toggleMagVar();
+    ldgToggleMagVar();
+    onCondChange();
+    onCondChangeLdg();
+
+    /* Rebuild FDP airport select with restored date, then reapply airport value */
+    const dateVal = $('fdp-date').value;
+    const d = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
+    buildAirportSelect(d);
+    if (data['fdp-airport']) $('fdp-airport').value = data['fdp-airport'];
+
+    /* Recalculate all */
+    calc();
+    calcLdg();
+    fdpCalc();
+  } catch(e) { /* ignore corrupt data */ }
+}
+
+function resetAllState() {
+  localStorage.removeItem(_STATE_KEY);
+  location.reload();
+}
+
+/* Auto-save on every input / select change */
+let _saveTimer = 0;
+function _debounceSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 400);
+}
+document.addEventListener('input',  _debounceSave);
+document.addEventListener('change', _debounceSave);
+document.addEventListener('scroll', _debounceSave, true);
+
+/* Restore on load */
+restoreState();
 </script>
 
 <!-- ════════════════════════════════════════
