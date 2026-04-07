@@ -111,6 +111,86 @@
       transition: opacity 0.15s; white-space: nowrap; flex: none;
     }
     .reset-btn:active { opacity: 1; }
+    .theme-btn {
+      padding: 8px 8px 8px 4px;
+      border: none; background: transparent;
+      font-size: 1.05em; cursor: pointer;
+      opacity: 0.75; flex: none;
+      transition: opacity 0.15s;
+    }
+    .theme-btn:active { opacity: 1; }
+
+    /* ══════════════════════════════════════════
+       DAY MODE
+    ══════════════════════════════════════════ */
+    body.day {
+      --bg:     #f2ede5;
+      --card:   #faf8f4;
+      --border: #ccc7bd;
+      --accent: #1264a0;
+      --text:   #181818;
+      --muted:  #787068;
+      --green:  #1a7040;
+      --gold:   #906800;
+      --warn:   #a04800;
+      --error:  #b01828;
+      --purple: #5838a0;
+    }
+    /* Lock screen */
+    body.day #lock-screen { background: var(--bg); }
+    body.day .lock-logo   { color: var(--accent); }
+    body.day .lock-sub    { color: var(--muted); }
+    body.day .lock-input  { background: var(--card); border-color: var(--border); color: var(--text); }
+    body.day .lock-btn    { background: var(--accent); color: #fff; }
+    /* Inputs / selects */
+    body.day select,
+    body.day input[type="number"],
+    body.day input[type="time"],
+    body.day input[type="date"] { background: var(--card); }
+    /* Toggle buttons */
+    body.day .tgl { background: var(--card); }
+    /* Boxes */
+    body.day .formula-box,
+    body.day .comp-item,
+    body.day .fdp-box,
+    body.day .fdp-lim,
+    body.day .tas-box,
+    body.day .appr-cell,
+    body.day .fms-cell    { background: var(--bg); border-color: var(--border); }
+    body.day .fdp-lim.fdp-lim-tof { border-color: rgba(0,120,50,0.4); background: rgba(0,120,50,0.06); }
+    body.day .fdp-lim.fdp-lim-ldg { border-color: rgba(168,80,0,0.35); background: rgba(168,80,0,0.06); }
+    body.day .fdp-lim.fdp-lim-blk { border-color: rgba(144,104,0,0.30); }
+    body.day .wind-strip  { background: var(--bg); border-color: var(--border); }
+    /* Text hints */
+    body.day .hdr-rev         { color: var(--muted); }
+    body.day .hint            { color: var(--muted); }
+    body.day .footnote        { color: var(--muted); }
+    body.day .ws-lbl          { color: var(--muted); }
+    body.day .fdp-lim-sub     { color: var(--muted); }
+    body.day .fdp-lim-day     { color: var(--muted); }
+    body.day .fdp-ext-note    { color: var(--muted); }
+    /* Drum pickers */
+    body.day .drum            { background: #ece8e0; border-color: var(--border); }
+    body.day .drum::before    { background: linear-gradient(to bottom, #f2ede5, rgba(242,237,229,0.85) 50%, transparent); }
+    body.day .drum::after     { background: linear-gradient(to top,   #f2ede5, rgba(242,237,229,0.85) 50%, transparent); }
+    body.day .drum-item       { color: #181818; }
+    body.day .drum-sep        { color: #8090a8; }
+    body.day .drum-sel        { border-top-color: #8090a8; border-bottom-color: #8090a8; }
+    body.day .drum-display    { color: var(--accent); }
+    body.day .picker-group-label { color: var(--muted); }
+    /* CREW tab */
+    body.day #tab-crew .card     { background: var(--card); border-color: var(--border); }
+    body.day #tab-crew .card-title { color: var(--accent); }
+    body.day .crew-hdr h1        { color: var(--accent); }
+    body.day .crew-hdr p         { color: var(--muted); }
+    /* Flight tab */
+    body.day #tab-flight {
+      --bg:   var(--bg, #f2ede5);
+      --card: var(--card, #faf8f4);
+      --text: var(--text, #181818);
+      --sub:  #787068;
+      --border: var(--border, #ccc7bd);
+    }
 
     /* ══════════════════════════════════════════
        PANELS
@@ -695,6 +775,7 @@
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
 </div>
 
 <!-- ═══════════════════════════ TAB: TO ═══════════════════════════ -->
@@ -1455,6 +1536,18 @@ const _AUTH_TTL = 24 * 60 * 60 * 1000; // 24時間（ミリ秒）
   }
 })();
 
+/* ── Theme init (before first paint) ── */
+(function() {
+  if (localStorage.getItem('nca_theme') === 'day') {
+    document.body.classList.add('day');
+  }
+})();
+
+/* ── SVG theme helpers (hoisted function declarations) ── */
+function svgBg()  { return document.body.classList.contains('day') ? '#f2ede5' : '#060d16'; }
+function svgBd()  { return document.body.classList.contains('day') ? '#ccc7bd' : '#162840'; }
+function svgDim() { return document.body.classList.contains('day') ? '#8090a8' : '#2a4860'; }
+
 function unlockApp() {
   const input = document.getElementById('lock-input');
   const errEl = document.getElementById('lock-err');
@@ -1564,8 +1657,8 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
   const R   = 88;
   const svg = $(svgId || 'diagram');
   if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
-    svg.innerHTML = `<circle cx="0" cy="0" r="${R+14}" fill="#060d16" stroke="#162840"/>
-      <text x="0" y="5" text-anchor="middle" fill="#2a4860" font-size="12">—</text>`;
+    svg.innerHTML = `<circle cx="0" cy="0" r="${R+14}" fill="${svgBg()}" stroke="${svgBd()}"/>
+      <text x="0" y="5" text-anchor="middle" fill="${svgDim()}" font-size="12">—</text>`;
     return;
   }
   const rwyRad  = rwyHdg     * Math.PI / 180;
@@ -1587,7 +1680,7 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
   const arcD = `M${ax1.toFixed(1)} ${ay1.toFixed(1)} A${arcR} ${arcR} 0 ${largeF} ${sweepF} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
   const ticks = Array.from({length:12},(_,i)=>{
     const a = i * 30 * Math.PI / 180, r0 = i%3===0 ? R+3 : R+6;
-    return `<line x1="${(Math.sin(a)*r0).toFixed(1)}" y1="${(-Math.cos(a)*r0).toFixed(1)}" x2="${(Math.sin(a)*(R+14)).toFixed(1)}" y2="${(-Math.cos(a)*(R+14)).toFixed(1)}" stroke="#162840" stroke-width="1"/>`;
+    return `<line x1="${(Math.sin(a)*r0).toFixed(1)}" y1="${(-Math.cos(a)*r0).toFixed(1)}" x2="${(Math.sin(a)*(R+14)).toFixed(1)}" y2="${(-Math.cos(a)*(R+14)).toFixed(1)}" stroke="${svgBd()}" stroke-width="1"/>`;
   }).join('');
   const hwColor = headComp >= 0 ? '#00e698' : '#ff4560';
   const hwMark  = headComp >= 0 ? 'url(#mh)' : 'url(#mt)';
@@ -1604,12 +1697,12 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
       <marker id="mt" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff4560"/></marker>
       <marker id="mc" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffd166"/></marker>
     </defs>
-    <circle cx="0" cy="0" r="${R+14}" fill="#060d16" stroke="#162840" stroke-width="1"/>
+    <circle cx="0" cy="0" r="${R+14}" fill="${svgBg()}" stroke="${svgBd()}" stroke-width="1"/>
     ${ticks}
-    <text x="0" y="${-(R+21)}" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">N</text>
-    <text x="${R+21}" y="4" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">E</text>
-    <text x="0" y="${R+28}" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">S</text>
-    <text x="${-(R+22)}" y="4" text-anchor="middle" fill="#2a4860" font-size="9" font-weight="600">W</text>
+    <text x="0" y="${-(R+21)}" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">N</text>
+    <text x="${R+21}" y="4" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">E</text>
+    <text x="0" y="${R+28}" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">S</text>
+    <text x="${-(R+22)}" y="4" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">W</text>
     <path d="${arcD}" fill="none" stroke="rgba(255,209,102,0.55)" stroke-width="2.5" stroke-dasharray="4,3"/>
     ${angLbl}
     <line x1="${rBx.toFixed(1)}" y1="${rBy.toFixed(1)}" x2="${rFx.toFixed(1)}" y2="${rFy.toFixed(1)}" stroke="#00c8ff" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
@@ -3298,6 +3391,15 @@ function resetAllState() {
   location.reload();
 }
 
+function toggleTheme() {
+  const isDay = document.body.classList.toggle('day');
+  document.getElementById('theme-btn').textContent = isDay ? '🌙' : '☀️';
+  localStorage.setItem('nca_theme', isDay ? 'day' : 'night');
+  calc();
+  calcLdg();
+  fdpCalc();
+}
+
 /* Auto-save on every input / select change */
 let _saveTimer = 0;
 function _debounceSave() {
@@ -3307,6 +3409,10 @@ function _debounceSave() {
 document.addEventListener('input',  _debounceSave);
 document.addEventListener('change', _debounceSave);
 document.addEventListener('scroll', _debounceSave, true);
+
+/* Set theme button icon on load */
+document.getElementById('theme-btn').textContent =
+  document.body.classList.contains('day') ? '🌙' : '☀️';
 
 /* Restore on load */
 restoreState();
