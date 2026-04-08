@@ -2815,6 +2815,45 @@ function atbCalc() {
     </div>
   </div>`;
 
+  /* ── 4. Immediate Landing — Pitch & N1 at TOW ── */
+  if (fob !== null) {
+    const immW       = tow;
+    const immVref    = calcVref(immW, atbFlap);
+    const immPVref   = interp(ws, apprData.map(d => d.pitch[0]), immW);
+    const immPVref5  = interp(ws, apprData.map(d => d.pitch[1]), immW);
+    const immN1Vref  = interp(ws, apprData.map(d => d.n1[0]),   immW);
+    const immN1Vref5 = interp(ws, apprData.map(d => d.n1[1]),   immW);
+
+    html += `<div class="atb-ref-hdr">Immediate Landing (at TOW)</div>`;
+    html += `<div class="atb-row" style="border-color:rgba(255,140,66,0.35);background:rgba(255,140,66,0.06)">
+      <div>
+        <div class="atb-label">VREF — Flap ${atbFlap}</div>
+        <div class="atb-sub">TOW ${immW.toFixed(0)} × 1000 LB</div>
+      </div>
+      <div style="text-align:right">
+        <div class="atb-val" style="color:var(--warn)">${immVref !== null ? immVref : '—'} <span style="font-size:0.45em;color:var(--muted)">KIAS</span></div>
+      </div>
+    </div>`;
+
+    html += `<div class="atb-row" style="flex-direction:column;gap:6px;align-items:stretch">
+      <div style="font-size:0.52rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Pitch &amp; N1</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+          <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF</div>
+          <div style="font-size:1.15em;font-weight:700;color:var(--text)">${immPVref !== null ? immPVref.toFixed(1) : '—'}°</div>
+          <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${immN1Vref !== null ? immN1Vref.toFixed(1) : '—'}%</div>
+          <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+        </div>
+        <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+          <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+5</div>
+          <div style="font-size:1.15em;font-weight:700;color:var(--text)">${immPVref5 !== null ? immPVref5.toFixed(1) : '—'}°</div>
+          <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${immN1Vref5 !== null ? immN1Vref5.toFixed(1) : '—'}%</div>
+          <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   html += `</div>`;
   result.innerHTML = html;
 }
