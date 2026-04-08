@@ -940,7 +940,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc()">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc()">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -1238,7 +1238,7 @@
   <div class="fg">
     <label>Landing Weight (× 1000 LB)</label>
     <input type="number" id="ldg-weight" value="600" step="1" inputmode="decimal"
-           oninput="apprCalcLdg(); ldgFlapSpdCalc()">
+           oninput="apprCalcLdg(); ldgFlapSpdCalc(); updateLdgVref()">
     <span class="hint">Approach Pitch valid: 460 – 763 × 1000 LB</span>
   </div>
   <div class="fg">
@@ -2193,6 +2193,19 @@ const AUTOLAND_XW = {
   rwycc2: null, rwycc1: null,
 };
 
+/* VREF table — 10,000 ft reference pressure altitude */
+const VREF_DATA = {
+  weights: [450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000],
+  f25: [125, 132, 138, 145, 152, 158, 163, 168, 173, 179, 184, 190],
+  f30: [122, 129, 136, 142, 148, 154, 160, 165, 170, 175, 181, 186],
+};
+
+function calcVref(weight, flap) {
+  const vals = flap === 'F25' ? VREF_DATA.f25 : VREF_DATA.f30;
+  const v = interp(VREF_DATA.weights, vals, weight);
+  return v !== null ? Math.round(v) : null;
+}
+
 const APPR_DATA = {
   f25: [
     { w: 460, pitch: [2.8, 1.7, 0.8, -0.1, -0.9], n1: [47.9, 48.6, 50.3, 52.2, 53.5] },
@@ -2274,6 +2287,14 @@ function setApprFlapLdg(v) {
   $('ldg-btnF30').className = v === 'F30' ? 'tgl on' : 'tgl';
   $('ldg-apprFlapTag').textContent = v;
   apprCalcLdg();
+  updateLdgVref();
+}
+function updateLdgVref() {
+  const w = parseFloat($('ldg-weight').value);
+  if (isNaN(w)) return;
+  const v = calcVref(w, ldgApprFlap);
+  if (v !== null) $('ldg-vref').value = v;
+  renderTasLdg();
 }
 function setTwLimitLdg(v) {
   twLimitLdg = v;
@@ -2675,6 +2696,16 @@ function atbCalc() {
   const zfw    = parseFloat($('atb-zfw').value);
   const tow    = parseFloat($('weight').value); // from TO tab
 
+  /* TOW > 850 → F25 only */
+  const f30Blocked = !isNaN(tow) && tow > 850;
+  if (f30Blocked && atbFlap === 'F30') {
+    atbFlap = 'F25';
+  }
+  $('atb-f25').className = atbFlap === 'F25' ? 'tgl on' : 'tgl';
+  $('atb-f30').className = (atbFlap === 'F30' && !f30Blocked) ? 'tgl on' : 'tgl';
+  $('atb-f30').disabled  = f30Blocked;
+  $('atb-f30').style.opacity = f30Blocked ? '0.35' : '';
+
   if (isNaN(zfw)) {
     result.innerHTML = `<div class="atb-row"><span class="atb-label">ZFW を入力してください</span></div>`;
     return;
@@ -2741,22 +2772,34 @@ function atbCalc() {
     }
   }
 
-  /* ── 3. Reference Pitch & N1 (Landing Weight = ZFW + Fuel to Remain ≤ MLW) ── */
+  /* ── 3. VREF + Reference Pitch & N1 (Landing Weight = MLW) ── */
   const ldgW = Math.min(zfw + fuelToRemain, MLW);
-  const apprData = atbFlap === 'F25' ? APPR_DATA.f25 : APPR_DATA.f30;
-  const ws = apprData.map(d => d.w);
+  const vref       = calcVref(ldgW, atbFlap);
+  const apprData   = atbFlap === 'F25' ? APPR_DATA.f25 : APPR_DATA.f30;
+  const ws         = apprData.map(d => d.w);
   const pitchVref  = interp(ws, apprData.map(d => d.pitch[0]), ldgW);
   const pitchVref5 = interp(ws, apprData.map(d => d.pitch[1]), ldgW);
   const n1Vref     = interp(ws, apprData.map(d => d.n1[0]),   ldgW);
   const n1Vref5    = interp(ws, apprData.map(d => d.n1[1]),   ldgW);
 
   html += `<div class="atb-ref-hdr">Reference Pitch &amp; N1</div>`;
-  html += `<div class="atb-row" style="gap:6px">
+
+  /* VREF row */
+  const flapNote = f30Blocked ? `<span style="font-size:0.55rem;color:var(--warn);margin-left:6px">TOW>850 → F25 only</span>` : '';
+  html += `<div class="atb-row" style="border-color:rgba(0,200,255,0.35);background:rgba(0,200,255,0.06)">
     <div>
-      <div class="atb-label">Appr Flap ${atbFlap}</div>
-      <div class="atb-sub">Ldg Wt ${ldgW.toFixed(0)} × 1000 LB</div>
+      <div class="atb-label">VREF — Flap ${atbFlap}${flapNote}</div>
+      <div class="atb-sub">Ldg Wt ${ldgW.toFixed(0)} × 1000 LB  (10,000 ft Ref P.ALT)</div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:180px">
+    <div style="text-align:right">
+      <div class="atb-val" style="color:var(--accent)">${vref !== null ? vref : '—'} <span style="font-size:0.45em;color:var(--muted)">KIAS</span></div>
+    </div>
+  </div>`;
+
+  /* Pitch & N1 grid */
+  html += `<div class="atb-row" style="flex-direction:column;gap:6px;align-items:stretch">
+    <div style="font-size:0.52rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Pitch &amp; N1</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
         <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF</div>
         <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref !== null ? pitchVref.toFixed(1) : '—'}°</div>
