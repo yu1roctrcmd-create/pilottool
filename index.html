@@ -1683,7 +1683,8 @@ function toggleMagVar() {
 function onRwySelect() {
   const n = parseInt($('rwyNum').value);
   if (!isNaN(n) && n >= 1 && n <= 36) {
-    scrollXwindDrum('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
+    scrollXwindDrum('xd-rwyhdg',  'disp-xd-rwyhdg',  '°', n * 10);
+    scrollXwindDrum('xd-winddir', 'disp-xd-winddir', '°', n * 10);
   } else {
     calc();
   }
@@ -2252,7 +2253,8 @@ function ldgToggleMagVar() {
 function onLdgRwySelect() {
   const n = parseInt($('ldg-rwyNum').value);
   if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
-    scrollXwindDrum('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
+    scrollXwindDrum('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°', n * 10);
+    scrollXwindDrum('ldg-winddir', 'disp-ldg-winddir', '°', n * 10);
   } else {
     calcLdg();
   }
