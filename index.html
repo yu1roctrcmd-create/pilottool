@@ -455,6 +455,35 @@
       letter-spacing: 3px; min-height: 1.4em;
     }
 
+    /* ── QNH Reference Table ── */
+    .qnh-ref { margin-top: 14px; }
+    .qnh-ref summary {
+      font-size: 0.62rem; color: var(--accent); letter-spacing: 1px;
+      cursor: pointer; list-style: none; padding: 6px 0 4px;
+      border-top: 1px solid var(--border);
+    }
+    .qnh-ref summary::-webkit-details-marker { display: none; }
+    .qnh-ref summary::before { content: '▸ '; }
+    .qnh-ref[open] summary::before { content: '▾ '; }
+    .qnh-table-wrap { margin-top: 8px; overflow-x: auto; }
+    .qnh-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.72rem; font-variant-numeric: tabular-nums;
+    }
+    .qnh-table th {
+      padding: 5px 8px; background: var(--border);
+      color: var(--muted); font-weight: 600; letter-spacing: 0.5px;
+      text-align: center; white-space: nowrap;
+    }
+    .qnh-table td {
+      padding: 4px 8px; text-align: center;
+      border-bottom: 1px solid var(--border); color: var(--text);
+    }
+    .qnh-table tr.std td { background: rgba(0,200,255,0.08); color: var(--accent); font-weight: 700; }
+    .qnh-table td.pos { color: var(--green); font-weight: 600; }
+    .qnh-table td.neg { color: var(--error); font-weight: 600; }
+    .qnh-note { font-size: 0.62rem; color: var(--muted); margin-top: 8px; text-align: center; letter-spacing: 0.5px; }
+
     /* ── ATB Card ── */
     .atb-block { margin-bottom: 10px; }
     .atb-row { display: flex; justify-content: space-between; align-items: baseline;
@@ -970,6 +999,42 @@
       </select>
     </div>
   </div>
+
+  <!-- QNH → ΔH reference table -->
+  <details class="qnh-ref">
+    <summary>QNH → Pressure Altitude (ΔH) Reference</summary>
+    <div class="qnh-table-wrap">
+      <table class="qnh-table">
+        <thead>
+          <tr><th>QNH (inHg)</th><th>ΔH (ft)</th><th>hPa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>28.81〜28.90</td><td class="pos">+1000</td><td>976〜978</td></tr>
+          <tr><td>28.91〜29.01</td><td class="pos">+900</td><td>979〜982</td></tr>
+          <tr><td>29.02〜29.11</td><td class="pos">+800</td><td>983〜985</td></tr>
+          <tr><td>29.12〜29.22</td><td class="pos">+700</td><td>986〜989</td></tr>
+          <tr><td>29.23〜29.33</td><td class="pos">+600</td><td>990〜993</td></tr>
+          <tr><td>29.34〜29.43</td><td class="pos">+500</td><td>994〜996</td></tr>
+          <tr><td>29.44〜29.54</td><td class="pos">+400</td><td>997〜1000</td></tr>
+          <tr><td>29.55〜29.65</td><td class="pos">+300</td><td>1001〜1003</td></tr>
+          <tr><td>29.66〜29.75</td><td class="pos">+200</td><td>1004〜1007</td></tr>
+          <tr><td>29.76〜29.86</td><td class="pos">+100</td><td>1008〜1011</td></tr>
+          <tr class="std"><td>29.87〜29.96</td><td>0</td><td>1012〜1014</td></tr>
+          <tr><td>29.97〜30.07</td><td class="neg">−100</td><td>1015〜1018</td></tr>
+          <tr><td>30.08〜30.18</td><td class="neg">−200</td><td>1019〜1021</td></tr>
+          <tr><td>30.19〜30.29</td><td class="neg">−300</td><td>1022〜1025</td></tr>
+          <tr><td>30.30〜30.40</td><td class="neg">−400</td><td>1026〜1029</td></tr>
+          <tr><td>30.41〜30.51</td><td class="neg">−500</td><td>1030〜1033</td></tr>
+          <tr><td>30.52〜30.62</td><td class="neg">−600</td><td>1034〜1036</td></tr>
+          <tr><td>30.63〜30.73</td><td class="neg">−700</td><td>1037〜1040</td></tr>
+          <tr><td>30.74〜30.84</td><td class="neg">−800</td><td>1041〜1044</td></tr>
+          <tr><td>30.85〜30.95</td><td class="neg">−900</td><td>1045〜1047</td></tr>
+          <tr><td>30.96〜31.06</td><td class="neg">−1000</td><td>1048〜1051</td></tr>
+        </tbody>
+      </table>
+      <div class="qnh-note">PRESS. ALT. = FIELD ELEV. + ΔH</div>
+    </div>
+  </details>
 </div>
 
 <!-- Pitch result -->
