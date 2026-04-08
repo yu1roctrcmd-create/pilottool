@@ -1680,14 +1680,23 @@ function getXwLimit() {
 function toggleMagVar() {
   $('magVarGroup').style.display = $('windType').value === 'TRUE' ? 'block' : 'none';
 }
+function setDrumVal(colId, dispId, suffix, value) {
+  const colEl  = document.getElementById(colId);
+  const dispEl = document.getElementById(dispId);
+  if (!colEl || colEl._from === undefined) return;
+  const pad = colEl.children[0] ? colEl.children[0].textContent.length : 1;
+  colEl._skipNotify = true;
+  colEl.scrollTop = (value - colEl._from) * ITEM_H;
+  dispEl.textContent = String(value).padStart(pad, '0') + suffix;
+  requestAnimationFrame(() => { colEl._skipNotify = false; });
+}
 function onRwySelect() {
   const n = parseInt($('rwyNum').value);
   if (!isNaN(n) && n >= 1 && n <= 36) {
-    scrollXwindDrum('xd-rwyhdg',  'disp-xd-rwyhdg',  '°', n * 10);
-    scrollXwindDrum('xd-winddir', 'disp-xd-winddir', '°', n * 10);
-  } else {
-    calc();
+    setDrumVal('xd-rwyhdg',  'disp-xd-rwyhdg',  '°', n * 10);
+    setDrumVal('xd-winddir', 'disp-xd-winddir', '°', n * 10);
   }
+  calc();
 }
 function onCondChange() {
   const cond = getCond();
@@ -2253,11 +2262,10 @@ function ldgToggleMagVar() {
 function onLdgRwySelect() {
   const n = parseInt($('ldg-rwyNum').value);
   if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
-    scrollXwindDrum('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°', n * 10);
-    scrollXwindDrum('ldg-winddir', 'disp-ldg-winddir', '°', n * 10);
-  } else {
-    calcLdg();
+    setDrumVal('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°', n * 10);
+    setDrumVal('ldg-winddir', 'disp-ldg-winddir', '°', n * 10);
   }
+  calcLdg();
 }
 function getLdgCond()   { return RWY_COND.find(c => c.key === $('ldg-rwyCond').value) || null; }
 function getXwLimitLdg() {
