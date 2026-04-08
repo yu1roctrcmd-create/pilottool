@@ -1090,8 +1090,8 @@
     <div class="fg">
       <label>Appr Flap (Ref N1)</label>
       <div class="tgl-group">
-        <button id="atb-f25" class="tgl" onclick="setAtbFlap('F25')">F25</button>
-        <button id="atb-f30" class="tgl on" onclick="setAtbFlap('F30')">F30</button>
+        <button id="atb-f25" class="tgl on" onclick="setAtbFlap('F25')">F25</button>
+        <button id="atb-f30" class="tgl"    onclick="setAtbFlap('F30')">F30</button>
       </div>
     </div>
   </div>
@@ -1244,8 +1244,8 @@
   <div class="fg">
     <label>Landing Flaps</label>
     <div class="tgl-group">
-      <button id="ldg-btnF25" class="tgl"    onclick="setApprFlapLdg('F25')">F25</button>
-      <button id="ldg-btnF30" class="tgl on" onclick="setApprFlapLdg('F30')">F30</button>
+      <button id="ldg-btnF25" class="tgl on" onclick="setApprFlapLdg('F25')">F25</button>
+      <button id="ldg-btnF30" class="tgl"    onclick="setApprFlapLdg('F30')">F30</button>
     </div>
   </div>
 </div>
@@ -2662,7 +2662,7 @@ function dumpTimeInterp(fuelDump, key) {
   return null;
 }
 
-let atbFlap = 'F30';
+let atbFlap = 'F25';
 function setAtbFlap(v) {
   atbFlap = v;
   $('atb-f25').className = v === 'F25' ? 'tgl on' : 'tgl';
@@ -3462,7 +3462,7 @@ flapSpdCalc();
   }
 })();
 ldgToggleMagVar();
-setApprFlapLdg('F30');
+setApprFlapLdg('F25');
 apprCalcLdg();
 ldgFlapSpdCalc();
 
