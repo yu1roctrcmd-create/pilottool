@@ -455,6 +455,30 @@
       letter-spacing: 3px; min-height: 1.4em;
     }
 
+    /* ── ATB Card ── */
+    .atb-block { margin-bottom: 10px; }
+    .atb-row { display: flex; justify-content: space-between; align-items: baseline;
+               padding: 10px 14px; border-radius: 8px;
+               background: var(--card); border: 1px solid var(--border);
+               margin-bottom: 6px; }
+    .atb-label { font-size: 0.6rem; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .atb-val   { font-size: 1.5em; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .atb-sub   { font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+    .atb-dump-hdr { font-size: 0.55rem; color: var(--gold); letter-spacing: 2px;
+                    text-transform: uppercase; margin: 12px 0 6px;
+                    display: flex; align-items: center; gap: 8px; }
+    .atb-dump-hdr::before, .atb-dump-hdr::after { content:''; flex:1; height:1px; background: rgba(255,209,102,0.25); }
+    .atb-pump-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+    .atb-pump-cell { background: var(--card); border: 1px solid var(--border);
+                     border-radius: 8px; padding: 10px 6px; text-align: center; }
+    .atb-pump-name { font-size: 0.52rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .atb-pump-min  { font-size: 1.6em; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+    .atb-pump-unit { font-size: 0.55rem; color: var(--muted); margin-top: 2px; }
+    .atb-ref-hdr   { font-size: 0.55rem; color: var(--accent); letter-spacing: 2px;
+                     text-transform: uppercase; margin: 12px 0 6px;
+                     display: flex; align-items: center; gap: 8px; }
+    .atb-ref-hdr::before, .atb-ref-hdr::after { content:''; flex:1; height:1px; background: rgba(0,200,255,0.2); }
+
     /* Crew order */
     .crew-order-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
     .crew-slot      { flex: 1; min-width: 100px; }
@@ -1050,6 +1074,31 @@
   <li>Interpolation applied between table values</li>
   <li>Flap Maneuvering Speed — Sea Level P.ALT 値</li>
 </ul>
+
+<!-- ── Section divider ── -->
+<div class="sec-div"><span>ATB Reference</span></div>
+
+<!-- ATB: Inputs -->
+<div class="card">
+  <div class="card-title">ATB — Return to Base</div>
+  <div class="row2">
+    <div class="fg">
+      <label>ZFW (× 1000 LB)</label>
+      <input type="number" id="atb-zfw" value="" step="1" inputmode="decimal"
+             placeholder="e.g. 500" oninput="atbCalc()">
+    </div>
+    <div class="fg">
+      <label>Appr Flap (Ref N1)</label>
+      <div class="tgl-group">
+        <button id="atb-f25" class="tgl" onclick="setAtbFlap('F25')">F25</button>
+        <button id="atb-f30" class="tgl on" onclick="setAtbFlap('F30')">F30</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ATB: Results -->
+<div id="atb-result"></div>
 
 </div><!-- /xw-col right -->
 </div><!-- /xw-layout -->
@@ -2575,6 +2624,156 @@ function apprCalcLdg() {
   });
   html += `</div>`;
   grid.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════
+   ATB — AIR TURN BACK REFERENCE
+══════════════════════════════════════════ */
+const MLW = 763; // × 1000 LB
+
+/* Fuel Dump Time table (image) */
+const DUMP_TABLE = [
+  { fuel: 20,  p2: 18,  p4: 6,  p6: 5  },
+  { fuel: 40,  p2: 36,  p4: 12, p6: 9  },
+  { fuel: 60,  p2: 54,  p4: 17, p6: 13 },
+  { fuel: 80,  p2: 72,  p4: 23, p6: 18 },
+  { fuel: 100, p2: 90,  p4: 29, p6: 22 },
+  { fuel: 120, p2: 108, p4: 34, p6: 26 },
+  { fuel: 140, p2: 126, p4: 40, p6: 30 },
+  { fuel: 160, p2: 144, p4: 46, p6: 35 },
+  { fuel: 180, p2: 162, p4: 51, p6: 39 },
+  { fuel: 200, p2: 180, p4: 57, p6: 43 },
+  { fuel: 220, p2: 198, p4: 63, p6: 48 },
+  { fuel: 240, p2: 215, p4: 68, p6: 52 },
+  { fuel: 260, p2: 233, p4: 74, p6: 56 },
+];
+
+function dumpTimeInterp(fuelDump, key) {
+  if (fuelDump <= 0) return 0;
+  const rows = DUMP_TABLE;
+  if (fuelDump <= rows[0].fuel) return rows[0][key];
+  if (fuelDump >= rows[rows.length-1].fuel) return rows[rows.length-1][key];
+  for (let i = 0; i < rows.length - 1; i++) {
+    if (fuelDump >= rows[i].fuel && fuelDump <= rows[i+1].fuel) {
+      const t = (fuelDump - rows[i].fuel) / (rows[i+1].fuel - rows[i].fuel);
+      return Math.round(rows[i][key] + t * (rows[i+1][key] - rows[i][key]));
+    }
+  }
+  return null;
+}
+
+let atbFlap = 'F30';
+function setAtbFlap(v) {
+  atbFlap = v;
+  $('atb-f25').className = v === 'F25' ? 'tgl on' : 'tgl';
+  $('atb-f30').className = v === 'F30' ? 'tgl on' : 'tgl';
+  atbCalc();
+}
+
+function atbCalc() {
+  const result = $('atb-result');
+  const zfw    = parseFloat($('atb-zfw').value);
+  const tow    = parseFloat($('weight').value); // from TO tab
+
+  if (isNaN(zfw)) {
+    result.innerHTML = `<div class="atb-row"><span class="atb-label">ZFW を入力してください</span></div>`;
+    return;
+  }
+
+  const fuelToRemain = MLW - zfw;
+  const fob          = !isNaN(tow) ? tow - zfw : null;
+  const fuelToDump   = fob !== null ? Math.max(0, fob - fuelToRemain) : null;
+
+  /* ── 1. Fuel to Remain ── */
+  let html = `<div class="atb-block">`;
+  html += `<div class="atb-row">
+    <div><div class="atb-label">Fuel to Remain</div>
+         <div class="atb-sub">MLW 763 − ZFW ${zfw}</div></div>
+    <div style="text-align:right">
+      <div class="atb-val" style="color:var(--accent)">${fuelToRemain.toFixed(0)} <span style="font-size:0.45em;color:var(--muted)">× 1000 LB</span></div>
+    </div>
+  </div>`;
+
+  /* ── 2. Fuel Dump ── */
+  if (fob !== null) {
+    html += `<div class="atb-dump-hdr">Fuel Dump</div>`;
+    html += `<div class="atb-row">
+      <div><div class="atb-label">FOB at Takeoff</div>
+           <div class="atb-sub">TOW ${tow} − ZFW ${zfw}</div></div>
+      <div style="text-align:right">
+        <div class="atb-val">${fob.toFixed(0)} <span style="font-size:0.45em;color:var(--muted)">× 1000 LB</span></div>
+      </div>
+    </div>`;
+
+    if (fuelToDump > 0) {
+      html += `<div class="atb-row" style="border-color:rgba(255,209,102,0.4);background:rgba(255,209,102,0.06)">
+        <div><div class="atb-label">Fuel to Dump</div>
+             <div class="atb-sub">FOB ${fob.toFixed(0)} − Remain ${fuelToRemain.toFixed(0)}</div></div>
+        <div style="text-align:right">
+          <div class="atb-val" style="color:var(--gold)">${fuelToDump.toFixed(0)} <span style="font-size:0.45em;color:var(--muted)">× 1000 LB</span></div>
+        </div>
+      </div>`;
+
+      const p2 = dumpTimeInterp(fuelToDump, 'p2');
+      const p4 = dumpTimeInterp(fuelToDump, 'p4');
+      const p6 = dumpTimeInterp(fuelToDump, 'p6');
+      html += `<div class="atb-pump-grid">
+        <div class="atb-pump-cell">
+          <div class="atb-pump-name">2 Pumps<br>1,110 LB/min</div>
+          <div class="atb-pump-min">${p2}</div>
+          <div class="atb-pump-unit">MIN</div>
+        </div>
+        <div class="atb-pump-cell">
+          <div class="atb-pump-name">4 Pumps<br>3,530 LB/min</div>
+          <div class="atb-pump-min">${p4}</div>
+          <div class="atb-pump-unit">MIN</div>
+        </div>
+        <div class="atb-pump-cell">
+          <div class="atb-pump-name">6 Pumps<br>4,660 LB/min</div>
+          <div class="atb-pump-min">${p6}</div>
+          <div class="atb-pump-unit">MIN</div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="atb-row" style="border-color:rgba(0,230,152,0.3);background:rgba(0,230,152,0.05)">
+        <div class="atb-label" style="color:var(--green)">Dump 不要 — FOB ≤ MLW weight limit</div>
+      </div>`;
+    }
+  }
+
+  /* ── 3. Reference Pitch & N1 (Landing Weight = ZFW + Fuel to Remain ≤ MLW) ── */
+  const ldgW = Math.min(zfw + fuelToRemain, MLW);
+  const apprData = atbFlap === 'F25' ? APPR_DATA.f25 : APPR_DATA.f30;
+  const ws = apprData.map(d => d.w);
+  const pitchVref  = interp(ws, apprData.map(d => d.pitch[0]), ldgW);
+  const pitchVref5 = interp(ws, apprData.map(d => d.pitch[1]), ldgW);
+  const n1Vref     = interp(ws, apprData.map(d => d.n1[0]),   ldgW);
+  const n1Vref5    = interp(ws, apprData.map(d => d.n1[1]),   ldgW);
+
+  html += `<div class="atb-ref-hdr">Reference Pitch &amp; N1</div>`;
+  html += `<div class="atb-row" style="gap:6px">
+    <div>
+      <div class="atb-label">Appr Flap ${atbFlap}</div>
+      <div class="atb-sub">Ldg Wt ${ldgW.toFixed(0)} × 1000 LB</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:180px">
+      <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+        <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF</div>
+        <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref !== null ? pitchVref.toFixed(1) : '—'}°</div>
+        <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${n1Vref !== null ? n1Vref.toFixed(1) : '—'}%</div>
+        <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+      </div>
+      <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+        <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+5</div>
+        <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref5 !== null ? pitchVref5.toFixed(1) : '—'}°</div>
+        <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${n1Vref5 !== null ? n1Vref5.toFixed(1) : '—'}%</div>
+        <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+      </div>
+    </div>
+  </div>`;
+
+  html += `</div>`;
+  result.innerHTML = html;
 }
 
 /* ── LDG Flap Maneuvering Speed ── */
