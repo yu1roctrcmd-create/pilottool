@@ -1261,8 +1261,8 @@
     <div class="fg">
       <label>Auto Throttle</label>
       <div class="tgl-group">
-        <button id="ldg-btnAtOn"  class="tgl on-green" onclick="setAtLdg(true)">ON</button>
-        <button id="ldg-btnAtOff" class="tgl"          onclick="setAtLdg(false)">OFF</button>
+        <button id="ldg-btnAtOn"  class="tgl"    onclick="setAtLdg(true)">ON</button>
+        <button id="ldg-btnAtOff" class="tgl on" onclick="setAtLdg(false)">OFF</button>
       </div>
     </div>
   </div>
@@ -2180,8 +2180,8 @@ function flapSpdCalc() {
 ══════════════════════════════════════════ */
 let ldgLen        = 'LONG';
 let ldgAutoland   = false;
-let ldgAtEngaged  = true;
-let ldgApprFlap   = 'F30';
+let ldgAtEngaged  = false;
+let ldgApprFlap   = 'F25';
 let twLimitLdg    = 10;
 let _ldgDrumReady = false;
 let _ldgLastTarget = null;
