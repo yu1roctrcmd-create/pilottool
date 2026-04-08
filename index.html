@@ -1633,6 +1633,12 @@
   </p>
 </div>
 
+<!-- FT Limit -->
+<div class="card" style="margin-top:16px">
+  <div class="card-title">Flight Time Limit (表 8-7-1)</div>
+  <div id="ft-result"><span style="font-size:0.8em;color:var(--muted)">FDP の Report Time と Crew 編成を入力してください</span></div>
+</div>
+
 </div><!-- /tab-content -->
 </div><!-- /tab-crew -->
 
@@ -3577,6 +3583,123 @@ function fdpCalc() {
     <p class="fdp-ext-note">
       ★ 離陸後発生の場合：適切な空港到達まで延長可（時間制限なし）<br>
       ★ 延長する時間は最小限となるよう努めること（機長判断）
+    </p>`;
+
+  ftCalc();
+}
+
+/* ══════════════════════════════════════════
+   FLIGHT TIME LIMIT (表 8-7-1)
+══════════════════════════════════════════ */
+function getFtLimit(localHour, crew) {
+  /* 2-crew: (  ) = reduced limit when short-haul / single-sector not applicable here
+     We show the standard value only */
+  if (crew === 2) {
+    return (localHour >= 5 && localHour <= 16) ? 10 * 60 : 9 * 60;
+  } else if (crew === 3) {
+    return 15 * 60;
+  } else {
+    return 17 * 60;
+  }
+}
+
+function ftCalc() {
+  const el = $('ft-result');
+  if (!el) return;
+
+  const timeVal = $('fdp-report').value;
+  if (!timeVal) { el.innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Report Time を入力してください</span>'; return; }
+
+  const [hStr, mStr] = timeVal.split(':');
+  const reportUtcMin = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+
+  const dateVal    = $('fdp-date').value;
+  const flightDate = dateVal ? new Date(dateVal + 'T12:00:00') : new Date();
+  const tz         = $('fdp-airport').value;
+  if (!tz) { el.innerHTML = '<span style="font-size:0.8em;color:var(--muted)">Airport を選択してください</span>'; return; }
+
+  const utcOffMin    = getUtcOffsetMin(tz, flightDate);
+  const reportLocalRaw = reportUtcMin + utcOffMin;
+  const localNorm    = ((reportLocalRaw % 1440) + 1440) % 1440;
+  const localHour    = Math.floor(localNorm / 60);
+
+  const fltH   = parseInt($('fdp-flt-h').value) || 0;
+  const fltM   = parseInt($('fdp-flt-m').value) || 0;
+  const taxH   = parseInt($('fdp-tax-h').value) || 0;
+  const taxM   = parseInt($('fdp-tax-m').value) || 0;
+  const txoH   = parseInt($('fdp-txo-h').value) || 0;
+  const txoM   = parseInt($('fdp-txo-m').value) || 0;
+  const fltMin = fltH * 60 + fltM;
+  const taxMin = taxH * 60 + taxM;
+  const txoMin = txoH * 60 + txoM;
+  const totalBlockMin = txoMin + fltMin + taxMin;
+
+  const ftLimitMin = getFtLimit(localHour, fdpCrew);
+  const marginMin  = ftLimitMin - totalBlockMin;
+
+  const bandLbl = (localHour >= 5 && localHour <= 16) ? '05:00〜16:59 L' : (localHour <= 4 ? '00:00〜04:59 L' : '17:00〜23:59 L');
+  const crewLbl = fdpCrew === 2 ? '2 Crew' : `${fdpCrew} Crew`;
+
+  function hhmm(min) {
+    const h = Math.floor(Math.abs(min) / 60), m = Math.abs(min) % 60;
+    return `${h}+${String(m).padStart(2,'0')}`;
+  }
+
+  const marginColor = marginMin < 0 ? 'var(--error)' : marginMin < 30 ? 'var(--warn)' : 'var(--green)';
+  const marginSign  = marginMin < 0 ? '−' : '';
+
+  el.innerHTML = `
+    <div class="fdp-box" style="margin-bottom:8px">
+      <div class="fdp-row"><span class="fdp-lbl">Crew / Band</span>
+        <span style="font-weight:700">${crewLbl} / ${bandLbl}</span></div>
+      <div class="fdp-row"><span class="fdp-lbl">FT Limit (表 8-7-1)</span>
+        <span style="font-weight:700;color:var(--gold)">${hhmm(ftLimitMin)}</span></div>
+    </div>
+    <div class="fdp-lims">
+      <div class="fdp-lim">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Taxi Out</div>
+        </div>
+        <div style="font-size:1.2em;font-weight:700;font-variant-numeric:tabular-nums">${hhmm(txoMin)}</div>
+      </div>
+      <div class="fdp-lim">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Flight Time</div>
+        </div>
+        <div style="font-size:1.2em;font-weight:700;font-variant-numeric:tabular-nums">${hhmm(fltMin)}</div>
+      </div>
+      <div class="fdp-lim">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Taxi In</div>
+        </div>
+        <div style="font-size:1.2em;font-weight:700;font-variant-numeric:tabular-nums">${hhmm(taxMin)}</div>
+      </div>
+      <div class="fdp-lim" style="border-color:rgba(0,200,255,0.3);background:rgba(0,200,255,0.05)">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">Total Block</div>
+          <div class="fdp-lim-sub">Taxi Out + FT + Taxi In</div>
+        </div>
+        <div style="font-size:1.4em;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${hhmm(totalBlockMin)}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:14px 16px;border-radius:10px;border:1px solid ${marginColor};background:${marginColor}18;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:0.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">FT Margin</div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:2px">Limit ${hhmm(ftLimitMin)} − Block ${hhmm(totalBlockMin)}</div>
+      </div>
+      <div style="font-size:2em;font-weight:700;color:${marginColor};font-variant-numeric:tabular-nums">${marginSign}${hhmm(Math.abs(marginMin))}</div>
+    </div>
+    ${marginMin >= 0
+      ? `<p style="font-size:0.62rem;color:var(--muted);margin-top:8px;line-height:1.6">
+          FT margin は <strong style="color:${marginColor}">${marginSign}${hhmm(Math.abs(marginMin))}</strong>。
+          出発地での Taxi time がこれを超える場合は GTB を検討。
+         </p>`
+      : `<p style="font-size:0.62rem;color:var(--error);margin-top:8px;line-height:1.6">
+          ⚠ FT Limit 超過 — GTB または運航計画を見直してください。
+         </p>`
+    }
+    <p style="font-size:0.55rem;color:#2a4060;margin-top:6px;line-height:1.6">
+      ★ 2 Crew ( ) 内は回転翼航空機等の短距離運航時の値。固定翼長距離は括弧外の値を適用。
     </p>`;
 }
 
