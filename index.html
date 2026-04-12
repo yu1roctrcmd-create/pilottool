@@ -170,6 +170,23 @@
     body.day .fdp-lim-day     { color: var(--muted); }
     body.day .fdp-ext-note    { color: var(--muted); }
     /* Drum pickers */
+    body.day .tgl.on        { color: #fff; }
+    body.day .tgl.on-green  { color: #fff; }
+    body.day .tgl.on-purple { color: #fff; }
+    /* Gantt segments */
+    body.day .seg-buffer    { background: #ddd8d0; color: var(--muted); }
+    body.day .seg-duty      { background: #d4cec5; color: var(--muted); }
+    /* result-card (wind diagram + pitch) */
+    body.day .result-card   { background: #faf8f4 !important; }
+    body.day .result-card::after { display: none; }
+    /* comp-val idle/zero */
+    body.day .comp-val.zero { color: var(--muted); }
+    body.day .comp-val.idle { color: var(--muted); }
+    body.day .res-val.idle  { color: var(--muted); }
+    /* footnote / misc dark text */
+    body.day .fdp-lim-sub   { color: var(--muted); }
+    body.day .fdp-ext-note  { color: var(--muted); }
+    body.day .sec-div span  { color: var(--muted); }
     body.day .drum            { background: #ece8e0; border-color: var(--border); }
     body.day .drum::before    { background: linear-gradient(to bottom, #f2ede5, rgba(242,237,229,0.85) 50%, transparent); }
     body.day .drum::after     { background: linear-gradient(to top,   #f2ede5, rgba(242,237,229,0.85) 50%, transparent); }
@@ -237,7 +254,7 @@
       text-transform: uppercase; font-weight: 500;
     }
     select, input[type="number"] {
-      width: 100%; background: #060d16; border: 1px solid var(--border);
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); padding: 10px 12px;
       font-family: inherit; font-size: 0.95em;
       -webkit-appearance: none; appearance: none; transition: border-color 0.15s;
@@ -252,7 +269,7 @@
     /* ── TOGGLE BUTTON GROUP ── */
     .tgl-group { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
     .tgl {
-      flex: 1; padding: 10px 8px; background: #060d16; border: none; color: var(--muted);
+      flex: 1; padding: 10px 8px; background: var(--bg); border: none; color: var(--muted);
       font-family: inherit; font-size: 0.88em; font-weight: 600; cursor: pointer;
       letter-spacing: 1px; transition: all 0.15s; border-right: 1px solid var(--border);
     }
@@ -264,7 +281,7 @@
     /* ── XW LIMIT BOX ── */
     .xwl-box {
       display: flex; align-items: center; justify-content: space-between;
-      background: #060d16; border: 1px solid var(--accent); border-radius: 8px;
+      background: var(--bg); border: 1px solid var(--accent); border-radius: 8px;
       padding: 10px 16px; margin-top: 10px;
     }
     .xwl-left  { display: flex; flex-direction: column; gap: 2px; }
@@ -276,14 +293,14 @@
 
     /* ── FORMULA BOX ── */
     .formula-box {
-      background: #060d16; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
       padding: 10px 14px; font-size: 0.82em; color: var(--muted); line-height: 1.8;
     }
     .formula-box .big { font-size: 1.15em; font-weight: 700; color: var(--accent); }
 
     /* ── RESULT CARD ── */
     .result-card {
-      background: linear-gradient(160deg, #070f1c 0%, #0a1828 100%);
+      background: var(--card);
       border: 1px solid var(--border); border-radius: var(--radius);
       padding: 16px; margin-bottom: 12px; position: relative;
     }
@@ -295,20 +312,20 @@
     /* ── WIND STRIP (input summary inside result-card) ── */
     .wind-strip {
       display: flex; align-items: center; justify-content: space-around;
-      background: #060d16; border: 1px solid #1a3055; border-radius: 9px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
       padding: 10px 8px; margin-bottom: 14px; gap: 4px;
     }
     .ws-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
     .ws-lbl  { font-size: 0.52rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1.2px; }
     .ws-val  { font-size: 1.05rem; font-weight: 700; color: #d4e4ff; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; white-space: nowrap; }
     .ws-val.ws-accent { color: #00c8ff; }
-    .ws-divider { width: 1px; height: 34px; background: #1a3055; flex-shrink: 0; }
+    .ws-divider { width: 1px; height: 34px; background: var(--border); flex-shrink: 0; }
 
     /* ── CROSSWIND FAN TABLE ── */
     .xwft-sub  { font-size: 0.6rem; color: var(--muted); text-align: center; letter-spacing: 1px; margin-bottom: 8px; }
     .xwft-hdr  { display: flex; justify-content: space-between; font-size: 0.58rem; color: #4a6a99; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; padding: 0 2px; }
     .xwft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-    .xwft-cell { background: #060d16; border: 1px solid #1a3055; border-radius: 5px; padding: 5px 4px; text-align: center; }
+    .xwft-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 4px; text-align: center; }
     .xwft-d    { font-size: 0.62rem; color: #4a6a99; letter-spacing: 0.8px; }
     .xwft-s    { font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
     .xwft-u    { font-size: 0.55rem; font-weight: 400; color: var(--muted); }
@@ -327,7 +344,7 @@
 
     /* ── COMPONENT GRID ── */
     .comp3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-    .comp-item  { background: #060d16; border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; }
+    .comp-item  { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; }
     .comp-label { font-size: 0.55em; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
     .comp-val   { font-size: 1.9em; font-weight: 700; letter-spacing: 0.5px; line-height: 1; color: #1a3050; transition: color 0.2s; }
     .comp-val.head  { color: var(--green); }
@@ -371,7 +388,7 @@
 
     /* ── FLAP MANEUVER SPEED ── */
     .fms-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 4px; }
-    .fms-cell { background: #060d16; border: 1px solid #1a3055; border-radius: 5px; padding: 7px 3px; text-align: center; }
+    .fms-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 7px 3px; text-align: center; }
     .fms-lbl  { font-size: 0.55rem; color: #4a6a99; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 3px; }
     .fms-val  { font-size: 1.0rem; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
     .fms-unit { font-size: 0.48rem; color: var(--muted); margin-top: 1px; }
@@ -382,7 +399,7 @@
       margin: 16px 0 14px;
     }
     .sec-div::before, .sec-div::after {
-      content: ''; flex: 1; height: 1px; background: #1a3055;
+      content: ''; flex: 1; height: 1px; background: var(--border);
     }
     .sec-div span {
       font-size: 0.56em; color: #2a4a70; letter-spacing: 2px;
@@ -396,8 +413,8 @@
     /* ══════════════════════════════════════════
        CREW TAB
     ══════════════════════════════════════════ */
-    #tab-crew .tab-content { max-width: 860px; background: #070c18; color: #d4e4ff; }
-    #tab-crew .card        { background: #0f1829; border: 1px solid #1a3055; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+    #tab-crew .tab-content { max-width: 860px; background: var(--bg); color: var(--text); }
+    #tab-crew .card        { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
     #tab-crew .card-title  { font-size: 0.75rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #4a6a99; margin-bottom: 18px; }
 
     .crew-hdr { text-align: center; margin-bottom: 32px; }
@@ -410,7 +427,7 @@
     .picker-group-label { font-size: 0.75rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
     .drum {
       position: relative; height: 220px;
-      background: #070c18; border: 1px solid #1a3055;
+      background: var(--bg); border: 1px solid var(--border);
       border-radius: 14px; overflow: hidden;
       display: flex; align-items: stretch;
     }
@@ -512,10 +529,10 @@
     .crew-order-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
     .crew-slot      { flex: 1; min-width: 100px; }
     .crew-slot-label { font-size: 0.68rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; text-align: center; }
-    .crew-slot-num  { font-size: 0.55rem; background: #1a3055; color: #4a6a99; border-radius: 3px; padding: 1px 5px; margin-right: 4px; }
+    .crew-slot-num  { font-size: 0.55rem; background: var(--border); color: var(--muted); border-radius: 3px; padding: 1px 5px; margin-right: 4px; }
     .crew-select {
-      width: 100%; background: #070c18; border: 1px solid #1a3055;
-      border-radius: 10px; color: #d4e4ff; font-size: 1.25rem; font-weight: 700;
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 1.25rem; font-weight: 700;
       letter-spacing: 2px; padding: 10px; outline: none; text-align: center;
       -webkit-appearance: none; appearance: none; cursor: pointer; transition: border-color 0.15s;
     }
@@ -537,7 +554,7 @@
 
     /* Summary */
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .summary-item { background: #0f1829; border: 1px solid #1a3055; border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .summary-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
     .s-label { font-size: 0.7rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
     .s-value { font-size: 1.4rem; font-weight: 700; color: #60a5fa; font-variant-numeric: tabular-nums; }
     .s-sub   { font-size: 0.7rem; color: #4a6a99; margin-top: 2px; }
@@ -547,7 +564,7 @@
     .gantt { min-width: 500px; padding-bottom: 4px; }
     .g-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
     .g-label    { width: 48px; font-size: 0.85rem; font-weight: 700; text-align: right; flex-shrink: 0; }
-    .g-bar-wrap { flex: 1; position: relative; height: 38px; background: #070c18; border-radius: 6px; }
+    .g-bar-wrap { flex: 1; position: relative; height: 38px; background: var(--bg); border-radius: 6px; }
     .g-seg { position: absolute; top: 0; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; overflow: hidden; }
     .g-seg:first-child { border-radius: 6px 0 0 6px; }
     .g-seg:last-child  { border-radius: 0 6px 6px 0; }
@@ -582,10 +599,10 @@
     .xd-drum-solo { max-width: 130px; margin: 0 auto; }
 
     /* ── TAS result box ── */
-    .tas-box { background: #060d16; border: 1px solid #1a3055; border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
+    .tas-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
     .tas-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 0.82em; }
     .tas-lbl { color: var(--muted); }
-    .tas-target { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a3055; text-align: center; }
+    .tas-target { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); text-align: center; }
     .tas-target-lbl  { font-size: 0.55rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
     .tas-target-val  { font-size: 2.8em; font-weight: 700; color: #00e5ff; line-height: 1; }
     .tas-target-unit { font-size: 0.65rem; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
@@ -595,7 +612,7 @@
     .appr-hdr  { font-size: 0.52rem; color: #4a6a99; letter-spacing: 0.3px; text-align: center; padding: 5px 2px; border-radius: 5px; }
     .appr-hdr.appr-cur { background: rgba(0,229,255,0.1); border: 1px solid #00e5ff; color: #00e5ff; }
     .appr-lbl  { font-size: 0.48rem; color: #4a6a99; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; white-space: nowrap; }
-    .appr-cell { background: #060d16; border: 1px solid #1a3055; border-radius: 5px; padding: 7px 3px; text-align: center; }
+    .appr-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 7px 3px; text-align: center; }
     .appr-cell.appr-cur { border-color: #00e5ff; background: rgba(0,229,255,0.08); }
     .appr-val  { font-size: 0.95rem; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
     .appr-cell.appr-cur .appr-val { color: #00e5ff; }
@@ -603,13 +620,13 @@
 
     /* ── FDP Calculator ── */
     input[type="time"], input[type="date"] {
-      width: 100%; background: #060d16; border: 1px solid var(--border);
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); padding: 10px 12px;
       font-family: inherit; font-size: 0.95em; -webkit-appearance: none; appearance: none;
       outline: none; transition: border-color 0.15s;
     }
     input[type="time"]:focus, input[type="date"]:focus { border-color: var(--accent); }
-    .fdp-box { background: #060d16; border: 1px solid #1a3055; border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
+    .fdp-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 10px; }
     .fdp-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 0.85em; }
     .fdp-lbl { color: var(--muted); }
     .fdp-end { text-align: center; margin-top: 10px; padding: 12px 8px; background: rgba(255,209,102,0.07); border: 1px solid rgba(255,209,102,0.25); border-radius: 8px; }
@@ -621,7 +638,7 @@
     .dur-input input { flex: 1; }
     /* FDP limit rows */
     .fdp-lims { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-    .fdp-lim  { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 8px; background: #060d16; border: 1px solid #1a3055; }
+    .fdp-lim  { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); }
     .fdp-lim.fdp-lim-tof { border-color: rgba(0,230,152,0.4); background: rgba(0,230,152,0.06); }
     .fdp-lim.fdp-lim-ldg { border-color: rgba(255,140,66,0.35); background: rgba(255,140,66,0.06); }
     .fdp-lim.fdp-lim-blk { border-color: rgba(255,209,102,0.3); }
@@ -637,8 +654,8 @@
 
     /* Table */
     .rest-table { width: 100%; border-collapse: collapse; }
-    .rest-table th { background: #070c18; padding: 9px 14px; text-align: left; font-size: 0.7rem; color: #4a6a99; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #1a3055; }
-    .rest-table td { padding: 12px 14px; border-bottom: 1px solid #0c1525; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+    .rest-table th { background: var(--bg); padding: 9px 14px; text-align: left; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+    .rest-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
     .rest-table tr:last-child td { border-bottom: none; }
     .c-cap { color: #60a5fa; font-weight: 700; }
     .c-cop { color: #34d399; font-weight: 700; }
@@ -650,9 +667,9 @@
     .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
     /* Segmented control (crew buffer) */
-    .seg-ctrl { display: flex; background: #070c18; border: 1px solid #1a3055; border-radius: 10px; padding: 3px; gap: 3px; }
-    .seg-btn  { flex: 1; padding: 9px 6px; background: transparent; border: none; border-radius: 7px; color: #4a6a99; font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-    .seg-btn.active { background: #1a3055; color: #60a5fa; }
+    .seg-ctrl { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 3px; }
+    .seg-btn  { flex: 1; padding: 9px 6px; background: transparent; border: none; border-radius: 7px; color: var(--muted); font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .seg-btn.active { background: var(--border); color: var(--accent); }
 
     /* Gantt half-duration dotted line */
     .g-half-line {
@@ -825,6 +842,7 @@
 <div class="tab-bar" id="main-tab-bar">
   <button class="tab-btn active" onclick="switchTab('to',this)">TO</button>
   <button class="tab-btn"        onclick="switchTab('ldg',this)">LDG</button>
+  <button class="tab-btn"        onclick="switchTab('crz',this)">CRZ</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
@@ -969,7 +987,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc()">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc()">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -989,7 +1007,7 @@
   <div class="row2">
     <div class="fg">
       <label>Pressure Altitude (FT)</label>
-      <input type="number" id="palt" value="0" step="100" inputmode="numeric" oninput="pitchCalc()">
+      <input type="number" id="palt" value="0" step="100" inputmode="numeric" oninput="pitchCalc(); cgCalc(); gaCalc()">
     </div>
     <div class="fg">
       <label>Air Conditioning</label>
@@ -1168,6 +1186,38 @@
 </div><!-- /xw-col right -->
 </div><!-- /xw-layout -->
 
+<!-- ── Climb Gradient ── -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Climb Gradient (OI.1.3–OI.1.11)</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Engine Config</label>
+      <div class="tgl-group">
+        <button class="tgl on" id="cg-eng4-btn" onclick="setCgEng(4)">4 ENG</button>
+        <button class="tgl"    id="cg-eng1-btn" onclick="setCgEng(1)">1 ENG INOP</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>OAT (°C) <span style="font-size:0.8em;opacity:0.65">— Temp Correction</span></label>
+      <input type="number" id="cg-oat" step="1" inputmode="numeric" placeholder="e.g. 25" oninput="cgCalc()">
+    </div>
+  </div>
+  <div class="fg" style="margin-top:8px">
+    <label>V2 (KIAS) <span style="font-size:0.8em;opacity:0.65">— Required ROC 計算用</span></label>
+    <input type="number" id="cg-v2" step="1" min="100" max="200" inputmode="numeric" placeholder="e.g. 155" oninput="cgCalc()">
+  </div>
+  <div class="fg" style="margin-top:8px">
+    <label>Rating / Flap</label>
+    <div class="tgl-group" id="cg-sel"></div>
+  </div>
+  <div id="cg-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">TOW / P.ALT を入力してください</p>
+  </div>
+  <p style="font-size:0.55rem;color:var(--muted);margin-top:8px;line-height:1.6">
+    Weight / P.ALT は上記入力値を自動使用。有効範囲 ISA+15°C 以下（温補正: ≤ISA+39°C）
+  </p>
+</div>
+
 </div><!-- /tab-content -->
 </div><!-- /tab-to -->
 
@@ -1303,7 +1353,7 @@
   <div class="fg">
     <label>Landing Weight (× 1000 LB)</label>
     <input type="number" id="ldg-weight" value="600" step="1" inputmode="decimal"
-           oninput="apprCalcLdg(); ldgFlapSpdCalc(); updateLdgVref()">
+           oninput="apprCalcLdg(); ldgFlapSpdCalc(); updateLdgVref(); gaCalc()">
     <span class="hint">Approach Pitch valid: 460 – 763 × 1000 LB</span>
   </div>
   <div class="fg">
@@ -1441,6 +1491,22 @@
 
 </div><!-- /xw-col right -->
 </div><!-- /xw-layout -->
+
+<!-- ── Go-Around Gradient ── -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Go-Around Gradient (OI.1.7 · Flaps20)</div>
+  <div class="fg">
+    <label>OAT (°C) <span style="font-size:0.8em;opacity:0.65">— Temp Correction</span></label>
+    <input type="number" id="ga-oat" step="1" inputmode="numeric" placeholder="e.g. 25" oninput="gaCalc()">
+  </div>
+  <div id="ga-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">Landing Weight / P.ALT を入力してください</p>
+  </div>
+  <p style="font-size:0.55rem;color:var(--muted);margin-top:8px;line-height:1.6">
+    Weight は Landing Weight 欄、P.ALT は TO/Corrections 欄の値を自動使用。<br>
+    Go-around thrust with Flaps20, VREF30+5KT, engine bleed for packs on, A/I off, gear up, bank 15°
+  </p>
+</div>
 
 </div><!-- /tab-content -->
 </div><!-- /tab-ldg -->
@@ -1622,9 +1688,19 @@
       </div>
     </div>
     <div class="fg">
-      <label>Local Time at Airport</label>
-      <div id="fdp-local-disp" style="font-size:1.35em;font-weight:700;padding:10px 12px;color:var(--text);font-variant-numeric:tabular-nums">--:-- L</div>
+      <label>1st Block in (h + m)</label>
+      <div class="dur-input">
+        <input type="number" id="fdp-blk-h" min="0" max="24" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+        <span class="dur-sep">+</span>
+        <input type="number" id="fdp-blk-m" min="0" max="59" step="1" value="0"
+               inputmode="numeric" style="text-align:center" oninput="fdpCalc()">
+      </div>
     </div>
+  </div>
+  <div style="margin-top:8px">
+    <label>Local Time at Airport</label>
+    <div id="fdp-local-disp" style="font-size:1.35em;font-weight:700;padding:6px 12px;color:var(--text);font-variant-numeric:tabular-nums">--:-- L</div>
   </div>
   <div id="fdp-result"></div>
   <p style="font-size:0.55rem;color:#1e3450;margin-top:10px;line-height:1.6">
@@ -1786,63 +1862,139 @@ function onCondChange() {
 function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId) {
   const R   = 88;
   const svg = $(svgId || 'diagram');
-  if (isNaN(rwyHdg) || isNaN(windDirMag) || windData <= 0) {
-    svg.innerHTML = `<circle cx="0" cy="0" r="${R+14}" fill="${svgBg()}" stroke="${svgBd()}"/>
-      <text x="0" y="5" text-anchor="middle" fill="${svgDim()}" font-size="12">—</text>`;
+  const sid = svgId || 'diagram';
+  const isDay = document.body.classList.contains('day');
+  const bgC  = svgBg();
+  const bdC  = svgBd();
+  const dimC = svgDim();
+
+  // Ground / asphalt colors
+  const gndC = isDay ? '#c6d4a4' : '#0e1e10';
+  const asfC = isDay ? '#6a7068' : '#28353e';
+  const mrkC = 'rgba(255,255,255,0.92)';
+
+  // Rotation offset so active runway points DOWN (180°)
+  // rotOff = 180 - rwyHdg  → runway heading lands at bottom
+  const rotOff = isNaN(rwyHdg) ? 0 : (180 - rwyHdg);
+
+  // 36-division compass ticks
+  const ticks = Array.from({length:36}, (_,i) => {
+    const a  = i * 10 * Math.PI / 180;
+    const r0 = i % 9 === 0 ? R+1 : i % 3 === 0 ? R+3 : R+6;
+    const sw = i % 9 === 0 ? 2   : i % 3 === 0 ? 1.5 : 0.7;
+    return `<line x1="${(Math.sin(a)*r0).toFixed(1)}" y1="${(-Math.cos(a)*r0).toFixed(1)}" x2="${(Math.sin(a)*(R+14)).toFixed(1)}" y2="${(-Math.cos(a)*(R+14)).toFixed(1)}" stroke="${bdC}" stroke-width="${sw}"/>`;
+  }).join('');
+
+  // Compass labels: positioned in normal coords, text counter-rotated to stay readable
+  const compassLbls = `
+    <text x="0" y="${-(R+21)}" text-anchor="middle" fill="${dimC}" font-size="9" font-weight="700" transform="rotate(${-rotOff} 0 ${-(R+21)})">N</text>
+    <text x="${R+21}" y="4" text-anchor="middle" fill="${dimC}" font-size="9" font-weight="600" transform="rotate(${-rotOff} ${R+21} 4)">E</text>
+    <text x="0" y="${R+28}" text-anchor="middle" fill="${dimC}" font-size="9" font-weight="600" transform="rotate(${-rotOff} 0 ${R+28})">S</text>
+    <text x="${-(R+22)}" y="4" text-anchor="middle" fill="${dimC}" font-size="9" font-weight="600" transform="rotate(${-rotOff} ${-(R+22)} 4)">W</text>`;
+
+  // Runway illustration
+  let runwaySVG = '';
+  if (!isNaN(rwyHdg)) {
+    const rwW = 18, rwL = 72;
+    const rn     = Math.round(rwyHdg / 10) || 36;
+    const rnStr  = String(rn).padStart(2, '0');
+    const rnOpp  = rn > 18 ? rn - 18 : rn + 18;
+    const rnOppStr = String(rnOpp).padStart(2, '0');
+
+    // Threshold stripes (3 bars each end)
+    let thr = '';
+    const bw=2.5, bh=9, gap=2.5, cnt=3;
+    const tx = -(cnt*bw+(cnt-1)*gap)/2;
+    for (let i=0;i<cnt;i++){
+      const x=(tx+i*(bw+gap)).toFixed(1);
+      thr+=`<rect x="${x}" y="${-rwL+3}" width="${bw}" height="${bh}" fill="${mrkC}"/>`;
+      thr+=`<rect x="${x}" y="${rwL-12}" width="${bw}" height="${bh}" fill="${mrkC}"/>`;
+    }
+
+    // Centerline dashes
+    let cl = '';
+    for (let y=-rwL+20; y<rwL-18; y+=14)
+      cl+=`<rect x="-0.9" y="${y.toFixed(1)}" width="1.8" height="8" fill="${mrkC}" opacity="0.75"/>`;
+
+    // Runway number text counter-rotated so it stays upright
+    runwaySVG = `
+      <g transform="rotate(${rwyHdg})">
+        <rect x="${-rwW/2}" y="${-rwL}" width="${rwW}" height="${rwL*2}" fill="${asfC}" rx="1.5"/>
+        ${thr}${cl}
+        <text x="0" y="${-rwL+26}" text-anchor="middle"
+              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
+              transform="rotate(${-rotOff} 0 ${-rwL+26})">${rnStr}</text>
+        <text x="0" y="${rwL-16}" text-anchor="middle"
+              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
+              transform="rotate(${-rotOff} 0 ${rwL-16})">${rnOppStr}</text>
+      </g>`;
+  }
+
+  // Idle: no wind — show compass + runway only
+  if (isNaN(windDirMag) || windData <= 0) {
+    svg.innerHTML = `
+      <circle cx="0" cy="0" r="${R+14}" fill="${bgC}" stroke="${bdC}" stroke-width="1"/>
+      <circle cx="0" cy="0" r="${R}" fill="${gndC}" opacity="0.3"/>
+      <g transform="rotate(${rotOff})">
+        ${ticks}${runwaySVG}
+      </g>
+      ${compassLbls}
+      ${isNaN(rwyHdg) ? `<text x="0" y="5" text-anchor="middle" fill="${dimC}" font-size="12">—</text>` : ''}`;
     return;
   }
-  const rwyRad  = rwyHdg     * Math.PI / 180;
+
+  // Wind + component vectors
+  const rwyRad  = rwyHdg  * Math.PI / 180;
   const windRad = windDirMag * Math.PI / 180;
-  const rFx =  Math.sin(rwyRad) * R * 0.87, rFy = -Math.cos(rwyRad) * R * 0.87;
-  const rBx = -rFx, rBy = -rFy;
-  const wFx =  Math.sin(windRad) * R * 0.82, wFy = -Math.cos(windRad) * R * 0.82;
-  const sc  = (R * 0.82) / windData;
-  const hx  =  Math.sin(rwyRad) * headComp * sc;
-  const hy  = -Math.cos(rwyRad) * headComp * sc;
-  const cx  =  Math.cos(rwyRad) * crossSigned * sc;
-  const cy  =  Math.sin(rwyRad) * crossSigned * sc;
-  const arcR   = R * 0.37;
+  const sc   = (R * 0.76) / windData;
+  const hx   =  Math.sin(rwyRad) * headComp    * sc;
+  const hy   = -Math.cos(rwyRad) * headComp    * sc;
+  const cx2  =  Math.cos(rwyRad) * crossSigned * sc;
+  const cy2  =  Math.sin(rwyRad) * crossSigned * sc;
+  const wR   = R * 0.83;
+  const wFx  = Math.sin(windRad) * wR;
+  const wFy  = -Math.cos(windRad) * wR;
+  const hwColor = headComp >= 0 ? '#00e698' : '#ff4560';
+  const hwMark  = headComp >= 0 ? `url(#mh${sid})` : `url(#mt${sid})`;
+
+  // Angle arc rwy→wind
   const dAngle = normPM180(windDirMag - rwyHdg);
+  const arcR2  = R * 0.36;
   const sweepF = dAngle >= 0 ? 1 : 0;
   const largeF = Math.abs(dAngle) > 180 ? 1 : 0;
-  const ax1 = Math.sin(rwyRad)  * arcR, ay1 = -Math.cos(rwyRad)  * arcR;
-  const ax2 = Math.sin(windRad) * arcR, ay2 = -Math.cos(windRad) * arcR;
-  const arcD = `M${ax1.toFixed(1)} ${ay1.toFixed(1)} A${arcR} ${arcR} 0 ${largeF} ${sweepF} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
-  const ticks = Array.from({length:12},(_,i)=>{
-    const a = i * 30 * Math.PI / 180, r0 = i%3===0 ? R+3 : R+6;
-    return `<line x1="${(Math.sin(a)*r0).toFixed(1)}" y1="${(-Math.cos(a)*r0).toFixed(1)}" x2="${(Math.sin(a)*(R+14)).toFixed(1)}" y2="${(-Math.cos(a)*(R+14)).toFixed(1)}" stroke="${svgBd()}" stroke-width="1"/>`;
-  }).join('');
-  const hwColor = headComp >= 0 ? '#00e698' : '#ff4560';
-  const hwMark  = headComp >= 0 ? 'url(#mh)' : 'url(#mt)';
-  const midA  = (rwyHdg + dAngle / 2) * Math.PI / 180;
-  const lr    = arcR * 1.55;
+  const ax1 = Math.sin(rwyRad)  * arcR2, ay1 = -Math.cos(rwyRad)  * arcR2;
+  const ax2 = Math.sin(windRad) * arcR2, ay2 = -Math.cos(windRad) * arcR2;
+  const arcD = `M${ax1.toFixed(1)} ${ay1.toFixed(1)} A${arcR2} ${arcR2} 0 ${largeF} ${sweepF} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
+  const midA  = (rwyHdg + dAngle/2) * Math.PI / 180;
+  const lr    = arcR2 * 1.6;
   const absDeg = Math.abs(Math.round(dAngle));
   const angLbl = absDeg > 4
-    ? `<text x="${(Math.sin(midA)*lr).toFixed(1)}" y="${(-Math.cos(midA)*lr+4).toFixed(1)}" text-anchor="middle" fill="#ffd166" font-size="9" opacity="0.85">${absDeg}°</text>`
+    ? `<text x="${(Math.sin(midA)*lr).toFixed(1)}" y="${(-Math.cos(midA)*lr+4).toFixed(1)}" text-anchor="middle" fill="#ffd166" font-size="9" opacity="0.9" transform="rotate(${-rotOff} ${(Math.sin(midA)*lr).toFixed(1)} ${(-Math.cos(midA)*lr+4).toFixed(1)})">${absDeg}°</text>`
     : '';
+
   svg.innerHTML = `
     <defs>
-      <marker id="mw" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff8c42"/></marker>
-      <marker id="mh" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#00e698"/></marker>
-      <marker id="mt" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff4560"/></marker>
-      <marker id="mc" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffd166"/></marker>
+      <marker id="mw${sid}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#ff8c42"/></marker>
+      <marker id="mh${sid}" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#00e698"/></marker>
+      <marker id="mt${sid}" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ff4560"/></marker>
+      <marker id="mc${sid}" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffd166"/></marker>
     </defs>
-    <circle cx="0" cy="0" r="${R+14}" fill="${svgBg()}" stroke="${svgBd()}" stroke-width="1"/>
-    ${ticks}
-    <text x="0" y="${-(R+21)}" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">N</text>
-    <text x="${R+21}" y="4" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">E</text>
-    <text x="0" y="${R+28}" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">S</text>
-    <text x="${-(R+22)}" y="4" text-anchor="middle" fill="${svgDim()}" font-size="9" font-weight="600">W</text>
-    <path d="${arcD}" fill="none" stroke="rgba(255,209,102,0.55)" stroke-width="2.5" stroke-dasharray="4,3"/>
+    <circle cx="0" cy="0" r="${R+14}" fill="${bgC}" stroke="${bdC}" stroke-width="1"/>
+    <circle cx="0" cy="0" r="${R}" fill="${gndC}" opacity="0.3"/>
+    <g transform="rotate(${rotOff})">
+      ${ticks}${runwaySVG}
+      <path d="${arcD}" fill="none" stroke="rgba(255,209,102,0.5)" stroke-width="2" stroke-dasharray="4,3"/>
+      <line x1="${wFx.toFixed(1)}" y1="${wFy.toFixed(1)}" x2="3" y2="3"
+            stroke="#ff8c42" stroke-width="3" stroke-linecap="round" marker-end="url(#mw${sid})"/>
+      <circle cx="${wFx.toFixed(1)}" cy="${wFy.toFixed(1)}" r="5" fill="#ff8c42" opacity="0.85"/>
+      <line x1="0" y1="0" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"
+            stroke="${hwColor}" stroke-width="2.5" marker-end="${hwMark}" opacity="0.9"/>
+      <line x1="0" y1="0" x2="${cx2.toFixed(1)}" y2="${cy2.toFixed(1)}"
+            stroke="#ffd166" stroke-width="2.5" marker-end="url(#mc${sid})" opacity="0.9"/>
+    </g>
+    ${compassLbls}
     ${angLbl}
-    <line x1="${rBx.toFixed(1)}" y1="${rBy.toFixed(1)}" x2="${rFx.toFixed(1)}" y2="${rFy.toFixed(1)}" stroke="#00c8ff" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
-    <circle cx="${rFx.toFixed(1)}" cy="${rFy.toFixed(1)}" r="6" fill="#00c8ff" opacity="0.55"/>
-    <line x1="${(rBx+Math.cos(rwyRad)*10).toFixed(1)}" y1="${(rBy+Math.sin(rwyRad)*10).toFixed(1)}" x2="${(rBx-Math.cos(rwyRad)*10).toFixed(1)}" y2="${(rBy-Math.sin(rwyRad)*10).toFixed(1)}" stroke="#00c8ff" stroke-width="2" opacity="0.4"/>
-    <circle cx="${wFx.toFixed(1)}" cy="${wFy.toFixed(1)}" r="6" fill="#ff8c42"/>
-    <line x1="${wFx.toFixed(1)}" y1="${wFy.toFixed(1)}" x2="3" y2="3" stroke="#ff8c42" stroke-width="2.5" marker-end="url(#mw)"/>
-    <line x1="0" y1="0" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="${hwColor}" stroke-width="2.5" marker-end="${hwMark}" opacity="0.85"/>
-    <line x1="0" y1="0" x2="${cx.toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#ffd166" stroke-width="2.5" marker-end="url(#mc)" opacity="0.85"/>
-    <circle cx="0" cy="0" r="4" fill="#e0e0e0" opacity="0.2"/>`;
+    <circle cx="0" cy="0" r="4" fill="${dimC}" opacity="0.35"/>`;
 }
 
 /* ── XWIND main calc ── */
@@ -1861,7 +2013,7 @@ function calc() {
     ? norm360(windDir - magVar)
     : norm360(windDir);
 
-  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1a3055;font-size:0.7rem;color:#4a6a99;line-height:1.7">`
+  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.7rem;color:var(--muted);line-height:1.7">`
     + `注1. Maximum Wind とは、平均風速を 10 KT 以上上回る最大瞬間風速をいう。<br>`
     + `注2. 気象テレタイプの風向はすべて真方位。その他は磁方位。`
     + `</div>`;
@@ -2037,58 +2189,62 @@ const CONDITIONS = [
 ];
 
 const PITCH_DATA = {
+  // Page 4-1 Rev.17 MAR 03, 2026
   'TO_10': {
     weights: [600, 650, 700, 750, 800, 850, 900, 950],
     pitch: [
-      [21.9,20.6,19.4,18.3,17.3,16.5,15.8,15.1],
-      [21.3,20.0,18.8,17.7,16.8,16.0,15.2,14.6],
-      [null,20.3,19.1,17.9,16.9,16.0,15.3,14.6],
-      [null,null,19.4,18.2,17.1,16.2,15.3,14.6],
-      [null,null,18.6,17.4,16.4,15.5,14.7,14.0],
-      [null,null,null,17.8,16.7,15.7,14.8,14.1],
-      [null,null,null,17.3,16.3,15.3,14.5,13.8],
+      [21.9,20.6,19.4,18.3,17.3,16.5,15.8,15.1],  // OAT <30°C
+      [21.3,20.0,18.8,17.7,16.8,16.0,15.2,14.6],  // OAT 35°C
+      [20.3,19.1,17.9,16.9,16.0,15.3,14.6,null],  // OAT 40°C
+      [19.4,18.2,17.1,16.2,15.3,14.6,null,null],  // OAT 45°C
+      [18.6,17.4,16.4,15.5,14.7,14.0,null,null],  // OAT 50°C
+      [17.8,16.7,15.7,14.8,14.1,null,null,null],  // AT 55°C
+      [17.3,16.3,15.3,14.5,13.8,null,null,null],  // AT 60°C
     ],
-    palt:  [-0.3,-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
+    palt:  [-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2,-0.2],
     acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
   },
+  // Page 4-2 Rev.18 APR 16, 2026
   'TO1_10': {
-    weights: [550, 600, 650, 700, 750, 800, 850],
+    weights: [550, 600, 650, 700, 750, 800, 850, 900, 950],
     pitch: [
-      [21.4,19.9,18.6,17.5,16.5,15.6,14.9],
-      [20.8,19.4,18.1,17.0,16.0,15.2,14.5],
-      [20.1,18.7,17.5,16.4,15.5,14.8,14.1],
-      [null,19.2,17.9,16.7,15.7,14.9,14.1],
-      [null,18.4,17.1,16.0,15.1,14.3,13.6],
-      [null,null,17.6,16.4,15.4,14.5,13.7],
-      [null,null,17.0,15.9,14.9,14.0,13.3],
+      [21.4,19.9,18.6,17.5,16.5,15.6,14.9,14.2,13.6],  // OAT <30°C
+      [20.8,19.4,18.1,17.0,16.0,15.2,14.5,13.9,null],  // OAT 35°C
+      [20.1,18.7,17.5,16.4,15.5,14.8,14.1,null,null],  // OAT 40°C
+      [19.2,17.9,16.7,15.7,14.9,14.1,null,null,null],  // OAT 45°C
+      [18.4,17.1,16.0,15.1,14.3,13.6,null,null,null],  // OAT 50°C
+      [17.6,16.4,15.4,14.5,13.7,null,null,null,null],  // AT 55°C
+      [17.0,15.9,14.9,14.0,13.3,null,null,null,null],  // AT 60°C
     ],
-    palt:  [-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
-    acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
+    palt:  [-0.3,-0.3,-0.2,-0.2,-0.2,-0.2,-0.2,-0.1,-0.1],
+    acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
   },
+  // Page 4-3 Rev.18 APR 16, 2026
   'TO2_10': {
-    weights: [450, 500, 550, 600, 650, 700, 750],
+    weights: [450, 500, 550, 600, 650, 700, 750, 800, 850],
     pitch: [
-      [22.9,21.1,19.5,18.1,16.9,15.9,15.0],
-      [22.3,20.5,18.9,17.6,16.4,15.5,14.6],
-      [21.6,19.9,18.4,17.1,16.0,15.0,14.2],
-      [20.6,19.0,17.6,16.3,15.3,14.4,13.7],
-      [19.8,18.2,16.8,15.7,14.7,13.9,13.1],
-      [null,18.9,17.4,16.1,15.0,14.1,13.3],
-      [null,18.3,16.8,15.6,14.5,13.7,12.9],
+      [22.9,21.1,19.5,18.1,16.9,15.9,15.0,14.3,13.6],  // OAT <30°C
+      [22.3,20.5,18.9,17.6,16.4,15.5,14.6,13.9,null],  // OAT 35°C
+      [21.6,19.9,18.4,17.1,16.0,15.0,14.2,13.5,null],  // OAT 40°C
+      [20.6,19.0,17.6,16.3,15.3,14.4,13.7,null,null],  // OAT 45°C
+      [19.8,18.2,16.8,15.7,14.7,13.9,13.1,null,null],  // OAT 50°C
+      [18.9,17.4,16.1,15.0,14.1,13.3,null,null,null],  // AT 55°C
+      [18.3,16.8,15.6,14.5,13.7,12.9,null,null,null],  // AT 60°C
     ],
-    palt:  [-0.3,-0.3,-0.3,-0.2,-0.2,-0.2,-0.2],
-    acOff: [ 0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2],
+    palt:  [-0.3,-0.3,-0.2,-0.2,-0.2,-0.2,-0.2,-0.2,-0.1],
+    acOff: [ 0.3, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
   },
+  // Page 4-4 Rev.17 MAR 03, 2026
   'TO_20': {
     weights: [700, 750, 800, 850, 900, 950, 987],
     pitch: [
-      [16.8,15.7,14.8,13.9,13.2,12.6,12.1],
-      [16.2,15.2,14.3,13.5,12.7,12.1,11.7],
-      [15.4,14.4,13.5,12.8,12.1,11.5,11.1],
-      [null,14.6,13.7,12.8,12.1,11.5,10.9],
-      [null,13.9,13.0,12.2,11.5,10.9,null],
-      [null,null,13.2,12.3,11.6,10.9,null],
-      [null,null,12.8,12.0,11.2,10.6,null],
+      [16.8,15.7,14.8,13.9,13.2,12.6,12.1],  // OAT <30°C
+      [16.2,15.2,14.3,13.5,12.7,12.1,11.7],  // OAT 35°C
+      [15.4,14.4,13.5,12.8,12.1,11.5,11.1],  // OAT 40°C
+      [14.6,13.7,12.8,12.1,11.5,10.9,null],  // OAT 45°C
+      [13.9,13.0,12.2,11.5,10.9,null,null],  // OAT 50°C
+      [13.2,12.3,11.6,10.9,null,null,null],  // AT 55°C
+      [12.8,12.0,11.2,10.6,null,null,null],  // AT 60°C
     ],
     palt:  [-0.2,-0.2,-0.2,-0.2,-0.2,-0.2,-0.2],
     acOff: [ 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
@@ -2432,7 +2588,7 @@ function calcLdg() {
   const windDirMag = $('ldg-windType').value === 'TRUE'
     ? norm360(windDir - magVar) : norm360(windDir);
 
-  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #1a3055;font-size:0.7rem;color:#4a6a99;line-height:1.7">`
+  const NOTES = `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.7rem;color:var(--muted);line-height:1.7">`
     + `注1. Maximum Wind とは、平均風速を 10 KT 以上上回る最大瞬間風速をいう。<br>`
     + `注2. 気象テレタイプの風向はすべて真方位。その他は磁方位。`
     + `</div>`;
@@ -2657,7 +2813,7 @@ function renderTasLdg() {
     <div class="tas-row"><span class="tas-lbl">Steady HW Component (Wind)</span><span>${hwPos.toFixed(1)} KT</span></div>
     <div class="tas-row"><span class="tas-lbl">½ Wind</span><span>${(hwPos / 2).toFixed(1)} KT</span></div>
     ${gustIncr > 0 ? `<div class="tas-row"><span class="tas-lbl">Gust (Max Wind − Steady)</span><span>+${gustIncr.toFixed(0)} KT</span></div>` : ''}
-    <div class="tas-row" style="border-top:1px solid #1a3055;margin-top:4px;padding-top:6px">
+    <div class="tas-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:6px">
       <span class="tas-lbl">Addition (½W+G, min 5, max 20)</span>
       <span style="font-weight:700;color:var(--accent)">+${addRnd} KT</span>
     </div>
@@ -3248,7 +3404,7 @@ function buildGantt(toM, etaM, winStart, winEnd, slots, flightDur, winDur) {
       ${makeSeg(bL+'%', wW+'%', 'seg-ref-window', 'REST WINDOW')}
       ${makeSeg((+bL + +wW)+'%', bR+'%', 'seg-buffer')}
     </div></div>`;
-  html += `<div style="height:1px;background:#1a3055;margin:6px 0 10px 58px;"></div>`;
+  html += `<div style="height:1px;background:var(--border);margin:6px 0 10px 58px;"></div>`;
 
   slots.forEach(s => {
     const dL  = ((s.start-toM)/flightDur*100).toFixed(2);
@@ -3629,10 +3785,13 @@ function ftCalc() {
   const taxM   = parseInt($('fdp-tax-m').value) || 0;
   const txoH   = parseInt($('fdp-txo-h').value) || 0;
   const txoM   = parseInt($('fdp-txo-m').value) || 0;
+  const blkH   = parseInt($('fdp-blk-h').value) || 0;
+  const blkM   = parseInt($('fdp-blk-m').value) || 0;
   const fltMin = fltH * 60 + fltM;
   const taxMin = taxH * 60 + taxM;
   const txoMin = txoH * 60 + txoM;
-  const totalBlockMin = txoMin + fltMin + taxMin;
+  const blkMin = blkH * 60 + blkM;
+  const totalBlockMin = txoMin + fltMin + taxMin + blkMin;
 
   const ftLimitMin = getFtLimit(localHour, fdpCrew);
   const marginMin  = ftLimitMin - totalBlockMin;
@@ -3668,6 +3827,13 @@ function ftCalc() {
         </div>
         <div style="font-size:1.2em;font-weight:700;font-variant-numeric:tabular-nums">${hhmm(fltMin)}</div>
       </div>
+      ${blkMin > 0 ? `
+      <div class="fdp-lim">
+        <div class="fdp-lim-left">
+          <div class="fdp-lim-name">1<sup>st</sup> Block in</div>
+        </div>
+        <div style="font-size:1.2em;font-weight:700;font-variant-numeric:tabular-nums">${hhmm(blkMin)}</div>
+      </div>` : ''}
       <div class="fdp-lim">
         <div class="fdp-lim-left">
           <div class="fdp-lim-name">Taxi In</div>
@@ -3677,7 +3843,7 @@ function ftCalc() {
       <div class="fdp-lim" style="border-color:rgba(0,200,255,0.3);background:rgba(0,200,255,0.05)">
         <div class="fdp-lim-left">
           <div class="fdp-lim-name">Total Block</div>
-          <div class="fdp-lim-sub">Taxi Out + FT + Taxi In</div>
+          <div class="fdp-lim-sub">TXO + FT${blkMin > 0 ? ' + 1st Blk' : ''} + TXI</div>
         </div>
         <div style="font-size:1.4em;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${hhmm(totalBlockMin)}</div>
       </div>
@@ -3700,6 +3866,605 @@ function ftCalc() {
     }
     <p style="font-size:0.55rem;color:#2a4060;margin-top:6px;line-height:1.6">
       ★ 2 Crew ( ) 内は回転翼航空機等の短距離運航時の値。固定翼長距離は括弧外の値を適用。
+    </p>`;
+}
+
+/* ══════════════════════════════════════════
+   CLIMB GRADIENT (OI.1.3 – OI.1.11)
+══════════════════════════════════════════ */
+// grad[altIdx][weightIdx]  weights in ×1000LB, alts in ft
+const CG_W = [700,750,800,850,900,950,1000];
+const CG_GA_W = [580,630,680,730,780,830];
+
+const CG_CHARTS = {
+  /* ── 4 Engine ── */
+  TO_F10: {
+    label:'TO / F10', page:'OI.1.3', eng:4,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [19.5,18.2,17.0,15.8,14.6,13.5,12.5],
+      [18.4,17.1,15.9,14.7,13.6,12.5,11.5],
+      [17.2,16.0,14.8,13.6,12.5,11.5,10.5],
+      [16.1,14.9,13.7,12.6,11.5,10.5, 9.5],
+      [14.9,13.8,12.6,11.5,10.5, 9.5, 8.5],
+    ],
+    tc:[-0.31,-0.31,-0.30,-0.29,-0.28],
+  },
+  CLB_F10: {
+    label:'CLB / F10', page:'OI.1.3', eng:4,
+    weights: CG_W, alts:[2000,3000,4000],
+    grad:[
+      [11.8,10.9,10.0, 9.1, 8.3, 7.5, 6.8],
+      [11.1,10.2, 9.3, 8.4, 7.6, 6.9, 6.2],
+      [10.4, 9.5, 8.7, 7.8, 7.0, 6.3, 5.6],
+    ],
+    tc:[-0.22,-0.21,-0.20],
+  },
+  TO_F20: {
+    label:'TO / F20', page:'OI.1.4', eng:4,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [18.8,17.4,16.0,14.7,13.5,12.3,11.3],
+      [17.5,16.1,14.8,13.5,12.3,11.2,10.2],
+      [16.1,14.8,13.5,12.3,11.2,10.1, 9.1],
+      [14.8,13.5,12.3,11.1,10.1, 9.0, 8.1],
+      [13.5,12.3,11.1,10.0, 9.0, 8.0, 7.1],
+    ],
+    tc:[-0.35,-0.33,-0.31,-0.29,-0.27],
+  },
+  CLB_F20: {
+    label:'CLB / F20', page:'OI.1.4', eng:4,
+    weights: CG_W, alts:[2000,3000,4000],
+    grad:[
+      [ 9.2, 8.4, 7.6, 6.8, 6.1, 5.4, 4.8],
+      [ 8.6, 7.7, 7.0, 6.2, 5.5, 4.9, 4.3],
+      [ 7.9, 7.1, 6.4, 5.7, 5.0, 4.4, 3.8],
+    ],
+    tc:[-0.22,-0.21,-0.21],
+  },
+  TO1_F10: {
+    label:'TO1 / F10', page:'OI.1.5', eng:4,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [15.8,14.6,13.3,12.1,11.0, 9.9, 8.9],
+      [15.1,13.9,12.7,11.5,10.4, 9.4, 8.4],
+      [14.4,13.1,12.0,10.8, 9.8, 8.8, 7.9],
+      [13.5,12.3,11.2,10.1, 9.1, 8.1, 7.2],
+      [12.7,11.5,10.4, 9.3, 8.3, 7.4, 6.5],
+    ],
+    tc:[-0.27,-0.26,-0.24,-0.21,-0.20],
+  },
+  CLB1_F10: {
+    label:'CLB1 / F10', page:'OI.1.5', eng:4,
+    weights: CG_W, alts:[2000,3000,4000],
+    grad:[
+      [ 9.5, 8.6, 7.7, 6.9, 6.1, 5.4, 4.7],
+      [ 8.8, 7.9, 7.1, 6.3, 5.5, 4.9, 4.2],
+      [ 8.1, 7.3, 6.5, 5.7, 5.0, 4.4, 3.8],
+    ],
+    tc:[-0.20,-0.19,-0.19],
+  },
+  TO2_F10: {
+    label:'TO2 / F10', page:'OI.1.6', eng:4,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [12.3,11.1,10.0, 8.9, 7.9, 7.0, 6.2],
+      [11.7,10.5, 9.4, 8.4, 7.4, 6.5, 5.7],
+      [11.0, 9.9, 8.8, 7.8, 6.9, 6.0, 5.2],
+      [10.3, 9.2, 8.2, 7.2, 6.3, 5.5, 4.7],
+      [ 9.6, 8.5, 7.5, 6.6, 5.8, 5.0, 4.2],
+    ],
+    tc:[-0.24,-0.22,-0.20,-0.18,-0.16],
+  },
+  CLB2_F10: {
+    label:'CLB2 / F10', page:'OI.1.6', eng:4,
+    weights: CG_W, alts:[2000,3000,4000],
+    grad:[
+      [ 6.8, 6.0, 5.3, 4.6, 4.0, 3.4, 2.9],
+      [ 6.3, 5.5, 4.8, 4.2, 3.6, 3.0, 2.5],
+      [ 5.8, 5.1, 4.4, 3.8, 3.2, 2.7, 2.2],
+    ],
+    tc:[-0.17,-0.17,-0.16],
+  },
+  /* ── 1 Engine INOP ── */
+  TO_F10_1E: {
+    label:'TO / F10', page:'OI.1.8', eng:1,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [11.0, 9.9, 8.9, 7.9, 7.0, 6.2, 5.4],
+      [10.4, 9.3, 8.3, 7.3, 6.5, 5.6, 4.9],
+      [ 9.7, 8.7, 7.7, 6.8, 5.9, 5.1, 4.4],
+      [ 9.1, 8.1, 7.1, 6.2, 5.4, 4.6, 3.9],
+      [ 8.5, 7.5, 6.6, 5.7, 4.9, 4.1, 3.4],
+    ],
+    tc:[-0.22,-0.22,-0.21,-0.20,-0.19],
+  },
+  TO_F20_1E: {
+    label:'TO / F20', page:'OI.1.9', eng:1,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [ 9.7, 8.7, 7.8, 6.9, 6.0, 5.2, 4.5],
+      [ 9.1, 8.1, 7.2, 6.3, 5.5, 4.7, 4.0],
+      [ 8.5, 7.5, 6.7, 5.8, 5.0, 4.2, 3.6],
+      [ 7.9, 7.0, 6.1, 5.3, 4.5, 3.8, 3.1],
+      [ 7.3, 6.4, 5.6, 4.8, 4.1, 3.4, 2.8],
+    ],
+    tc:[-0.23,-0.23,-0.22,-0.21,-0.20],
+  },
+  TO1_F10_1E: {
+    label:'TO1 / F10', page:'OI.1.10', eng:1,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [ 8.5, 7.5, 6.6, 5.8, 5.0, 4.3, 3.6],
+      [ 7.9, 7.0, 6.1, 5.3, 4.5, 3.8, 3.2],
+      [ 7.4, 6.5, 5.6, 4.8, 4.1, 3.4, 2.8],
+      [ 6.8, 5.9, 5.1, 4.4, 3.6, 3.0, 2.4],
+      [ 6.2, 5.4, 4.6, 3.9, 3.2, 2.6, 2.0],
+    ],
+    tc:[-0.19,-0.18,-0.17,-0.15,-0.14],
+  },
+  TO2_F10_1E: {
+    label:'TO2 / F10', page:'OI.1.11', eng:1,
+    weights: CG_W, alts:[0,1000,2000,3000,4000],
+    grad:[
+      [ 6.2, 5.4, 4.7, 4.0, 3.4, 2.8, 2.3],
+      [ 5.8, 5.1, 4.4, 3.7, 3.1, 2.5, 2.0],
+      [ 5.4, 4.7, 4.0, 3.4, 2.8, 2.3, 1.7],
+      [ 5.0, 4.3, 3.6, 3.1, 2.5, 2.0, 1.5],
+      [ 4.6, 3.9, 3.3, 2.7, 2.2, 1.7, 1.2],
+    ],
+    tc:[-0.18,-0.16,-0.15,-0.13,-0.12],
+  },
+  /* ── Go-Around (stored here for uniform interp) ── */
+  GA_F20: {
+    label:'Go-Around / F20', page:'OI.1.7', eng:4,
+    weights: CG_GA_W, alts:[3000,4000,5000],
+    grad:[
+      [19.5,18.7,17.8,17.0,16.2,15.4],
+      [19.0,18.1,17.2,16.4,15.5,14.7],
+      [18.4,17.5,16.6,15.8,14.9,14.1],
+    ],
+    tc:[-0.34,-0.31,-0.29],
+  },
+};
+
+// Config for TO tab selector
+const CG_ENG4_ORDER = ['TO_F10','TO_F20','TO1_F10','TO2_F10','CLB_F10','CLB_F20','CLB1_F10','CLB2_F10'];
+const CG_ENG1_ORDER = ['TO_F10_1E','TO_F20_1E','TO1_F10_1E','TO2_F10_1E'];
+
+let cgEng = 4;
+let cgKey = 'TO_F10';
+
+function cgInterp2D(chart, weight, palt) {
+  const wts = chart.weights;
+  const als = chart.alts;
+  const gr  = chart.grad;
+  const w   = Math.max(wts[0], Math.min(wts[wts.length-1], weight));
+  const p   = Math.max(als[0], Math.min(als[als.length-1], palt));
+  let wi = Math.max(0, wts.length-2);
+  for (let i=0; i<wts.length-1; i++) { if (w<=wts[i+1]) { wi=i; break; } }
+  let ai = Math.max(0, als.length-2);
+  for (let i=0; i<als.length-1; i++) { if (p<=als[i+1]) { ai=i; break; } }
+  const wf = (wts[wi+1]===wts[wi]) ? 0 : (w-wts[wi])/(wts[wi+1]-wts[wi]);
+  const af = (als[ai+1]===als[ai]) ? 0 : (p-als[ai])/(als[ai+1]-als[ai]);
+  const g = (1-af)*((1-wf)*gr[ai][wi]+wf*gr[ai][wi+1])
+          +    af *((1-wf)*gr[ai+1][wi]+wf*gr[ai+1][wi+1]);
+  return g;
+}
+
+function cgTempCorr(chart, palt, oat) {
+  if (oat === null || isNaN(oat)) return 0;
+  const isaPlus15 = 30 - 2*(palt/1000);
+  const dT = oat - isaPlus15;
+  if (dT <= 0) return 0;
+  const als = chart.alts;
+  const tcs = chart.tc;
+  const p = Math.max(als[0], Math.min(als[als.length-1], palt));
+  let ai = Math.max(0, als.length-2);
+  for (let i=0; i<als.length-1; i++) { if (p<=als[i+1]) { ai=i; break; } }
+  const af = (als[ai+1]===als[ai]) ? 0 : (p-als[ai])/(als[ai+1]-als[ai]);
+  const tc = (1-af)*tcs[ai] + af*tcs[ai+1];
+  return dT * tc; // negative
+}
+
+function setCgEng(n) {
+  cgEng = n;
+  $('cg-eng4-btn').className = n===4 ? 'tgl on' : 'tgl';
+  $('cg-eng1-btn').className = n===1 ? 'tgl on' : 'tgl';
+  const order = n===4 ? CG_ENG4_ORDER : CG_ENG1_ORDER;
+  if (!order.includes(cgKey)) cgKey = order[0];
+  buildCgSel();
+  cgCalc();
+}
+
+function buildCgSel() {
+  const wrap = $('cg-sel');
+  if (!wrap) return;
+  const order = cgEng===4 ? CG_ENG4_ORDER : CG_ENG1_ORDER;
+  wrap.innerHTML = order.map(k =>
+    `<button class="tgl${k===cgKey?' on':''}" onclick="setCgKey('${k}')">${CG_CHARTS[k].label}</button>`
+  ).join('');
+}
+
+function setCgKey(k) {
+  cgKey = k;
+  buildCgSel();
+  cgCalc();
+}
+
+function cgCalc() {
+  const el = $('cg-result');
+  if (!el) return;
+  const weight = parseFloat($('weight').value);
+  const palt   = parseFloat($('palt').value) || 0;
+  const oat    = $('cg-oat').value !== '' ? parseFloat($('cg-oat').value) : null;
+
+  if (isNaN(weight)) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">TOW を入力してください</p>';
+    return;
+  }
+  const chart = CG_CHARTS[cgKey];
+  const wMin = chart.weights[0], wMax = chart.weights[chart.weights.length-1];
+  const pMin = chart.alts[0],    pMax = chart.alts[chart.alts.length-1];
+  const wClamped = weight < wMin || weight > wMax;
+  const pClamped = palt   < pMin || palt   > pMax;
+
+  const base = cgInterp2D(chart, weight, palt);
+  const corr = cgTempCorr(chart, palt, oat);
+  const total = base + corr;
+
+  const isaPlus15 = 30 - 2*(palt/1000);
+  const dT = (oat !== null && !isNaN(oat)) ? oat - isaPlus15 : null;
+  const corrApplied = dT !== null && dT > 0;
+
+  const totColor = total < 2.4 ? 'var(--error)' : total < 3.2 ? 'var(--warn)' : 'var(--green)';
+  const warnHtml = (wClamped || pClamped)
+    ? `<p style="font-size:0.65rem;color:var(--warn);margin-top:4px">⚠ 入力値が有効範囲外のため外挿値 (W:${wMin}–${wMax}, PA:${pMin}–${pMax} ft)</p>`
+    : '';
+  const corrHtml = corrApplied
+    ? `<div class="brow"><span>Temp Corr (${dT.toFixed(1)}°C above ISA+15)</span><span class="v" style="color:var(--warn)">${corr.toFixed(2)}%</span></div>`
+    : (oat !== null ? `<div class="brow"><span>OAT ≤ ISA+15 (${isaPlus15.toFixed(0)}°C) — 補正不要</span><span class="v">0</span></div>` : '');
+
+  // ROC supplement
+  const v2Raw = parseFloat($('cg-v2').value);
+  let rocRows = [];
+  if (!isNaN(v2Raw) && v2Raw > 0) {
+    const T_isa = 288.15 - 0.0019812 * palt;
+    const sigma = Math.pow(T_isa / 288.15, 4.2559);
+    const sqrtSig = Math.sqrt(sigma);
+    [{lbl:'V2', ias:v2Raw},{lbl:'V2+10',ias:v2Raw+10},{lbl:'V2+25',ias:v2Raw+25}].forEach(s => {
+      const tas = s.ias / sqrtSig;
+      rocRows.push({lbl:s.lbl, ias:s.ias, tas:Math.round(tas), roc:Math.round(total*tas*1.0127)});
+    });
+  }
+
+  el.innerHTML = `
+    <div class="result-card pitch-result" style="padding:16px 16px 14px !important">
+      <div class="res-label">${chart.label} &nbsp;·&nbsp; ${chart.page}</div>
+      <div class="res-val ok" style="font-size:3.8em;color:${totColor}">${total.toFixed(2)}</div>
+      <div class="res-unit">% CLIMB GRADIENT</div>
+      <div class="breakdown" style="display:block">
+        <div class="brow"><span>Base (W=${weight}, PA=${palt} ft)</span><span class="v">${base.toFixed(2)}%</span></div>
+        ${corrHtml}
+        <div class="brow total"><span>Total</span><span class="v">${total.toFixed(2)}%</span></div>
+      </div>
+      ${_gradSvg(total, rocRows)}
+    </div>
+    ${warnHtml}`;
+}
+
+/* ── Go-Around Gradient ── */
+function gaCalc() {
+  const el = $('ga-result');
+  if (!el) return;
+  const weight = parseFloat($('ldg-weight').value);
+  const palt   = parseFloat($('palt').value) || 0;
+  const oat    = $('ga-oat').value !== '' ? parseFloat($('ga-oat').value) : null;
+
+  if (isNaN(weight)) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Landing Weight を入力してください</p>';
+    return;
+  }
+  const chart = CG_CHARTS['GA_F20'];
+  // GA P.ALT clamp: min 3000 (≤3000 uses the 3000 row)
+  const paltGA = Math.max(3000, Math.min(5000, palt));
+  const wMin = chart.weights[0], wMax = chart.weights[chart.weights.length-1];
+  const wClamped = weight < wMin || weight > wMax;
+  const pClamped = palt < 3000;
+
+  const base = cgInterp2D(chart, weight, paltGA);
+  const corr = cgTempCorr(chart, paltGA, oat);
+  const total = base + corr;
+
+  const isaPlus15 = 30 - 2*(paltGA/1000);
+  const dT = (oat !== null && !isNaN(oat)) ? oat - isaPlus15 : null;
+  const corrApplied = dT !== null && dT > 0;
+
+  const totColor = total < 2.4 ? 'var(--error)' : total < 3.2 ? 'var(--warn)' : 'var(--green)';
+  const warnHtml = wClamped
+    ? `<p style="font-size:0.65rem;color:var(--warn);margin-top:4px">⚠ Weight 有効範囲外: ${wMin}–${wMax}×1000 LB</p>`
+    : pClamped ? `<p style="font-size:0.65rem;color:var(--muted);margin-top:4px">P.ALT ≤3000 ft → ≤3000 ft 曲線を使用</p>` : '';
+  const corrHtml = corrApplied
+    ? `<div class="brow"><span>Temp Corr (${dT.toFixed(1)}°C above ISA+15)</span><span class="v" style="color:var(--warn)">${corr.toFixed(2)}%</span></div>`
+    : (oat !== null ? `<div class="brow"><span>OAT ≤ ISA+15 (${isaPlus15.toFixed(0)}°C) — 補正不要</span><span class="v">0</span></div>` : '');
+
+  // ROC at Vref
+  const vrefVal = parseFloat($('ldg-vref') ? $('ldg-vref').value : '');
+  let gaRocRows = [];
+  if (!isNaN(vrefVal) && vrefVal > 0) {
+    const T_isa = 288.15 - 0.0019812 * paltGA;
+    const sigma = Math.pow(T_isa / 288.15, 4.2559);
+    const tas = vrefVal / Math.sqrt(sigma);
+    gaRocRows.push({lbl:'VREF', ias:vrefVal, tas:Math.round(tas), roc:Math.round(total*tas*1.0127)});
+  }
+
+  el.innerHTML = `
+    <div class="result-card" style="margin-bottom:0">
+      <div class="res-label">Go-Around / F20 · OI.1.7</div>
+      <div class="res-val ok" style="font-size:3.8em;color:${totColor}">${total.toFixed(2)}</div>
+      <div class="res-unit">% CLIMB GRADIENT</div>
+      <div class="breakdown" style="display:block">
+        <div class="brow"><span>Base (W=${weight}, PA=${paltGA} ft)</span><span class="v">${base.toFixed(2)}%</span></div>
+        ${corrHtml}
+        <div class="brow total"><span>Total</span><span class="v">${total.toFixed(2)}%</span></div>
+      </div>
+      ${_gradSvg(total, gaRocRows)}
+    </div>
+    ${warnHtml}`;
+}
+
+/* ══════════════════════════════════════════
+   GRADIENT ANGLE SVG
+══════════════════════════════════════════ */
+function _gradSvg(grad_pct, rocRows) {
+  // rocRows: [{lbl:'V2', ias:155, tas:155, roc:900}, ...]
+  const θ_real = Math.atan(grad_pct / 100) * 180 / Math.PI;
+  // Exaggerate for visibility (scale so 3% looks like ~18°, cap 40°)
+  const θd = Math.min(θ_real * 6, 40);
+  const θr = θd * Math.PI / 180;
+  const gc  = grad_pct < 2.4 ? '#ff4560' : grad_pct < 3.2 ? '#ff8c42' : '#00e698';
+  const isDay = document.body.classList.contains('day');
+  const asfC  = isDay ? '#9aaba0' : '#28353e';
+  const mrkC  = 'rgba(255,255,255,0.82)';
+
+  // Diagram area: left portion 0–185, right panel 190–320
+  // Origin of climb at (18, 82)
+  const ox = 18, oy = 82, pLen = 163;
+  const ex = ox + pLen * Math.cos(θr);
+  const ey = oy - pLen * Math.sin(θr);
+
+  // Arrowhead
+  const ah=8, aw=3.5;
+  const ddx=Math.cos(θr), ddy=-Math.sin(θr);
+  const px1=(ex-ah*ddx+aw*ddy).toFixed(1), py1=(ey-ah*ddy-aw*ddx).toFixed(1);
+  const px2=(ex-ah*ddx-aw*ddy).toFixed(1), py2=(ey-ah*ddy+aw*ddx).toFixed(1);
+
+  // Angle arc
+  const arcR = 34;
+  const axe = ox + arcR * Math.cos(θr), aye = oy - arcR * Math.sin(θr);
+
+  // Runway hatches on ground line
+  const nH = 10;
+  const hatches = Array.from({length:nH},(_,i)=>{
+    const x1=ox+6+i*16, x2=ox+i*16;
+    return `<line x1="${x1}" y1="${oy}" x2="${x2}" y2="${oy+7}" stroke="var(--border)" stroke-width="1.2"/>`;
+  }).join('');
+
+  // Dashed altitude line from path end down to ground
+  const altLine = `<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${oy}" stroke="var(--muted)" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>`;
+
+  // Runway rect (thin strip)
+  const rwRect = `<rect x="${ox-4}" y="${oy-3}" width="12" height="6" rx="1" fill="${asfC}"/>
+    <line x1="${ox-3}" y1="${oy}" x2="${ox+7}" y2="${oy}" stroke="${mrkC}" stroke-width="0.7"/>`;
+
+  // ROC rows in right panel
+  const panX = 193;
+  let rocSvg = '';
+  if (rocRows && rocRows.length) {
+    const rowH = 13;
+    rocRows.forEach((r, i) => {
+      const y = 20 + i * rowH;
+      const rocColor = r.roc < 400 ? '#ff4560' : r.roc < 700 ? '#ff8c42' : '#00c8ff';
+      rocSvg += `
+        <text x="${panX}" y="${y}" font-size="7.5" fill="var(--muted)" font-weight="600">${r.lbl}</text>
+        <text x="${panX+28}" y="${y}" font-size="7" fill="var(--text)" text-anchor="middle">${r.ias}kt</text>
+        <text x="${panX+52}" y="${y}" font-size="7" fill="var(--muted)" text-anchor="middle">→</text>
+        <text x="${panX+80}" y="${y}" font-size="8" fill="${rocColor}" font-weight="700" text-anchor="end">${r.roc}</text>
+        <text x="${panX+82}" y="${y}" font-size="6" fill="var(--muted)">fpm</text>`;
+    });
+  }
+
+  // Divider line between diagram and panel
+  const divX = 189;
+
+  // Gradient % label above climb path midpoint
+  const mx = ox + (pLen*0.55)*Math.cos(θr);
+  const my = oy - (pLen*0.55)*Math.sin(θr) - 7;
+
+  const viewH = rocRows && rocRows.length ? Math.max(96, 14 + rocRows.length * 13 + 10) : 96;
+
+  return `<svg viewBox="0 0 320 ${viewH}" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;display:block;margin:10px 0 4px;border-radius:8px;background:var(--card);padding:4px 0">
+    <!-- Ground -->
+    <line x1="6" y1="${oy}" x2="${divX-4}" y2="${oy}" stroke="var(--border)" stroke-width="1.8"/>
+    ${hatches}
+    ${rwRect}
+    <!-- Climb path -->
+    ${altLine}
+    <line x1="${ox}" y1="${oy}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"
+          stroke="${gc}" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+    <polygon points="${ex.toFixed(1)},${ey.toFixed(1)} ${px1},${py1} ${px2},${py2}" fill="${gc}"/>
+    <!-- Angle arc & label -->
+    <path d="M${(ox+arcR).toFixed(1)},${oy} A${arcR},${arcR} 0 0,0 ${axe.toFixed(1)},${aye.toFixed(1)}"
+          fill="none" stroke="#ffd166" stroke-width="1.8"/>
+    <text x="${(ox+arcR*0.6).toFixed(0)}" y="${(oy-arcR*0.28-2).toFixed(0)}"
+          font-size="8" fill="#ffd166" font-weight="700" font-family="monospace">θ ${θ_real.toFixed(2)}°</text>
+    <!-- Gradient label on path -->
+    <text x="${mx.toFixed(1)}" y="${my.toFixed(1)}" text-anchor="middle"
+          font-size="9" fill="${gc}" font-weight="700">${grad_pct.toFixed(2)}%</text>
+    <!-- Exaggeration note -->
+    <text x="6" y="${viewH-3}" font-size="5.5" fill="var(--muted)" opacity="0.7">※angle exaggerated (actual θ=${θ_real.toFixed(2)}°)</text>
+    <!-- Right panel divider -->
+    <line x1="${divX}" y1="6" x2="${divX}" y2="${viewH-6}" stroke="var(--border)" stroke-width="0.8" opacity="0.6"/>
+    <!-- Right panel header -->
+    <text x="${panX}" y="11" font-size="6.5" fill="var(--muted)" letter-spacing="0.5">SPEED</text>
+    <text x="${panX+80}" y="11" font-size="6.5" fill="var(--muted)" letter-spacing="0.5" text-anchor="end">ROC REQ</text>
+    <line x1="${panX}" y1="13" x2="318" y2="13" stroke="var(--border)" stroke-width="0.6"/>
+    ${rocSvg}
+  </svg>`;
+}
+
+/* ══════════════════════════════════════════
+   CRZ TAB — IAS / TAS / Mach Calculator
+══════════════════════════════════════════ */
+function _crzAtmos(h_ft, dISA) {
+  const T0 = 288.15, P0 = 101325, a0 = 661.4786;
+  let T_isa, P;
+  if (h_ft <= 36089) {
+    T_isa = T0 - 0.0019812 * h_ft;
+    P = P0 * Math.pow(T_isa / T0, 5.2559);
+  } else {
+    const T_tp = T0 - 0.0019812 * 36089;
+    const P_tp = P0 * Math.pow(T_tp / T0, 5.2559);
+    T_isa = 216.65;
+    P = P_tp * Math.exp(-4.8063e-5 * (h_ft - 36089));
+  }
+  const T = T_isa + (dISA || 0);
+  const a = a0 * Math.sqrt(T / T0);
+  return { T, T_isa, P, a, P0, a0 };
+}
+function _machToSpeeds(M, h_ft, dISA) {
+  const { T, T_isa, P, a, P0, a0 } = _crzAtmos(h_ft, dISA || 0);
+  const TAS = M * a;
+  const qc  = P * (Math.pow(1 + 0.2 * M * M, 3.5) - 1);
+  const CAS = a0 * Math.sqrt(5 * (Math.pow(qc / P0 + 1, 2/7) - 1));
+  return { TAS, CAS, M, a, T, T_isa };
+}
+function _casToSpeeds(CAS, h_ft, dISA) {
+  const { T, T_isa, P, a, P0, a0 } = _crzAtmos(h_ft, dISA || 0);
+  const qc  = P0 * (Math.pow(1 + 0.2 * Math.pow(CAS / a0, 2), 3.5) - 1);
+  const TAS = a * Math.sqrt(5 * (Math.pow(qc / P + 1, 2/7) - 1));
+  const M   = TAS / a;
+  return { TAS, CAS, M, a, T, T_isa };
+}
+
+let _crzFix = 'mach';
+function setCrzFix(mode) {
+  _crzFix = mode;
+  $('crz-fix-mach-btn').classList.toggle('on', mode === 'mach');
+  $('crz-fix-ias-btn').classList.toggle('on',  mode === 'ias');
+  crzCalc();
+}
+function crzCalcFrom(src) {
+  if (src === 'mach') $('crz-ias').value  = '';
+  else                $('crz-mach').value = '';
+  crzCalc();
+}
+
+function crzCalc() {
+  const flRaw   = parseFloat($('crz-fl').value);
+  const dISA    = parseFloat($('crz-disa').value) || 0;
+  const machRaw = parseFloat($('crz-mach').value);
+  const iasRaw  = parseFloat($('crz-ias').value);
+  const elRes   = $('crz-result');
+  const elDelta = $('crz-delta');
+  const elTable = $('crz-table');
+  if (!elRes) return;
+  if (isNaN(flRaw)) {
+    elRes.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">FL を入力してください</p>';
+    elDelta.innerHTML = ''; elTable.innerHTML = ''; return;
+  }
+  const h_ft  = flRaw * 100;
+  const atmos = _crzAtmos(h_ft, dISA);
+  const isaC  = atmos.T_isa - 273.15;
+  const actC  = atmos.T - 273.15;
+  const aboveTp = h_ft > 36089;
+  let sp;
+  if (!isNaN(machRaw) && $('crz-mach').value !== '') {
+    sp = _machToSpeeds(machRaw, h_ft, dISA);
+  } else if (!isNaN(iasRaw) && $('crz-ias').value !== '') {
+    sp = _casToSpeeds(iasRaw, h_ft, dISA);
+  } else {
+    elRes.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Mach または IAS を入力してください</p>';
+    elDelta.innerHTML = ''; _crzRenderTable(h_ft, dISA, null, null); return;
+  }
+  elRes.innerHTML = `
+    <div class="result-card" style="margin-bottom:0;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">IAS (CAS)</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--accent)">${sp.CAS.toFixed(0)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT</div>
+        </div>
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">TAS</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--green)">${sp.TAS.toFixed(0)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT</div>
+        </div>
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">MACH</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--gold)">${sp.M.toFixed(3)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">M</div>
+        </div>
+      </div>
+      <div class="breakdown" style="display:block">
+        <div class="brow"><span>FL${flRaw.toFixed(0)} (${h_ft.toLocaleString()} ft) ${aboveTp ? '— 圏界面以上' : ''}</span><span class="v">${aboveTp ? 'Isothermal' : 'Troposphere'}</span></div>
+        <div class="brow"><span>ISA Temperature</span><span class="v">${isaC.toFixed(1)}°C</span></div>
+        ${dISA !== 0 ? `<div class="brow"><span>Actual Temp (ISA${dISA>=0?'+':''}${dISA})</span><span class="v" style="color:var(--warn)">${actC.toFixed(1)}°C</span></div>` : ''}
+        <div class="brow"><span>Speed of Sound</span><span class="v">${sp.a.toFixed(0)} KT</span></div>
+      </div>
+    </div>`;
+  const sp2  = _machToSpeeds(sp.M - 0.01, h_ft, dISA);
+  const dCAS = sp.CAS - sp2.CAS;
+  const dTAS = sp.TAS - sp2.TAS;
+  elDelta.innerHTML = `
+    <div class="breakdown" style="display:block">
+      <div class="brow" style="color:var(--muted);font-size:0.7em"><span>FL${flRaw.toFixed(0)}, M${sp.M.toFixed(3)} → −0.01 → M${(sp.M-0.01).toFixed(3)}</span></div>
+      <div class="brow"><span>ΔIAS (CAS)</span><span class="v" style="color:var(--error)">−${dCAS.toFixed(1)} KT</span></div>
+      <div class="brow"><span>ΔTAS</span><span class="v" style="color:var(--error)">−${dTAS.toFixed(1)} KT</span></div>
+      <div class="brow" style="margin-top:4px;color:var(--muted);font-size:0.7em"><span>M${sp.M.toFixed(3)} → +0.01 → M${(sp.M+0.01).toFixed(3)}</span></div>
+      <div class="brow"><span>ΔIAS (CAS)</span><span class="v" style="color:var(--green)">+${dCAS.toFixed(1)} KT</span></div>
+      <div class="brow"><span>ΔTAS</span><span class="v" style="color:var(--green)">+${dTAS.toFixed(1)} KT</span></div>
+    </div>`;
+  _crzRenderTable(h_ft, dISA, sp.M, sp.CAS);
+}
+
+function _crzRenderTable(curH, dISA, mach, cas) {
+  const el = $('crz-table');
+  if (!el) return;
+  const fls = [240,260,280,300,320,340,360,380,400,420];
+  let rows = '';
+  for (const fl of fls) {
+    const h    = fl * 100;
+    const atm  = _crzAtmos(h, dISA);
+    const isaC = (atm.T_isa - 273.15).toFixed(1);
+    let sp;
+    if (_crzFix === 'mach' && mach !== null)     sp = _machToSpeeds(mach, h, dISA);
+    else if (_crzFix === 'ias' && cas !== null)   sp = _casToSpeeds(cas,  h, dISA);
+    else {
+      rows += `<tr><td>FL${fl}</td><td style="color:var(--muted)">${isaC}°C</td><td colspan="3" style="color:var(--muted);text-align:center">—</td></tr>`;
+      continue;
+    }
+    const hl = Math.abs(h - curH) < 50 ? 'style="color:var(--accent);font-weight:700"' : '';
+    rows += `<tr ${hl}><td>FL${fl}</td><td style="color:var(--muted)">${isaC}°C</td>
+      <td style="text-align:right">${sp.CAS.toFixed(0)}</td>
+      <td style="text-align:right">${sp.TAS.toFixed(0)}</td>
+      <td style="text-align:right">M${sp.M.toFixed(3)}</td></tr>`;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.82em">
+      <thead><tr style="color:var(--muted);font-size:0.72em;border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:4px 0;font-weight:500">FL</th>
+        <th style="text-align:left;padding:4px 0;font-weight:500">ISA Tmp</th>
+        <th style="text-align:right;padding:4px 0;font-weight:500">IAS</th>
+        <th style="text-align:right;padding:4px 0;font-weight:500">TAS</th>
+        <th style="text-align:right;padding:4px 0;font-weight:500">Mach</th>
+      </tr></thead>
+      <tbody style="color:var(--text)">${rows}</tbody>
+    </table>
+    <p style="font-size:0.6em;color:var(--muted);margin-top:6px">
+      ${_crzFix === 'mach' ? `Mach ${mach ? mach.toFixed(3) : '—'} 固定` : `IAS ${cas ? cas.toFixed(0) : '—'} KT 固定`}、
+      ΔT ISA${dISA >= 0 ? '+' : ''}${dISA}°C
     </p>`;
 }
 
@@ -3763,6 +4528,14 @@ buildAirportSelect(new Date());
 buildRouteSelect();
 fdpCalc();
 
+/* Climb Gradient */
+buildCgSel();
+cgCalc();
+gaCalc();
+
+/* CRZ */
+crzCalc();
+
 /* ══════════════════════════════════════════
    STATE PERSISTENCE (6h)
 ══════════════════════════════════════════ */
@@ -3773,7 +4546,7 @@ const _INPUT_IDS = [
   'rwyNum','windType','magVar','rwyCond','flaps','gust','weight','palt',
   'ldg-rwyNum','ldg-windType','ldg-magVar','ldg-rwyCond','ldg-weight','ldg-vref','ldg-gust',
   'fdp-route','fdp-date','fdp-report','fdp-airport',
-  'fdp-flt-h','fdp-flt-m','fdp-tax-h','fdp-tax-m','fdp-txo-h','fdp-txo-m',
+  'fdp-flt-h','fdp-flt-m','fdp-tax-h','fdp-tax-m','fdp-txo-h','fdp-txo-m','fdp-blk-h','fdp-blk-m',
 ];
 const _TO_DRUMS = [
   { col:'xd-rwyhdg',  disp:'disp-xd-rwyhdg',  sfx:'°'   },
@@ -3897,6 +4670,72 @@ document.getElementById('theme-btn').textContent =
 /* Restore on load */
 restoreState();
 </script>
+
+<!-- ════════════════════════════════════════
+     CRZ TAB
+═════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-crz">
+<div class="tab-content">
+
+<div class="card">
+  <div class="card-title">IAS / TAS / Mach Converter</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Flight Level (FL)</label>
+      <input type="number" id="crz-fl" value="350" step="10" min="100" max="450"
+             inputmode="numeric" oninput="crzCalc()">
+    </div>
+    <div class="fg">
+      <label>ΔT from ISA (°C)</label>
+      <input type="number" id="crz-disa" value="0" step="1"
+             inputmode="numeric" placeholder="0" oninput="crzCalc()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="crz-mach" value="0.84" step="0.01" min="0.5" max="1.0"
+             inputmode="decimal" oninput="crzCalcFrom('mach')">
+    </div>
+    <div class="fg">
+      <label>IAS / CAS (KT)</label>
+      <input type="number" id="crz-ias" step="1" min="150" max="400"
+             inputmode="numeric" placeholder="e.g. 280" oninput="crzCalcFrom('ias')">
+    </div>
+  </div>
+  <div id="crz-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Mach Δ0.01 による速度変化</div>
+  <div id="crz-delta" style="margin-top:4px">
+    <p style="font-size:0.78em;color:var(--muted)">上記で計算後に表示</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px">
+  <div class="card-title">高度別 IAS / TAS / Mach テーブル</div>
+  <div class="fg" style="margin-bottom:10px">
+    <label>Fixed parameter</label>
+    <div class="tgl-group">
+      <button class="tgl on" id="crz-fix-mach-btn" onclick="setCrzFix('mach')">Mach 固定</button>
+      <button class="tgl"    id="crz-fix-ias-btn"  onclick="setCrzFix('ias')">IAS 固定</button>
+    </div>
+  </div>
+  <div id="crz-table"></div>
+</div>
+
+<ul class="footnote">
+  <li>圏界面 (Tropopause): 36,089 ft (FL361) 以上は等温層 −56.5°C (ISA)</li>
+  <li>CAS = Calibrated Airspeed ≈ IAS。TAS = True Airspeed。Mach = TAS ÷ 音速</li>
+  <li>ΔT from ISA: 非標準大気での音速・TAS 補正（例: ISA+10 → +10 を入力）</li>
+  <li>コンプレッシビリティ補正 (qc/P 法) を適用した高精度計算</li>
+</ul>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-crz -->
 
 <!-- ════════════════════════════════════════
      FLIGHT LOOKUP TAB
