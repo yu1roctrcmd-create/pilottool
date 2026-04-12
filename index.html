@@ -842,6 +842,7 @@
 <div class="tab-bar" id="main-tab-bar">
   <button class="tab-btn active" onclick="switchTab('to',this)">TO</button>
   <button class="tab-btn"        onclick="switchTab('ldg',this)">LDG</button>
+  <button class="tab-btn"        onclick="switchTab('clb',this)">CLB</button>
   <button class="tab-btn"        onclick="switchTab('crz',this)">CRZ</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
@@ -4315,6 +4316,226 @@ function _gradSvg(grad_pct, rocRows) {
 }
 
 /* ══════════════════════════════════════════
+   CLB TAB
+══════════════════════════════════════════ */
+function _clbCrossoverAlt(ias_kt, mach, dISA) {
+  // Binary search: find altitude where CAS=ias_kt gives Mach=mach (ISA + dISA)
+  let lo = 0, hi = 36000;
+  for (let i = 0; i < 64; i++) {
+    const mid = (lo + hi) / 2;
+    const sp = _casToSpeeds(ias_kt, mid, dISA || 0);
+    if (sp.M < mach) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
+  const isDay  = document.body.classList.contains('day');
+  const W = 320, H = 220;
+  const padL = 42, padR = 14, padT = 14, padB = 28;
+  const gW = W - padL - padR, gH = H - padT - padB;
+  const maxAlt = 42000;
+
+  const ax = (alt) => padL + (alt / maxAlt) * gH;  // y position from altitude
+  const sx = (ias) => {                             // x position from IAS
+    const minIas = 200, maxIas = 380;
+    return padL + Math.max(0, Math.min(1, (ias - minIas) / (maxIas - minIas))) * gW;
+  };
+
+  // Y = altitude (vertical), X = IAS (horizontal) — flipped convention
+  const ay = (alt) => padT + gH - (alt / maxAlt) * gH;
+  const ix = (ias) => { const mn=200,mx=380; return padL + Math.max(0,Math.min(1,(ias-mn)/(mx-mn)))*gW; };
+
+  const mrcH   = Math.min(mrcXoverH, 36000);
+  const stdH   = Math.min(stdXoverH, 36000);
+  const restrH = 10000;
+
+  // Key Y positions
+  const y0    = ay(0);
+  const yRestr= ay(restrH);
+  const yMrc  = ay(mrcH);
+  const yStd  = ay(stdH);
+  const yTop  = ay(38000);
+
+  // Key X positions
+  const x250  = ix(250);
+  const xMrc  = ix(mrcIas);
+  const x310  = ix(310);
+  const xMin  = padL;
+  const xMax  = padL + gW;
+
+  // Grid lines & labels for altitudes
+  const altTicks = [0, 10000, 20000, 30000, 40000];
+  const gridLines = altTicks.map(a => {
+    const y = ay(a);
+    const lbl = a === 0 ? 'SL' : `FL${a/100}`;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${padL+gW}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="0.6" stroke-dasharray="3,3"/>
+            <text x="${padL-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="7" fill="var(--muted)">${lbl}</text>`;
+  }).join('');
+
+  // Speed axis ticks
+  const iasTicks = [220, 250, 280, 310, 340, 370];
+  const speedTicks = iasTicks.map(v => {
+    const x = ix(v);
+    return `<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${padT+gH}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="2,3"/>
+            <text x="${x.toFixed(1)}" y="${padT+gH+9}" text-anchor="middle" font-size="7" fill="var(--muted)">${v}</text>`;
+  }).join('');
+
+  // Phase fills
+  const mrcColor = '#00e698', stdColor = '#00c8ff', warnColor = '#ff8c42';
+
+  // Max Rate Climb profile path (step function)
+  // Phase 1: 0→10000ft at 250kt
+  // Phase 2: 10000ft→mrcXover at mrcIas
+  // Phase 3: above mrcXover → M0.83 (speed increases with alt, show as Mach line)
+  const mrcPath = `M${x250},${y0} L${x250},${yRestr} L${xMrc},${yRestr} L${xMrc},${yMrc}`;
+
+  // Standard 310/.83 profile
+  const stdPath = `M${x250},${y0} L${x250},${yRestr} L${x310},${yRestr} L${x310},${yStd}`;
+
+  // Crossover FL labels
+  const mrcXoverFL = Math.round(mrcH / 100);
+  const stdXoverFL = Math.round(stdH / 100);
+
+  // Mach 0.83 line (speed increases as altitude drops, because lower pressure)
+  // At each altitude above crossover, compute the IAS for M0.83
+  let machLine = '';
+  const machPts = [];
+  for (let alt = mrcH; alt <= 38000; alt += 500) {
+    const sp = _machToSpeeds(mrcMach, Math.min(alt, 36089), dISA || 0);
+    const x = ix(sp.CAS);
+    const y = ay(alt);
+    machPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  if (machPts.length > 1) {
+    machLine = `<polyline points="${machPts.join(' ')}" fill="none" stroke="${mrcColor}" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.7"/>`;
+  }
+
+  // Standard Mach 0.83 line
+  let stdMachLine = '';
+  const stdMachPts = [];
+  for (let alt = stdH; alt <= 38000; alt += 500) {
+    const sp = _machToSpeeds(0.83, Math.min(alt, 36089), dISA || 0);
+    const x = ix(sp.CAS);
+    const y = ay(alt);
+    stdMachPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  if (stdMachPts.length > 1) {
+    stdMachLine = `<polyline points="${stdMachPts.join(' ')}" fill="none" stroke="${stdColor}" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.6"/>`;
+  }
+
+  // Crossover markers
+  const mrcMarker = `
+    <line x1="${padL}" y1="${yMrc.toFixed(1)}" x2="${xMrc.toFixed(1)}" y2="${yMrc.toFixed(1)}" stroke="${mrcColor}" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.6"/>
+    <circle cx="${xMrc.toFixed(1)}" cy="${yMrc.toFixed(1)}" r="4" fill="${mrcColor}" opacity="0.9"/>
+    <text x="${(xMrc+6).toFixed(1)}" y="${(yMrc+4).toFixed(1)}" font-size="7.5" fill="${mrcColor}" font-weight="700">FL${mrcXoverFL}</text>`;
+  const stdMarker = mrcIas !== 310 ? `
+    <line x1="${padL}" y1="${yStd.toFixed(1)}" x2="${x310.toFixed(1)}" y2="${yStd.toFixed(1)}" stroke="${stdColor}" stroke-width="0.7" stroke-dasharray="2,2" opacity="0.5"/>
+    <circle cx="${x310.toFixed(1)}" cy="${yStd.toFixed(1)}" r="3" fill="${stdColor}" opacity="0.7"/>
+    <text x="${(x310+5).toFixed(1)}" y="${(yStd-3).toFixed(1)}" font-size="6.5" fill="${stdColor}" opacity="0.85">FL${stdXoverFL}(std)</text>` : '';
+
+  // 10,000 ft restriction marker
+  const restrMark = `
+    <line x1="${padL}" y1="${yRestr.toFixed(1)}" x2="${(padL+gW).toFixed(1)}" y2="${yRestr.toFixed(1)}" stroke="${warnColor}" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+    <text x="${padL+gW-2}" y="${(yRestr-3).toFixed(1)}" text-anchor="end" font-size="6.5" fill="${warnColor}" opacity="0.8">250KT / 10,000ft</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+      style="width:100%;display:block;margin:10px 0 4px;border-radius:8px;background:var(--card)">
+    <!-- Grid -->
+    ${gridLines}${speedTicks}
+    <!-- Standard 310/M0.83 path (background) -->
+    <polyline points="${x250},${y0} ${x250},${yRestr} ${x310},${yRestr} ${x310},${yStd}" fill="none" stroke="${stdColor}" stroke-width="1.5" opacity="0.45" stroke-dasharray="5,3"/>
+    ${stdMachLine}
+    ${stdMarker}
+    <!-- MRC path (foreground) -->
+    <polyline points="${x250},${y0} ${x250},${yRestr} ${xMrc},${yRestr} ${xMrc},${yMrc}" fill="none" stroke="${mrcColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${machLine}
+    ${mrcMarker}
+    ${restrMark}
+    <!-- Axes -->
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+gH}" stroke="var(--muted)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+gH}" x2="${padL+gW}" y2="${padT+gH}" stroke="var(--muted)" stroke-width="1"/>
+    <!-- Labels -->
+    <text x="${padL+gW/2}" y="${H-2}" text-anchor="middle" font-size="7.5" fill="var(--muted)">IAS (KT)</text>
+    <text x="8" y="${padT+gH/2}" text-anchor="middle" font-size="7.5" fill="var(--muted)" transform="rotate(-90 8 ${padT+gH/2})">Altitude</text>
+    <!-- Legend -->
+    <line x1="${padL+4}" y1="${padT+6}" x2="${padL+18}" y2="${padT+6}" stroke="${mrcColor}" stroke-width="2.5"/>
+    <text x="${padL+21}" y="${padT+10}" font-size="7" fill="${mrcColor}">Max Rate Climb</text>
+    <line x1="${padL+110}" y1="${padT+6}" x2="${padL+124}" y2="${padT+6}" stroke="${stdColor}" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <text x="${padL+127}" y="${padT+10}" font-size="7" fill="${stdColor}">310/M0.83 (std)</text>
+  </svg>`;
+}
+
+function clbCalc() {
+  const el    = $('clb-result');
+  const elStd = $('clb-std-result');
+  if (!el) return;
+
+  const dISA = parseFloat($('clb-disa').value) || 0;
+
+  // Standard 310/.83 crossover (always shown)
+  const stdXover = _clbCrossoverAlt(310, 0.83, dISA);
+  const stdFL    = Math.round(stdXover / 100);
+  const stdAtmos = _crzAtmos(stdXover, dISA);
+  elStd.innerHTML = `
+    <div class="breakdown" style="display:block">
+      <div class="brow"><span>310 KIAS → M0.83 クロスオーバー</span>
+        <span class="v" style="color:var(--accent)">FL${stdFL}</span></div>
+      <div class="brow"><span>クロスオーバー高度気温 (ISA${dISA>=0?'+':''}${dISA})</span>
+        <span class="v">${(stdAtmos.T-273.15).toFixed(1)}°C</span></div>
+    </div>`;
+
+  const w = parseFloat($('clb-weight').value);
+  if (isNaN(w)) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>';
+    // Still draw standard profile
+    el.innerHTML += _clbProfileSvg(310, 0.83, stdXover, stdXover, dISA);
+    return;
+  }
+
+  const vref30 = calcVref(w, 'F30');
+  if (vref30 === null) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">重量が有効範囲外です</p>';
+    return;
+  }
+
+  const mrcIas   = vref30 + 120;
+  const mrcXover = _clbCrossoverAlt(mrcIas, 0.83, dISA);
+  const mrcFL    = Math.round(mrcXover / 100);
+  const mrcAtmos = _crzAtmos(mrcXover, dISA);
+  const mrcTas   = mrcIas / Math.sqrt(Math.pow(mrcAtmos.T_isa / 288.15, 4.2559));
+  const iasCk    = mrcIas > 310 ? `<span style="font-size:0.75em;color:var(--warn)"> ※310より速い</span>` : '';
+
+  el.innerHTML = `
+    <div class="result-card" style="margin-bottom:0;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">VREF30</div>
+          <div style="font-size:1.8em;font-weight:700;color:var(--text)">${vref30}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT</div>
+        </div>
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">+120 KT</div>
+          <div style="font-size:1.8em;font-weight:700;color:var(--green)">${mrcIas}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT IAS</div>
+        </div>
+        <div>
+          <div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">INTERCEPT</div>
+          <div style="font-size:1.8em;font-weight:700;color:var(--gold)">FL${mrcFL}</div>
+          <div style="font-size:0.6em;color:var(--muted)">M0.83</div>
+        </div>
+      </div>
+      <div class="breakdown" style="display:block">
+        <div class="brow"><span>Weight</span><span class="v">${w.toFixed(0)} ×1000 LB</span></div>
+        <div class="brow"><span>VREF30 + 120</span><span class="v" style="color:var(--green)">${mrcIas} KT IAS ${iasCk}</span></div>
+        <div class="brow"><span>M0.83 インターセプト高度</span><span class="v" style="color:var(--gold)">FL${mrcFL} (${Math.round(mrcXover).toLocaleString()} ft)</span></div>
+        <div class="brow"><span>クロスオーバー気温 (ISA${dISA>=0?'+':''}${dISA})</span><span class="v">${(mrcAtmos.T-273.15).toFixed(1)}°C</span></div>
+      </div>
+      ${_clbProfileSvg(mrcIas, 0.83, mrcXover, stdXover, dISA)}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════
    CRZ TAB — IAS / TAS / Mach Calculator
 ══════════════════════════════════════════ */
 function _crzAtmos(h_ft, dISA) {
@@ -4533,6 +4754,9 @@ buildCgSel();
 cgCalc();
 gaCalc();
 
+/* CLB */
+clbCalc();
+
 /* CRZ */
 crzCalc();
 
@@ -4670,6 +4894,48 @@ document.getElementById('theme-btn').textContent =
 /* Restore on load */
 restoreState();
 </script>
+
+<!-- ════════════════════════════════════════
+     CLB TAB
+═════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-clb">
+<div class="tab-content">
+
+<!-- Max Rate Climb Card -->
+<div class="card">
+  <div class="card-title">Max Rate Climb &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">747-8 · VREF30 + 120 kt → M0.83</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>Weight (×1000 LB)</label>
+      <input type="number" id="clb-weight" step="10" min="400" max="1000"
+             inputmode="numeric" placeholder="e.g. 750" oninput="clbCalc()">
+    </div>
+    <div class="fg">
+      <label>ΔT from ISA (°C)</label>
+      <input type="number" id="clb-disa" value="0" step="1"
+             inputmode="numeric" placeholder="0" oninput="clbCalc()">
+    </div>
+  </div>
+  <div id="clb-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
+  </div>
+</div>
+
+<!-- Standard Climb Schedule Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
+  <div id="clb-std-result" style="margin-top:4px"></div>
+</div>
+
+<ul class="footnote">
+  <li>Max Rate Climb: VREF30 + 120 KT までIAS維持し、M0.83にインターセプト (AOM参照)</li>
+  <li>FMC は Max Rate Climb Speed を提供しない (Note: The FMC does not provide maximum rate climb speeds)</li>
+  <li>Standard: 250 KIAS below 10,000 ft → 310 KIAS → M0.83</li>
+  <li>クロスオーバー高度はISA標準大気による計算値。ΔTで補正可能</li>
+</ul>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-clb -->
 
 <!-- ════════════════════════════════════════
      CRZ TAB
