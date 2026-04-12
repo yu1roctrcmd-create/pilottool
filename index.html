@@ -410,6 +410,34 @@
     .footnote { font-size: 0.62em; color: #1e3450; line-height: 1.7; padding: 4px 4px 0; }
     .footnote li { margin-left: 14px; }
 
+    /* ── TAS/MACH Reference Table ── */
+    .tmt-section { margin-bottom: 16px; }
+    .tmt-section-lbl { font-size: 0.68em; font-weight: 700; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+    .tmt-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; border: 1px solid var(--border); }
+    .tmt { border-collapse: collapse; font-size: 9.5px; white-space: nowrap; }
+    .tmt thead tr:first-child th { background: #0d2540; color: #fff; padding: 3px 6px; text-align: center; border: 1px solid rgba(255,255,255,0.10); font-weight: 700; }
+    .tmt thead tr:last-child th  { background: #0a1e33; color: #7090b0; padding: 2px 5px; text-align: center; border: 1px solid rgba(255,255,255,0.06); font-size: 8.5px; }
+    .tmt tbody td { padding: 2px 5px; text-align: center; border: 1px solid rgba(255,255,255,0.05); color: var(--text); }
+    .tmt tbody tr:hover td { background: rgba(255,255,255,0.04); }
+    .tmt-fl  { font-weight: 700; color: var(--accent); background: rgba(13,37,64,0.6) !important;
+                position: sticky; left: 0; z-index: 2; min-width: 38px; }
+    .tmt-sub { color: var(--muted); background: rgba(13,37,64,0.3) !important; min-width: 40px; }
+    .tmt-hi  { background: rgba(0,230,152,0.10) !important; color: #00e698 !important; font-weight: 700; }
+    body.day .tmt thead tr:first-child th { background: #1e4080; }
+    body.day .tmt thead tr:last-child th  { background: #17316a; color: #8899bb; }
+    body.day .tmt tbody td { border-color: #d0d8e8; color: #222; }
+    body.day .tmt-fl  { background: rgba(30,64,128,0.10) !important; color: #1e4080; }
+    body.day .tmt-sub { background: rgba(30,64,128,0.05) !important; color: #666; }
+    body.day .tmt-hi  { background: rgba(0,180,100,0.12) !important; color: #007a40 !important; }
+
+    /* ── Path Angle Calculator ── */
+    .path-gs-tbl { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 0.78em; }
+    .path-gs-tbl th { background: var(--card); color: var(--muted); font-weight: 600; padding: 3px 8px; border: 1px solid var(--border); text-align: center; }
+    .path-gs-tbl td { padding: 3px 8px; border: 1px solid var(--border); text-align: center; color: var(--text); }
+    .path-gs-tbl tr:hover td { background: rgba(255,255,255,0.04); }
+    body.day .path-gs-tbl th { background: #f0f4fa; }
+    body.day .path-gs-tbl td { background: #fff; }
+
     /* ══════════════════════════════════════════
        CREW TAB
     ══════════════════════════════════════════ */
@@ -988,7 +1016,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc()">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight();">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -4466,6 +4494,156 @@ function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
   </svg>`;
 }
 
+/* ───────────────────────────────────────────
+   TO Weight → CLB Weight Sync
+─────────────────────────────────────────── */
+let _clbWtManual = false;
+
+function syncClbWeight() {
+  if (_clbWtManual) return;
+  const tow = $('weight') ? $('weight').value : '';
+  if (tow !== '') {
+    $('clb-weight').value = tow;
+    clbCalc();
+  }
+}
+
+function resetClbWeight() {
+  _clbWtManual = false;
+  $('clb-wt-sync-lbl').style.display = '';
+  $('clb-wt-reset').style.display    = 'none';
+  syncClbWeight();
+}
+
+/* ───────────────────────────────────────────
+   Path Angle / Required ROC Calculator
+─────────────────────────────────────────── */
+function clbPathCalc() {
+  const dist = parseFloat($('clb-path-dist').value);
+  const alt  = parseFloat($('clb-path-alt').value);
+  const el   = $('clb-path-result');
+  if (isNaN(dist) || isNaN(alt) || dist <= 0 || alt <= 0) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>';
+    return;
+  }
+  const grad  = (alt / (dist * 6076.115)) * 100;
+  const theta = Math.atan(grad / 100) * 180 / Math.PI;
+  const ftNM  = Math.round(alt / dist);
+
+  // ROC table at various GS
+  const GS_LIST = [350, 380, 400, 420, 450, 480, 500];
+  const rocRows = GS_LIST.map(gs => {
+    const t_min = (dist / gs) * 60;
+    return { gs, fpm: Math.round(alt / t_min) };
+  });
+
+  const gc = grad < 2.5 ? '#ff4560' : grad < 4.0 ? '#ff8c42' : '#00e698';
+
+  el.innerHTML = `
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">Gradient</div>
+        <div style="font-size:1.6em;font-weight:700;color:${gc}">${grad.toFixed(1)}<span style="font-size:0.55em"> %</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">Path Angle θ</div>
+        <div style="font-size:1.6em;font-weight:700;color:${gc}">${theta.toFixed(2)}<span style="font-size:0.55em"> °</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">ft / NM</div>
+        <div style="font-size:1.6em;font-weight:700">${ftNM}<span style="font-size:0.55em"> ft/NM</span></div>
+      </div>
+    </div>
+    <table class="path-gs-tbl">
+      <thead><tr><th>GS (kt)</th>${rocRows.map(r=>`<th>${r.gs}</th>`).join('')}</tr></thead>
+      <tbody><tr><td style="color:var(--muted);font-weight:600">ROC (fpm)</td>${rocRows.map(r=>`<td>${r.fpm}</td>`).join('')}</tr></tbody>
+    </table>
+    <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 上昇</p>`;
+}
+
+/* ───────────────────────────────────────────
+   Mach/IAS/TAS Reference Table (ISA)
+─────────────────────────────────────────── */
+function _initTasMachTable() {
+  const P0 = 2116.22, T0 = 288.15, a0 = 661.4786;
+
+  function _isa(fl) {
+    const H = fl * 100, Htp = 36089;
+    let T, P;
+    if (H <= Htp) {
+      T = T0 - 0.0019812 * H;
+      P = P0 * Math.pow(T / T0, 5.25588);
+    } else {
+      T = 216.65;
+      P = P0 * 0.22336 * Math.exp(-4.80634e-5 * (H - Htp));
+    }
+    return { T, P, a: a0 * Math.sqrt(T / T0) };
+  }
+
+  // Mach → CAS (IAS), TAS
+  function _m2it(mach, fl) {
+    const { P, a } = _isa(fl);
+    const qc  = P  * (Math.pow(1 + 0.2 * mach * mach, 3.5) - 1);
+    const ias = a0 * Math.sqrt(5 * (Math.pow(qc / P0 + 1, 2/7) - 1));
+    return { ias: Math.round(ias), tas: Math.round(mach * a) };
+  }
+
+  // CAS (IAS) → Mach, TAS
+  function _i2mt(ias_kt, fl) {
+    const { P, a } = _isa(fl);
+    const qc   = P0 * (Math.pow(1 + 0.2 * Math.pow(ias_kt / a0, 2), 3.5) - 1);
+    const mach = Math.sqrt(5 * (Math.pow(qc / P + 1, 2/7) - 1));
+    return { mach, tas: Math.round(mach * a) };
+  }
+
+  const FLS   = [410,400,390,380,370,360,350,340,330,320,310,300,290,280,270,260,250,240];
+  const MACHS = [0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86];
+  const IASS  = [250,255,260,265,270,275,280,285,290,295,300,305,310];
+
+  // ── Upper: Mach → IAS/TAS ──
+  let h = `<div class="tmt-wrap"><table class="tmt"><thead>
+    <tr><th rowspan="2">FL</th><th rowspan="2">OAT<br>°C</th>
+    ${MACHS.map(m => `<th colspan="2" ${m===0.83?'style="background:#0a3a20"':''}>M${m.toFixed(2)}</th>`).join('')}
+    </tr><tr>
+    ${MACHS.map(m => `<th ${m===0.83?'style="background:#0a3020"':''}>IAS</th><th ${m===0.83?'style="background:#0a3020"':''}>TAS</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  for (const fl of FLS) {
+    const { T } = _isa(fl);
+    const oat = Math.round((T - 273.15) * 10) / 10;
+    h += `<tr><td class="tmt-fl">${fl}</td><td class="tmt-sub">${oat}</td>`;
+    for (const m of MACHS) {
+      const { ias, tas } = _m2it(m, fl);
+      const c = m === 0.83 ? ' class="tmt-hi"' : '';
+      h += `<td${c}>${ias}</td><td${c}>${tas}</td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table></div>';
+  $('clb-tmt-upper').innerHTML = h;
+
+  // ── Lower: IAS → Mach/TAS ──
+  let h2 = `<div class="tmt-wrap"><table class="tmt"><thead>
+    <tr><th rowspan="2">FL</th><th rowspan="2">a (kt)</th>
+    ${IASS.map(v => `<th colspan="2" ${v===310?'style="background:#0a3a20"':''}>${v} kt</th>`).join('')}
+    </tr><tr>
+    ${IASS.map(v => `<th ${v===310?'style="background:#0a3020"':''}>Mach</th><th ${v===310?'style="background:#0a3020"':''}>TAS</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  for (const fl of FLS) {
+    const { a } = _isa(fl);
+    h2 += `<tr><td class="tmt-fl">${fl}</td><td class="tmt-sub">${(Math.round(a*10)/10).toFixed(1)}</td>`;
+    for (const iv of IASS) {
+      const { mach, tas } = _i2mt(iv, fl);
+      const c = iv === 310 ? ' class="tmt-hi"' : '';
+      h2 += `<td${c}>${mach.toFixed(3)}</td><td${c}>${tas}</td>`;
+    }
+    h2 += '</tr>';
+  }
+  h2 += '</tbody></table></div>';
+  $('clb-tmt-lower').innerHTML = h2;
+}
+
 function clbCalc() {
   const el    = $('clb-result');
   const elStd = $('clb-std-result');
@@ -4755,7 +4933,9 @@ cgCalc();
 gaCalc();
 
 /* CLB */
+syncClbWeight();
 clbCalc();
+_initTasMachTable();
 
 /* CRZ */
 crzCalc();
@@ -4906,9 +5086,14 @@ restoreState();
   <div class="card-title">Max Rate Climb &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">747-8 · VREF30 + 120 kt → M0.83</span></div>
   <div class="row2">
     <div class="fg">
-      <label>Weight (×1000 LB)</label>
-      <input type="number" id="clb-weight" step="10" min="400" max="1000"
-             inputmode="numeric" placeholder="e.g. 750" oninput="clbCalc()">
+      <label>Weight (×1000 LB)
+        <span id="clb-wt-sync-lbl" style="font-size:0.75em;font-weight:400;opacity:0.6;margin-left:4px">← TOW連動</span>
+        <button id="clb-wt-reset" onclick="resetClbWeight()"
+          style="display:none;font-size:0.7em;padding:1px 6px;margin-left:4px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">← TOW戻す</button>
+      </label>
+      <input type="number" id="clb-weight" step="1" min="400" max="1000"
+             inputmode="numeric" placeholder="e.g. 750"
+             oninput="_clbWtManual=true; $('clb-wt-sync-lbl').style.display='none'; $('clb-wt-reset').style.display=''; clbCalc();">
     </div>
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
@@ -4933,6 +5118,47 @@ restoreState();
   <li>Standard: 250 KIAS below 10,000 ft → 310 KIAS → M0.83</li>
   <li>クロスオーバー高度はISA標準大気による計算値。ΔTで補正可能</li>
 </ul>
+
+<!-- Path Angle / Required ROC Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Path Angle / 必要上昇率 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">距離・高度差から算出</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>上昇距離 (NM)</label>
+      <input type="number" id="clb-path-dist" step="5" min="1" inputmode="numeric"
+             placeholder="e.g. 40" oninput="clbPathCalc()">
+    </div>
+    <div class="fg">
+      <label>高度差 (ft)</label>
+      <input type="number" id="clb-path-alt" step="100" min="100" inputmode="numeric"
+             placeholder="e.g. 12000" oninput="clbPathCalc()">
+    </div>
+  </div>
+  <div id="clb-path-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>
+  </div>
+</div>
+
+<!-- Mach/IAS/TAS Reference Table Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気</span></div>
+
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ Mach → IAS / TAS</div>
+    <div id="clb-tmt-upper"></div>
+  </div>
+
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ IAS → Mach / TAS</div>
+    <div id="clb-tmt-lower"></div>
+  </div>
+
+  <ul class="footnote" style="margin-top:6px">
+    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。a: 音速 (kt)</li>
+    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 / 310 kt — Standard Climb Schedule</li>
+    <li>ISA標準大気 (ΔT=0) による計算値</li>
+  </ul>
+</div>
 
 </div><!-- /tab-content -->
 </div><!-- /tab-clb -->
