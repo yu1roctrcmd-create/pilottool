@@ -432,6 +432,25 @@
 
     /* ── Path Angle Calculator ── */
     .path-gs-tbl { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 0.78em; }
+
+    /* ── Energy Control Leaflet ── */
+    .ecl-section { font-size: 0.62em; font-weight: 700; color: var(--accent); letter-spacing: 1.5px;
+                   text-transform: uppercase; margin: 13px 0 5px; border-bottom: 1px solid var(--border);
+                   padding-bottom: 3px; }
+    .ecl-note { font-size: 0.72em; line-height: 1.75; color: var(--text); margin: 3px 0 5px; }
+    .ecl-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ecl-tbl { border-collapse: collapse; font-size: 10.5px; white-space: nowrap; width: 100%; margin: 4px 0; }
+    .ecl-tbl th { background: #0d2540; color: #fff; padding: 3px 6px; text-align: center;
+                  border: 1px solid rgba(255,255,255,0.10); font-weight: 600; font-size: 10px; }
+    .ecl-tbl td { padding: 2px 5px; border: 1px solid rgba(255,255,255,0.07); text-align: center; }
+    .ecl-tbl .ecl-flap { font-weight: 700; color: var(--accent);
+                          background: rgba(13,37,64,0.55) !important; text-align: center; }
+    .ecl-tbl .ecl-drag { color: var(--muted); font-size: 10px; }
+    .ecl-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .ecl-2col { grid-template-columns: 1fr; } }
+    body.day .ecl-tbl th  { background: #1a3a70; }
+    body.day .ecl-tbl td  { border-color: #ccd4e0; color: #222; }
+    body.day .ecl-tbl .ecl-flap { background: rgba(30,58,112,0.08) !important; color: #1a3a70; }
     .path-gs-tbl th { background: var(--card); color: var(--muted); font-weight: 600; padding: 3px 8px; border: 1px solid var(--border); text-align: center; }
     .path-gs-tbl td { padding: 3px 8px; border: 1px solid var(--border); text-align: center; color: var(--text); }
     .path-gs-tbl tr:hover td { background: rgba(255,255,255,0.04); }
@@ -5352,6 +5371,116 @@ restoreState();
   <div id="des-path-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>
   </div>
+</div>
+
+<!-- ── Energy Control Leaflet ── -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Energy Control Leaflet &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">747-8 参考資料</span></div>
+
+  <!-- (5) 3° PATH Gear Down -->
+  <div class="ecl-section">▸ 3° PATH (Gear Down) での減速</div>
+  <p class="ecl-note">・Gear Down での減速: <strong>10〜15 kt / NM</strong></p>
+  <p class="ecl-note">（例）1000 ft AFE で Stabilize するには 318 ft/NM = 3° として、<br>
+  2000 ft AFE で <strong>Flap5 Maneuvering Speed (≈ VREF30 + 40 kt)</strong> が必要</p>
+
+  <!-- (3) VNAV PATH -->
+  <div class="ecl-section">▸ VNAV PATH (OFF IDLE PATH) · 250 kt / 6,000 ft から開始</div>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead><tr><th>SPD (kt)</th><th>Config</th><th>IAS (kt)</th><th>距離 (NM)</th><th>高度 (ft)</th></tr></thead>
+      <tbody>
+        <tr><td>220</td><td>F1</td>      <td>215</td><td>7.0</td><td>4,000</td></tr>
+        <tr><td>200</td><td>F5</td>      <td>195</td><td>3.5</td><td>3,000</td></tr>
+        <tr><td>180</td><td>F10</td>     <td>180</td><td>1.8</td><td>2,500</td></tr>
+        <tr><td>160</td><td>F20 / GEAR</td><td>166</td><td>1.2</td><td>2,000</td></tr>
+        <tr><td>150</td><td>F25</td>     <td>162</td><td>0.5</td><td>1,500</td></tr>
+        <tr><td>150</td><td>F30</td>     <td>158</td><td>0.9</td><td>500</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- (7) Descent Performance 700T -->
+  <div class="ecl-section">▸ Descent Performance — 700T · ISA 5,000 FT · NO WIND</div>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead>
+        <tr><th>FLAP</th><th>IAS</th><th>DRAG / S·B</th><th>RATE<br>(FPM)</th><th>PATH<br>(°)</th><th>PITCH<br>(°)</th><th>TAS<br>(kt)</th><th>ALT<br>(ft)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="ecl-flap" rowspan="2">F UP</td><td rowspan="2">240</td>
+            <td class="ecl-drag">—</td>    <td>1500</td><td>2.9</td><td>2.5</td><td>265</td><td>8000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>2000</td><td style="color:#ff8c42">4.3</td><td>2.7</td><td>265</td><td>8000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="4">F1</td><td rowspan="4">214</td>
+            <td class="ecl-drag">—</td>    <td>1600</td><td>3.8</td><td>4</td>  <td>230</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>1900</td><td style="color:#ff8c42">4.6</td><td>5</td>  <td>230</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>2400</td><td style="color:#ff4560">5.8</td><td>2.5</td><td>230</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B &amp; GEAR</td><td>2700</td><td style="color:#ff4560">6.9</td><td>2.5</td><td>230</td><td>7000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="4">F5</td><td rowspan="4">194</td>
+            <td class="ecl-drag">—</td>    <td>1600</td><td>4.1</td><td>5</td>  <td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>1900</td><td style="color:#ff8c42">5.0</td><td>5</td>  <td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>2100</td><td style="color:#ff4560">5.9</td><td>3.5</td><td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B &amp; GEAR</td><td>2300</td><td style="color:#ff4560">6.5</td><td>4</td>  <td>210</td><td>7000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="3">F10</td><td rowspan="3">180</td>
+            <td class="ecl-drag">—</td>    <td>1500</td><td>4.3</td><td>4</td>  <td>190</td><td>6000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>1700</td><td style="color:#ff8c42">5.1</td><td>5</td>  <td>190</td><td>6000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>2000</td><td style="color:#ff4560">5.7</td><td>3</td>  <td>190</td><td>6000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="2">F20</td><td rowspan="2">165</td>
+            <td class="ecl-drag">—</td>    <td>1400</td><td>4.5</td><td>2</td>  <td>175</td><td>6000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>1900</td><td style="color:#ff4560">6.3</td><td>0.5</td><td>175</td><td>6000</td></tr>
+
+        <tr><td class="ecl-flap">F25</td><td>161</td>
+            <td class="ecl-drag">GEAR</td> <td>1800</td><td style="color:#ff4560">6.3</td><td>−1</td> <td>165</td><td>3000</td></tr>
+        <tr><td class="ecl-flap">F30</td><td>157</td>
+            <td class="ecl-drag">GEAR</td> <td>1800</td><td style="color:#ff4560">6.1</td><td>−2</td> <td>160</td><td>3000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- (8) Descent Performance 500T -->
+  <div class="ecl-section" style="margin-top:14px">▸ Descent Performance — 500T · ISA · NO WIND</div>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead>
+        <tr><th>FLAP</th><th>IAS</th><th>DRAG / S·B</th><th>RATE<br>(FPM)</th><th>PATH<br>(°)</th><th>PITCH<br>(°)</th><th>TAS<br>(kt)</th><th>ALT<br>(ft)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="ecl-flap" rowspan="2">F UP</td><td rowspan="2">240</td>
+            <td class="ecl-drag">—</td>    <td>1400</td><td>3.0</td><td>1</td>  <td>265</td><td>8000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>2500</td><td style="color:#ff4560">5.4</td><td>1</td>  <td>265</td><td>8000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="4">F1</td><td rowspan="4">190</td>
+            <td class="ecl-drag">—</td>    <td>1400</td><td>3.8</td><td>3</td>  <td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>1700</td><td style="color:#ff8c42">4.6</td><td>4</td>  <td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>2200</td><td style="color:#ff4560">6.1</td><td>1</td>  <td>210</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B &amp; GEAR</td><td>2500</td><td style="color:#ff4560">6.8</td><td>2</td>  <td>210</td><td>7000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="4">F5</td><td rowspan="4">169</td>
+            <td class="ecl-drag">—</td>    <td>1200</td><td>3.8</td><td>4</td>  <td>190</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B</td>  <td>1500</td><td style="color:#ff8c42">4.8</td><td>5</td>  <td>190</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>1800</td><td style="color:#ff4560">5.7</td><td>2.5</td><td>190</td><td>7000</td></tr>
+        <tr><td class="ecl-drag">S/B &amp; GEAR</td><td>2000</td><td style="color:#ff4560">6.3</td><td>4</td>  <td>190</td><td>7000</td></tr>
+
+        <tr><td class="ecl-flap" rowspan="2">F20</td><td rowspan="2">140</td>
+            <td class="ecl-drag">—</td>    <td>1400</td><td style="color:#ff8c42">5.2</td><td>2.5</td><td>155</td><td>6000</td></tr>
+        <tr><td class="ecl-drag">GEAR</td> <td>1800</td><td style="color:#ff4560">6.5</td><td>2</td>  <td>155</td><td>6000</td></tr>
+
+        <tr><td class="ecl-flap">F25</td><td>136</td>
+            <td class="ecl-drag">GEAR</td> <td>1300</td><td style="color:#ff8c42">5.3</td><td>0</td>  <td>145</td><td>3000</td></tr>
+        <tr><td class="ecl-flap">F30</td><td>133</td>
+            <td class="ecl-drag">GEAR</td> <td>1400</td><td style="color:#ff4560">5.7</td><td>−1</td> <td>140</td><td>3000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ul class="footnote" style="margin-top:8px">
+    <li>PATH色: <span style="color:#ff8c42">橙 ≥ 4.3°</span> / <span style="color:#ff4560">赤 ≥ 5.5°</span></li>
+    <li>Des Speed は Mach より IAS を維持する方がベター（Speed減速指示が予想される場合は Higher Speed 注意）</li>
+    <li>Lower Speed で TOD 阻止 / Higher Speed で降り方がよい</li>
+  </ul>
 </div>
 
 <!-- Mach/IAS/TAS Reference Table -->
