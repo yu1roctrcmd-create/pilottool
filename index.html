@@ -4675,8 +4675,9 @@ const _TMT_IASS  = [250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 
 const _TMT_FLS   = [430,420,410,400,390,380,370,360,350,340,330,320,310,300,290,280,270,260,250,240];
 
 function _tmtInject(upperElId, lowerElId, machs, iass, fls, hiMach, hiIas) {
-  const elU = $(upperElId), elL = $(lowerElId);
-  if (!elU || !elL) return false;
+  const elU = upperElId ? $(upperElId) : null;
+  const elL = lowerElId ? $(lowerElId) : null;
+  if (!elU && !elL) return false;
   machs  = machs  || _TMT_MACHS;
   iass   = iass   || _TMT_IASS;
   fls    = fls    || _TMT_FLS;
@@ -4704,7 +4705,7 @@ function _tmtInject(upperElId, lowerElId, machs, iass, fls, hiMach, hiIas) {
     h += '</tr>';
   }
   h += '</tbody></table></div>';
-  elU.innerHTML = h;
+  if (elU) elU.innerHTML = h;
 
   // ── Lower: IAS → Mach/TAS ──
   let h2 = `<div class="tmt-wrap"><table class="tmt"><thead>
@@ -4724,24 +4725,24 @@ function _tmtInject(upperElId, lowerElId, machs, iass, fls, hiMach, hiIas) {
     h2 += '</tr>';
   }
   h2 += '</tbody></table></div>';
-  elL.innerHTML = h2;
+  if (elL) elL.innerHTML = h2;
   return true;
 }
 
 // Per-tab lazy init (called from switchTab)
 let _tmtBuilt = { clb: false, crz: false, des: false };
 
-function _initTasMachTable() {   // CLB
+function _initTasMachTable() {   // CLB: IAS → Mach/TAS のみ
   if (_tmtBuilt.clb) return;
-  if (_tmtInject('clb-tmt-upper','clb-tmt-lower')) _tmtBuilt.clb = true;
+  if (_tmtInject(null,'clb-tmt-lower')) _tmtBuilt.clb = true;
 }
 function _initCrzTmt() {         // CRZ
   if (_tmtBuilt.crz) return;
   if (_tmtInject('crz-tmt-upper','crz-tmt-lower')) _tmtBuilt.crz = true;
 }
-function _initDesTmt() {         // DES
+function _initDesTmt() {         // DES: Mach → IAS/TAS のみ
   if (_tmtBuilt.des) return;
-  if (_tmtInject('des-tmt-upper','des-tmt-lower')) _tmtBuilt.des = true;
+  if (_tmtInject('des-tmt-upper', null)) _tmtBuilt.des = true;
 }
 
 function clbCalc() {
@@ -5243,19 +5244,11 @@ restoreState();
 <div class="card" style="margin-top:12px">
   <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気</span></div>
 
-  <div class="tmt-section">
-    <div class="tmt-section-lbl">▸ Mach → IAS / TAS</div>
-    <div id="clb-tmt-upper"></div>
-  </div>
-
-  <div class="tmt-section">
-    <div class="tmt-section-lbl">▸ IAS → Mach / TAS</div>
-    <div id="clb-tmt-lower"></div>
-  </div>
+  <div id="clb-tmt-lower"></div>
 
   <ul class="footnote" style="margin-top:6px">
-    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。a: 音速 (kt)</li>
-    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 / 310 kt — Standard Climb Schedule</li>
+    <li>a: 音速 (kt)。TAS: 真対気速度 (kt)</li>
+    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: 310 kt — Standard Climb Schedule</li>
     <li>ISA標準大気 (ΔT=0) による計算値</li>
   </ul>
 </div>
@@ -5486,17 +5479,11 @@ restoreState();
 <!-- Mach/IAS/TAS Reference Table -->
 <div class="card" style="margin-top:12px">
   <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気 · M0.83 中央</span></div>
-  <div class="tmt-section">
-    <div class="tmt-section-lbl">▸ Mach → IAS / TAS</div>
-    <div id="des-tmt-upper"></div>
-  </div>
-  <div class="tmt-section">
-    <div class="tmt-section-lbl">▸ IAS → Mach / TAS</div>
-    <div id="des-tmt-lower"></div>
-  </div>
+  <div id="des-tmt-upper"></div>
+
   <ul class="footnote" style="margin-top:6px">
-    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。a: 音速 (kt)</li>
-    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 / 310 kt — Standard Schedule</li>
+    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。OAT: 外気温 (°C)</li>
+    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 — Standard Descent Schedule</li>
     <li>ISA標準大気 (ΔT=0) による計算値</li>
   </ul>
 </div>
