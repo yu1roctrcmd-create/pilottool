@@ -1802,6 +1802,7 @@ function switchTab(name, btn) {
   if (name === 'crew')   requestAnimationFrame(initCrewDrums);
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
+  if (name === 'clb')    requestAnimationFrame(_initTasMachTable);
 }
 
 let _crewDrumReady = false;
@@ -4564,7 +4565,12 @@ function clbPathCalc() {
 /* ───────────────────────────────────────────
    Mach/IAS/TAS Reference Table (ISA)
 ─────────────────────────────────────────── */
+let _tmtBuilt = false;
 function _initTasMachTable() {
+  if (_tmtBuilt) return;
+  const elU = $('clb-tmt-upper'), elL = $('clb-tmt-lower');
+  if (!elU || !elL) return;          // DOM not ready yet → skip silently
+  _tmtBuilt = true;
   const P0 = 2116.22, T0 = 288.15, a0 = 661.4786;
 
   function _isa(fl) {
@@ -4620,7 +4626,7 @@ function _initTasMachTable() {
     h += '</tr>';
   }
   h += '</tbody></table></div>';
-  $('clb-tmt-upper').innerHTML = h;
+  elU.innerHTML = h;
 
   // ── Lower: IAS → Mach/TAS ──
   let h2 = `<div class="tmt-wrap"><table class="tmt"><thead>
@@ -4641,7 +4647,7 @@ function _initTasMachTable() {
     h2 += '</tr>';
   }
   h2 += '</tbody></table></div>';
-  $('clb-tmt-lower').innerHTML = h2;
+  elL.innerHTML = h2;
 }
 
 function clbCalc() {
