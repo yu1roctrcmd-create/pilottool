@@ -872,6 +872,7 @@
   <button class="tab-btn"        onclick="switchTab('ldg',this)">LDG</button>
   <button class="tab-btn"        onclick="switchTab('clb',this)">CLB</button>
   <button class="tab-btn"        onclick="switchTab('crz',this)">CRZ</button>
+  <button class="tab-btn"        onclick="switchTab('des',this)">DES</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
@@ -1803,6 +1804,8 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    requestAnimationFrame(_initTasMachTable);
+  if (name === 'crz')    requestAnimationFrame(_initCrzTmt);
+  if (name === 'des')    requestAnimationFrame(_initDesTmt);
 }
 
 let _crewDrumReady = false;
@@ -4562,65 +4565,121 @@ function clbPathCalc() {
     <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 上昇</p>`;
 }
 
+/* DES Path Angle / Required Descent Rate */
+function desPathCalc() {
+  const dist = parseFloat($('des-path-dist').value);
+  const alt  = parseFloat($('des-path-alt').value);
+  const el   = $('des-path-result');
+  if (isNaN(dist) || isNaN(alt) || dist <= 0 || alt <= 0) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>';
+    return;
+  }
+  const grad  = (alt / (dist * 6076.115)) * 100;
+  const theta = Math.atan(grad / 100) * 180 / Math.PI;
+  const ftNM  = Math.round(alt / dist);
+
+  // Standard 3° GS reference
+  const stdFtNM = Math.round(Math.tan(3 * Math.PI / 180) * 6076.115);  // ≈ 318 ft/NM
+  const stdGrad = (Math.tan(3 * Math.PI / 180) * 100).toFixed(1);
+
+  const GS_LIST = [350, 380, 400, 420, 450, 480, 500];
+  const rdcRows = GS_LIST.map(gs => {
+    const t_min = (dist / gs) * 60;
+    return { gs, fpm: Math.round(alt / t_min) };
+  });
+
+  // Color: descent typically 3-5% is normal, <2.5% too shallow, >6% steep
+  const gc = grad < 2.5 ? '#ff8c42' : grad > 6.0 ? '#ff4560' : '#00e698';
+
+  el.innerHTML = `
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">Gradient</div>
+        <div style="font-size:1.6em;font-weight:700;color:${gc}">${grad.toFixed(1)}<span style="font-size:0.55em"> %</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">Path Angle θ</div>
+        <div style="font-size:1.6em;font-weight:700;color:${gc}">${theta.toFixed(2)}<span style="font-size:0.55em"> °</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">ft / NM</div>
+        <div style="font-size:1.6em;font-weight:700">${ftNM}<span style="font-size:0.55em"> ft/NM</span></div>
+        <div style="font-size:0.62em;color:var(--muted)">標準3°: ${stdFtNM} ft/NM (${stdGrad}%)</div>
+      </div>
+    </div>
+    <table class="path-gs-tbl">
+      <thead><tr><th>GS (kt)</th>${rdcRows.map(r=>`<th>${r.gs}</th>`).join('')}</tr></thead>
+      <tbody><tr><td style="color:var(--muted);font-weight:600">ROD (fpm)</td>${rdcRows.map(r=>`<td>${r.fpm}</td>`).join('')}</tr></tbody>
+    </table>
+    <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 降下</p>`;
+}
+
 /* ───────────────────────────────────────────
    Mach/IAS/TAS Reference Table (ISA)
 ─────────────────────────────────────────── */
-let _tmtBuilt = false;
-function _initTasMachTable() {
-  if (_tmtBuilt) return;
-  const elU = $('clb-tmt-upper'), elL = $('clb-tmt-lower');
-  if (!elU || !elL) return;          // DOM not ready yet → skip silently
-  _tmtBuilt = true;
-  const P0 = 2116.22, T0 = 288.15, a0 = 661.4786;
+/* ═══════════════════════════════════════════
+   SHARED: Mach/IAS/TAS Table Builder (ISA)
+   M0.83 centered: columns 0.79–0.87
+═══════════════════════════════════════════ */
+const _TMT_P0 = 2116.22, _TMT_T0 = 288.15, _TMT_A0 = 661.4786;
 
-  function _isa(fl) {
-    const H = fl * 100, Htp = 36089;
-    let T, P;
-    if (H <= Htp) {
-      T = T0 - 0.0019812 * H;
-      P = P0 * Math.pow(T / T0, 5.25588);
-    } else {
-      T = 216.65;
-      P = P0 * 0.22336 * Math.exp(-4.80634e-5 * (H - Htp));
-    }
-    return { T, P, a: a0 * Math.sqrt(T / T0) };
+function _tmtIsa(fl) {
+  const H = fl * 100, Htp = 36089;
+  let T, P;
+  if (H <= Htp) {
+    T = _TMT_T0 - 0.0019812 * H;
+    P = _TMT_P0 * Math.pow(T / _TMT_T0, 5.25588);
+  } else {
+    T = 216.65;
+    P = _TMT_P0 * 0.22336 * Math.exp(-4.80634e-5 * (H - Htp));
   }
+  return { T, P, a: _TMT_A0 * Math.sqrt(T / _TMT_T0) };
+}
 
-  // Mach → CAS (IAS), TAS
-  function _m2it(mach, fl) {
-    const { P, a } = _isa(fl);
-    const qc  = P  * (Math.pow(1 + 0.2 * mach * mach, 3.5) - 1);
-    const ias = a0 * Math.sqrt(5 * (Math.pow(qc / P0 + 1, 2/7) - 1));
-    return { ias: Math.round(ias), tas: Math.round(mach * a) };
-  }
+function _tmtM2it(mach, fl) {          // Mach → IAS, TAS
+  const { P, a } = _tmtIsa(fl);
+  const qc  = P * (Math.pow(1 + 0.2 * mach * mach, 3.5) - 1);
+  const ias = _TMT_A0 * Math.sqrt(5 * (Math.pow(qc / _TMT_P0 + 1, 2/7) - 1));
+  return { ias: Math.round(ias), tas: Math.round(mach * a) };
+}
 
-  // CAS (IAS) → Mach, TAS
-  function _i2mt(ias_kt, fl) {
-    const { P, a } = _isa(fl);
-    const qc   = P0 * (Math.pow(1 + 0.2 * Math.pow(ias_kt / a0, 2), 3.5) - 1);
-    const mach = Math.sqrt(5 * (Math.pow(qc / P + 1, 2/7) - 1));
-    return { mach, tas: Math.round(mach * a) };
-  }
+function _tmtI2mt(ias_kt, fl) {        // IAS → Mach, TAS
+  const { P, a } = _tmtIsa(fl);
+  const qc   = _TMT_P0 * (Math.pow(1 + 0.2 * Math.pow(ias_kt / _TMT_A0, 2), 3.5) - 1);
+  const mach = Math.sqrt(5 * (Math.pow(qc / P + 1, 2/7) - 1));
+  return { mach, tas: Math.round(mach * a) };
+}
 
-  const FLS   = [410,400,390,380,370,360,350,340,330,320,310,300,290,280,270,260,250,240];
-  const MACHS = [0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86];
-  const IASS  = [250,255,260,265,270,275,280,285,290,295,300,305,310];
+// Default config — M0.83 at center (index 4 of 9)
+const _TMT_MACHS = [0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87];
+const _TMT_IASS  = [250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310];
+const _TMT_FLS   = [430,420,410,400,390,380,370,360,350,340,330,320,310,300,290,280,270,260,250,240];
+
+function _tmtInject(upperElId, lowerElId, machs, iass, fls, hiMach, hiIas) {
+  const elU = $(upperElId), elL = $(lowerElId);
+  if (!elU || !elL) return false;
+  machs  = machs  || _TMT_MACHS;
+  iass   = iass   || _TMT_IASS;
+  fls    = fls    || _TMT_FLS;
+  hiMach = (hiMach === undefined) ? 0.83 : hiMach;
+  hiIas  = (hiIas  === undefined) ? 310  : hiIas;
+
+  const BG1 = 'style="background:#0a3a20"', BG2 = 'style="background:#0a3020"';
 
   // ── Upper: Mach → IAS/TAS ──
   let h = `<div class="tmt-wrap"><table class="tmt"><thead>
     <tr><th rowspan="2">FL</th><th rowspan="2">OAT<br>°C</th>
-    ${MACHS.map(m => `<th colspan="2" ${m===0.83?'style="background:#0a3a20"':''}>M${m.toFixed(2)}</th>`).join('')}
+    ${machs.map(m=>`<th colspan="2" ${Math.abs(m-hiMach)<0.001?BG1:''}>M${m.toFixed(2)}</th>`).join('')}
     </tr><tr>
-    ${MACHS.map(m => `<th ${m===0.83?'style="background:#0a3020"':''}>IAS</th><th ${m===0.83?'style="background:#0a3020"':''}>TAS</th>`).join('')}
+    ${machs.map(m=>`<th ${Math.abs(m-hiMach)<0.001?BG2:''}>IAS</th><th ${Math.abs(m-hiMach)<0.001?BG2:''}>TAS</th>`).join('')}
     </tr></thead><tbody>`;
-
-  for (const fl of FLS) {
-    const { T } = _isa(fl);
+  for (const fl of fls) {
+    const { T } = _tmtIsa(fl);
     const oat = Math.round((T - 273.15) * 10) / 10;
     h += `<tr><td class="tmt-fl">${fl}</td><td class="tmt-sub">${oat}</td>`;
-    for (const m of MACHS) {
-      const { ias, tas } = _m2it(m, fl);
-      const c = m === 0.83 ? ' class="tmt-hi"' : '';
+    for (const m of machs) {
+      const { ias, tas } = _tmtM2it(m, fl);
+      const c = Math.abs(m - hiMach) < 0.001 ? ' class="tmt-hi"' : '';
       h += `<td${c}>${ias}</td><td${c}>${tas}</td>`;
     }
     h += '</tr>';
@@ -4631,23 +4690,39 @@ function _initTasMachTable() {
   // ── Lower: IAS → Mach/TAS ──
   let h2 = `<div class="tmt-wrap"><table class="tmt"><thead>
     <tr><th rowspan="2">FL</th><th rowspan="2">a (kt)</th>
-    ${IASS.map(v => `<th colspan="2" ${v===310?'style="background:#0a3a20"':''}>${v} kt</th>`).join('')}
+    ${iass.map(v=>`<th colspan="2" ${v===hiIas?BG1:''}>${v} kt</th>`).join('')}
     </tr><tr>
-    ${IASS.map(v => `<th ${v===310?'style="background:#0a3020"':''}>Mach</th><th ${v===310?'style="background:#0a3020"':''}>TAS</th>`).join('')}
+    ${iass.map(v=>`<th ${v===hiIas?BG2:''}>Mach</th><th ${v===hiIas?BG2:''}>TAS</th>`).join('')}
     </tr></thead><tbody>`;
-
-  for (const fl of FLS) {
-    const { a } = _isa(fl);
+  for (const fl of fls) {
+    const { a } = _tmtIsa(fl);
     h2 += `<tr><td class="tmt-fl">${fl}</td><td class="tmt-sub">${(Math.round(a*10)/10).toFixed(1)}</td>`;
-    for (const iv of IASS) {
-      const { mach, tas } = _i2mt(iv, fl);
-      const c = iv === 310 ? ' class="tmt-hi"' : '';
+    for (const iv of iass) {
+      const { mach, tas } = _tmtI2mt(iv, fl);
+      const c = iv === hiIas ? ' class="tmt-hi"' : '';
       h2 += `<td${c}>${mach.toFixed(3)}</td><td${c}>${tas}</td>`;
     }
     h2 += '</tr>';
   }
   h2 += '</tbody></table></div>';
   elL.innerHTML = h2;
+  return true;
+}
+
+// Per-tab lazy init (called from switchTab)
+let _tmtBuilt = { clb: false, crz: false, des: false };
+
+function _initTasMachTable() {   // CLB
+  if (_tmtBuilt.clb) return;
+  if (_tmtInject('clb-tmt-upper','clb-tmt-lower')) _tmtBuilt.clb = true;
+}
+function _initCrzTmt() {         // CRZ
+  if (_tmtBuilt.crz) return;
+  if (_tmtInject('crz-tmt-upper','crz-tmt-lower')) _tmtBuilt.crz = true;
+}
+function _initDesTmt() {         // DES
+  if (_tmtBuilt.des) return;
+  if (_tmtInject('des-tmt-upper','des-tmt-lower')) _tmtBuilt.des = true;
 }
 
 function clbCalc() {
@@ -5225,6 +5300,24 @@ restoreState();
   <div id="crz-table"></div>
 </div>
 
+<!-- Mach/IAS/TAS Reference Table -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気 · M0.83 中央</span></div>
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ Mach → IAS / TAS</div>
+    <div id="crz-tmt-upper"></div>
+  </div>
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ IAS → Mach / TAS</div>
+    <div id="crz-tmt-lower"></div>
+  </div>
+  <ul class="footnote" style="margin-top:6px">
+    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。a: 音速 (kt)</li>
+    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 / 310 kt — Standard Schedule</li>
+    <li>ISA標準大気 (ΔT=0) による計算値</li>
+  </ul>
+</div>
+
 <ul class="footnote">
   <li>圏界面 (Tropopause): 36,089 ft (FL361) 以上は等温層 −56.5°C (ISA)</li>
   <li>CAS = Calibrated Airspeed ≈ IAS。TAS = True Airspeed。Mach = TAS ÷ 音速</li>
@@ -5234,6 +5327,53 @@ restoreState();
 
 </div><!-- /tab-content -->
 </div><!-- /tab-crz -->
+
+<!-- ════════════════════════════════════════
+     DES TAB
+═════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-des">
+<div class="tab-content">
+
+<!-- Path Angle / Required Descent Rate Card -->
+<div class="card">
+  <div class="card-title">Path Angle / 必要降下率 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">距離・高度差から算出</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>降下距離 (NM)</label>
+      <input type="number" id="des-path-dist" step="5" min="1" inputmode="numeric"
+             placeholder="e.g. 80" oninput="desPathCalc()">
+    </div>
+    <div class="fg">
+      <label>高度差 (ft)</label>
+      <input type="number" id="des-path-alt" step="100" min="100" inputmode="numeric"
+             placeholder="e.g. 25000" oninput="desPathCalc()">
+    </div>
+  </div>
+  <div id="des-path-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>
+  </div>
+</div>
+
+<!-- Mach/IAS/TAS Reference Table -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気 · M0.83 中央</span></div>
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ Mach → IAS / TAS</div>
+    <div id="des-tmt-upper"></div>
+  </div>
+  <div class="tmt-section">
+    <div class="tmt-section-lbl">▸ IAS → Mach / TAS</div>
+    <div id="des-tmt-lower"></div>
+  </div>
+  <ul class="footnote" style="margin-top:6px">
+    <li>IAS列: 計器速度 (CAS)。TAS: 真対気速度 (kt)。a: 音速 (kt)</li>
+    <li><span style="color:#00e698;font-weight:700">緑ハイライト</span>: M0.83 / 310 kt — Standard Schedule</li>
+    <li>ISA標準大気 (ΔT=0) による計算値</li>
+  </ul>
+</div>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-des -->
 
 <!-- ════════════════════════════════════════
      FLIGHT LOOKUP TAB
