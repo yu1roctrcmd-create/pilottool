@@ -1507,6 +1507,18 @@
   </div>
 </div>
 
+<!-- WCA Card (LDG) -->
+<div class="card" style="margin-top:10px">
+  <div class="card-title">Wind Correction Angle &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">WCA — 進入クラブ角</span></div>
+  <div id="ldg-wca-result">
+    <p style="font-size:0.78em;color:var(--muted)">VREF・RWY・風向・風速を入力してください</p>
+  </div>
+  <ul class="footnote" style="margin-top:6px">
+    <li>Wind Additive = max(5, HW÷2 + Gust Increment) kt</li>
+    <li>WCA = arcsin(XW ÷ V<sub>app</sub>) &nbsp;—&nbsp; 緑 &lt;5° / 橙 5〜10° / 赤 &gt;10°</li>
+  </ul>
+</div>
+
 <!-- Max Wind per Direction (LDG) -->
 <div class="card" id="ldg-xwftCard" style="display:none">
   <div class="card-title">Max Wind per Direction
@@ -2759,6 +2771,7 @@ function calcLdg() {
   drawDiagram(norm360(rwyHdg), windDirMag, windData, headCompDiag, crossSigned, 'ldg-diagram');
   buildXwTableLdg();
   renderTasLdg();
+  ldgWcaCalc();
 }
 
 /* ── LDG crosswind fan table ── */
@@ -2819,6 +2832,7 @@ function buildXwTableLdg() {
 function renderTasLdg() {
   const vref = parseFloat($('ldg-vref').value);
   const box  = $('ldg-tasBox');
+  ldgWcaCalc();
   if (isNaN(vref)) { box.style.display = 'none'; return; }
 
   if (ldgAtEngaged) {
@@ -4598,86 +4612,63 @@ function clbPathCalc() {
 }
 
 /* ───────────────────────────────────────────
-   DES — Wind Correction Angle (WCA)
+   LDG — Wind Correction Angle (WCA)
+   Wind data is read directly from LDG tab inputs
 ─────────────────────────────────────────── */
-function syncDesWcaFromLdg() {
-  // VREF
-  const vref = $('ldg-vref');
-  if (vref && vref.value) $('des-wca-vref').value = vref.value;
+function ldgWcaCalc() {
+  const el = $('ldg-wca-result');
+  if (!el) return;
 
-  // RWY HDG from drum
-  const rwyEl = document.getElementById('ldg-rwyhdg');
-  if (rwyEl) { const v = getColRangeVal(rwyEl); if (!isNaN(v)) $('des-wca-rwy').value = v; }
+  // Read all data from existing LDG tab inputs
+  const vref    = parseFloat($('ldg-vref') ? $('ldg-vref').value : '');
+  const rwyEl   = document.getElementById('ldg-rwyhdg');
+  const wdEl    = document.getElementById('ldg-winddir');
+  const wsEl    = document.getElementById('ldg-steady');
+  const rwyHdg  = rwyEl ? getColRangeVal(rwyEl)  : NaN;
+  const wSpd    = wsEl  ? getColRangeVal(wsEl)   : NaN;
+  const gustRaw = $('ldg-gust') ? $('ldg-gust').value.trim() : '';
+  const gust    = gustRaw !== '' ? parseFloat(gustRaw) : NaN;
 
-  // Wind DIR from drum (mag)
-  const wdEl  = document.getElementById('ldg-winddir');
-  const magV  = parseFloat($('ldg-magVar') ? $('ldg-magVar').value : '0') || 0;
-  const wType = $('ldg-windType') ? $('ldg-windType').value : 'MAG';
-  if (wdEl) {
-    let wd = getColRangeVal(wdEl);
-    if (wType === 'TRUE') wd = ((wd - magV) % 360 + 360) % 360;
-    if (!isNaN(wd)) $('des-wca-wdir').value = Math.round(wd);
+  // Wind direction with mag/true correction
+  let wDir = wdEl ? getColRangeVal(wdEl) : NaN;
+  if ($('ldg-windType') && $('ldg-windType').value === 'TRUE') {
+    const magV = parseFloat($('ldg-magVar') ? $('ldg-magVar').value : '0') || 0;
+    wDir = ((wDir - magV) % 360 + 360) % 360;
   }
 
-  // Wind speed (steady)
-  const wsEl = document.getElementById('ldg-steady');
-  if (wsEl) { const v = getColRangeVal(wsEl); if (!isNaN(v)) $('des-wca-wspd').value = v; }
-
-  // Gust
-  const gustRaw = $('ldg-gust') ? $('ldg-gust').value.trim() : '';
-  $('des-wca-gust').value = (gustRaw !== '') ? gustRaw : '';
-
-  desWcaCalc();
-}
-
-function desWcaCalc() {
-  const el    = $('des-wca-result');
-  if (!el) return;
-  const vref  = parseFloat($('des-wca-vref').value);
-  const rwyHdg= parseFloat($('des-wca-rwy').value);
-  const wDir  = parseFloat($('des-wca-wdir').value);
-  const wSpd  = parseFloat($('des-wca-wspd').value);
-  const gust  = parseFloat($('des-wca-gust').value);
-
-  if ([vref, rwyHdg, wDir, wSpd].some(isNaN) || wSpd < 0) {
+  if ([vref, rwyHdg, wDir, wSpd].some(isNaN) || wSpd <= 0) {
     el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">VREF・RWY HDG・風向・風速を入力してください</p>';
     return;
   }
 
-  // Wind components relative to runway
-  const relDeg = ((wDir - rwyHdg) % 360 + 360) % 360;
-  const relRad = relDeg * Math.PI / 180;
-  const hw     = wSpd * Math.cos(relRad);           // +headwind / -tailwind
-  const xwSgn  = wSpd * Math.sin(relRad);           // + = from right
+  // Wind components
+  const relRad = ((wDir - rwyHdg) % 360 + 360) % 360 * Math.PI / 180;
+  const hw     = wSpd * Math.cos(relRad);
+  const xwSgn  = wSpd * Math.sin(relRad);
   const xw     = Math.abs(xwSgn);
   const xwDir  = xwSgn >= 0 ? 'R' : 'L';
 
-  // Wind additive (747-8 standard: HW/2 + gust increment, min 5kt)
-  const hwPos     = Math.max(0, hw);                // headwind only
-  const gustInc   = (!isNaN(gust) && gust > wSpd) ? (gust - wSpd) : 0;
-  const addCalc   = hwPos / 2 + gustInc;
-  const addUsed   = Math.max(5, addCalc);
+  // Wind additive: max(5, HW/2 + gust_increment)
+  const hwPos   = Math.max(0, hw);
+  const gustInc = (!isNaN(gust) && gust > wSpd) ? (gust - wSpd) : 0;
+  const addCalc = hwPos / 2 + gustInc;
+  const addUsed = Math.max(5, addCalc);
 
-  // Approach speeds
   const as5   = vref + 5;
   const asAdj = vref + addUsed;
+  const wcaFn = (xwKt, vKt) => xwKt >= vKt ? 90 : Math.asin(xwKt / vKt) * 180 / Math.PI;
+  const wca5   = wcaFn(xw, as5);
+  const wcaAdj = wcaFn(xw, asAdj);
 
-  // WCA = arcsin(XW / V_approach)
-  const wca = (xwKt, vKt) => xwKt >= vKt ? 90 : Math.asin(xwKt / vKt) * 180 / Math.PI;
-  const wca5   = wca(xw, as5);
-  const wcaAdj = wca(xw, asAdj);
-
-  // Colors
-  const xwColor = xw < 15 ? 'var(--text)' : xw < 25 ? '#ff8c42' : '#ff4560';
-  const hwColor = hw >= 0 ? '#00e698' : '#ff4560';
-  const hwLabel = hw >= 0 ? 'HW' : 'TW';
-  const wcaColor = (w) => w < 5 ? '#00e698' : w < 10 ? '#ff8c42' : '#ff4560';
+  const hwColor  = hw >= 0 ? '#00e698' : '#ff4560';
+  const xwColor  = xw < 15 ? 'var(--text)' : xw < 25 ? '#ff8c42' : '#ff4560';
+  const wcaColor = w => w < 5 ? '#00e698' : w < 10 ? '#ff8c42' : '#ff4560';
+  const addNote  = `HW/2=${hwPos.toFixed(1)}÷2${gustInc>0?' + Gust '+gustInc.toFixed(0):''}${addCalc<5?' → min5':''}`;
 
   el.innerHTML = `
-    <!-- Wind components -->
     <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 10px">
       <div>
-        <div style="font-size:0.67em;color:var(--muted)">${hwLabel}</div>
+        <div style="font-size:0.67em;color:var(--muted)">${hw>=0?'HW':'TW'}</div>
         <div style="font-size:1.3em;font-weight:700;color:${hwColor}">${Math.abs(hw).toFixed(1)}<span style="font-size:0.55em"> kt</span></div>
       </div>
       <div>
@@ -4687,38 +4678,29 @@ function desWcaCalc() {
       <div>
         <div style="font-size:0.67em;color:var(--muted)">Wind Additive</div>
         <div style="font-size:1.3em;font-weight:700">${addUsed.toFixed(0)}<span style="font-size:0.55em"> kt</span>
-          <span style="font-size:0.55em;color:var(--muted)">(HW/2 ${hwPos.toFixed(1)}÷2${gustInc>0?' + Gust '+gustInc.toFixed(0):''}${addCalc<5?' → min5':''})</span>
-        </div>
+          <span style="font-size:0.52em;color:var(--muted)"> (${addNote})</span></div>
       </div>
     </div>
-
-    <!-- WCA table -->
-    <table style="border-collapse:collapse;width:100%;font-size:0.85em">
-      <thead>
-        <tr style="background:#0d2540;color:#fff">
-          <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1);text-align:left">App Speed</th>
-          <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1)">Speed</th>
-          <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1)">WCA</th>
-        </tr>
-      </thead>
+    <table style="border-collapse:collapse;width:100%;font-size:0.83em">
+      <thead><tr style="background:#0d2540;color:#fff">
+        <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1);text-align:left">App Speed</th>
+        <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1)">Speed</th>
+        <th style="padding:5px 8px;border:1px solid rgba(255,255,255,0.1)">WCA</th>
+      </tr></thead>
       <tbody>
         <tr>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);color:var(--muted)">VREF + 5 kt <span style="font-size:0.85em">(最小)</span></td>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${as5} kt</td>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700;color:${wcaColor(wca5)}">${wca5.toFixed(1)}° ${xwDir}</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);color:var(--muted)">VREF + 5 kt（最小）</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${as5} kt</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700;color:${wcaColor(wca5)}">${wca5.toFixed(1)}° ${xwDir}</td>
         </tr>
         <tr>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);color:var(--muted)">VREF + ${addUsed.toFixed(0)} kt <span style="font-size:0.85em">(計算値)</span></td>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${asAdj} kt</td>
-          <td style="padding:5px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700;color:${wcaColor(wcaAdj)}">${wcaAdj.toFixed(1)}° ${xwDir}</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);color:var(--muted)">VREF + ${addUsed.toFixed(0)} kt（計算値）</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${asAdj} kt</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700;color:${wcaColor(wcaAdj)}">${wcaAdj.toFixed(1)}° ${xwDir}</td>
         </tr>
       </tbody>
     </table>
-    <p style="font-size:0.65em;color:var(--muted);margin-top:5px">
-      RWY ${String(Math.round(rwyHdg)).padStart(3,'0')}° &nbsp;|&nbsp;
-      Wind ${String(Math.round(wDir)).padStart(3,'0')}° / ${wSpd}${!isNaN(gust)&&gust>wSpd?' G'+gust:''} kt &nbsp;|&nbsp;
-      WCA = arcsin(XW ÷ V<sub>app</sub>)
-    </p>`;
+    <p style="font-size:0.63em;color:var(--muted);margin-top:5px">VREF ${vref} kt &nbsp;|&nbsp; RWY ${String(Math.round(rwyHdg)).padStart(3,'0')}° &nbsp;|&nbsp; Wind ${String(Math.round(wDir)).padStart(3,'0')}°/${wSpd}${!isNaN(gust)&&gust>wSpd?' G'+gust:''} kt &nbsp;|&nbsp; WCA = arcsin(XW÷V<sub>app</sub>)</p>`;
 }
 
 /* DES Path Angle / Required Descent Rate */
@@ -5578,55 +5560,6 @@ restoreState();
 <div class="tab-panel" id="tab-des">
 <div class="tab-content">
 
-<!-- WCA Card -->
-<div class="card">
-  <div class="card-title" style="margin-bottom:10px">
-    Wind Correction Angle &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">WCA — 進入クラブ角</span>
-    <button onclick="syncDesWcaFromLdg()"
-      style="float:right;font-size:0.7em;padding:3px 10px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:600">← LDG連動</button>
-  </div>
-
-  <div class="row2">
-    <div class="fg">
-      <label>VREF (kt)</label>
-      <input type="number" id="des-wca-vref" step="1" min="100" max="220"
-             inputmode="numeric" placeholder="e.g. 155" oninput="desWcaCalc()">
-    </div>
-    <div class="fg">
-      <label>RWY HDG (°M)</label>
-      <input type="number" id="des-wca-rwy" step="10" min="0" max="360"
-             inputmode="numeric" placeholder="e.g. 270" oninput="desWcaCalc()">
-    </div>
-  </div>
-  <div class="row2">
-    <div class="fg">
-      <label>Wind DIR (°M)</label>
-      <input type="number" id="des-wca-wdir" step="10" min="0" max="360"
-             inputmode="numeric" placeholder="e.g. 310" oninput="desWcaCalc()">
-    </div>
-    <div class="fg">
-      <label>Wind Speed (kt)</label>
-      <input type="number" id="des-wca-wspd" step="1" min="0" max="100"
-             inputmode="numeric" placeholder="e.g. 20" oninput="desWcaCalc()">
-    </div>
-  </div>
-  <div class="fg" style="max-width:160px">
-    <label>Gust (kt) &nbsp;<span style="font-size:0.8em;opacity:0.6">任意</span></label>
-    <input type="number" id="des-wca-gust" step="1" min="0" max="120"
-           inputmode="numeric" placeholder="e.g. 30" oninput="desWcaCalc()">
-  </div>
-
-  <div id="des-wca-result" style="margin-top:10px">
-    <p style="font-size:0.78em;color:var(--muted)">VREF・RWY HDG・風向・風速を入力 または ← LDG連動</p>
-  </div>
-
-  <ul class="footnote" style="margin-top:6px">
-    <li>Wind Additive = max(5, HW÷2 + Gust Increment) kt</li>
-    <li>WCA = arcsin(XW ÷ V<sub>app</sub>) &nbsp;—&nbsp; 緑 &lt;5° / 橙 5–10° / 赤 &gt;10°</li>
-    <li>「← LDG連動」でLDGタブの風・VREF・RWY情報を一括反映</li>
-  </ul>
-</div>
-
 <!-- Path Angle / Required Descent Rate Card -->
 <div class="card" style="margin-top:12px">
   <div class="card-title">Path Angle / 必要降下率 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">距離・高度差から算出</span></div>
@@ -5651,6 +5584,54 @@ restoreState();
 <div class="card" style="margin-top:12px">
   <div class="card-title">Energy Control Leaflet &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">747-8 参考資料</span></div>
 
+  <!-- (1) 降下角の目安 -->
+  <div class="ecl-section">▸ 降下角の目安</div>
+  <div class="ecl-2col" style="align-items:start;gap:10px">
+    <div class="ecl-tbl-wrap">
+      <table class="ecl-tbl">
+        <thead><tr><th>降下角</th><th>高度の目安</th><th>降下率の目安</th></tr></thead>
+        <tbody>
+          <tr><td>2.5°</td><td>距離 ÷ 4</td><td>GS × 3</td></tr>
+          <tr><td style="color:#00e698;font-weight:700">3°</td><td>距離 × 3</td><td style="color:#00e698;font-weight:700">GS × 5</td></tr>
+          <tr><td>4°</td><td>距離 × 4</td><td>GS × 7</td></tr>
+          <tr><td>5°</td><td>距離 × 5</td><td>GS × 9</td></tr>
+          <tr><td>6°</td><td>距離 × 6</td><td>GS × 10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <!-- (6) 旋回半径 -->
+      <div style="font-size:0.62em;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">AFDS HDG SEL 旋回半径</div>
+      <p class="ecl-note" style="font-size:0.63em;color:var(--muted)">Bank確立・RollOut中20°旋回<br>平均Bank12.5° / Turn中25°</p>
+      <div class="ecl-tbl-wrap">
+        <table class="ecl-tbl" style="width:auto">
+          <thead><tr><th>SPD (kt)</th><th>半径 (NM)</th></tr></thead>
+          <tbody>
+            <tr><td>240</td><td>2.3</td></tr>
+            <tr><td>220</td><td>1.9</td></tr>
+            <tr><td>200</td><td>1.6</td></tr>
+            <tr><td>180</td><td>1.2</td></tr>
+            <tr><td>160</td><td>1.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p class="ecl-note" style="font-size:0.63em;color:var(--muted);margin-top:3px">高度目安: 距離(NM)×係数 = 高度(百ft) ｜ 降下率: ROD(fpm) = GS(kt) × 係数</p>
+
+  <!-- (2) Level Flight 減速 -->
+  <div class="ecl-section">▸ Level Flight 減速 Rules of Thumb</div>
+  <p class="ecl-note">240 kt → Flap Extension → Level Flight → 170 kt 減速: 概ね <strong>7 NM</strong></p>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead><tr><th>Drag Configuration</th><th>減速率</th><th>減速必要距離</th></tr></thead>
+      <tbody>
+        <tr><td>—</td><td>1 kt / sec</td><td>10 kt / 1 NM</td></tr>
+        <tr><td>Speed Brake</td><td>2 kt / sec</td><td>20 kt / 1 NM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- (5) 3° PATH Gear Down -->
   <div class="ecl-section">▸ 3° PATH (Gear Down) での減速</div>
   <p class="ecl-note">・Gear Down での減速: <strong>10〜15 kt / NM</strong></p>
@@ -5669,6 +5650,20 @@ restoreState();
         <tr><td>160</td><td>F20 / GEAR</td><td>166</td><td>1.2</td><td>2,000</td></tr>
         <tr><td>150</td><td>F25</td>     <td>162</td><td>0.5</td><td>1,500</td></tr>
         <tr><td>150</td><td>F30</td>     <td>158</td><td>0.9</td><td>500</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- (4) THRUST IDLE -->
+  <div class="ecl-section">▸ THRUST IDLE · 250 kt / 8,000 ft から開始</div>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead><tr><th>Config</th><th>IAS (kt)</th><th>Distance (NM)</th><th>Altitude (ft)</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td>          <td>214</td><td>6.0</td><td>6,500</td></tr>
+        <tr><td>F5</td>          <td>194</td><td>3.3</td><td>3,000</td></tr>
+        <tr><td>F20 GearDown</td><td>166</td><td>3.0</td><td>2,100</td></tr>
+        <tr><td>F25</td>         <td>162</td><td>0.5</td><td>1,500</td></tr>
       </tbody>
     </table>
   </div>
