@@ -433,6 +433,17 @@
     /* ── Path Angle Calculator ── */
     .path-gs-tbl { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 0.78em; }
 
+    /* ── PREP Tab ── */
+    .prep-result-row { display:flex; gap:18px; flex-wrap:wrap; margin:8px 0; }
+    .prep-result-item { min-width:90px; }
+    .prep-result-item .lbl { font-size:0.67em; color:var(--muted); }
+    .prep-result-item .val { font-size:1.55em; font-weight:700; line-height:1.15; }
+    .prep-result-item .unit { font-size:0.52em; font-weight:400; }
+    .prep-formula { font-size:0.72em; color:var(--muted); background:rgba(255,255,255,0.04);
+                    border-radius:6px; padding:7px 10px; margin:6px 0; font-family:'SF Mono',Menlo,monospace;
+                    border:1px solid var(--border); line-height:1.8; }
+    body.day .prep-formula { background:#f5f7fb; }
+
     /* ── Energy Control Leaflet ── */
     .ecl-section { font-size: 0.62em; font-weight: 700; color: var(--accent); letter-spacing: 1.5px;
                    text-transform: uppercase; margin: 13px 0 5px; border-bottom: 1px solid var(--border);
@@ -894,6 +905,7 @@
   <button class="tab-btn"        onclick="switchTab('des',this)">DES</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
+  <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
 </div>
@@ -1825,6 +1837,7 @@ function switchTab(name, btn) {
   if (name === 'clb')    requestAnimationFrame(_initTasMachTable);
   if (name === 'crz')    requestAnimationFrame(_initCrzTmt);
   if (name === 'des')    requestAnimationFrame(_initDesTmt);
+  if (name === 'prep')   requestAnimationFrame(_initPrepTable);
 }
 
 let _crewDrumReady = false;
@@ -4855,6 +4868,101 @@ function setCrzFix(mode) {
   $('crz-fix-ias-btn').classList.toggle('on',  mode === 'ias');
   crzCalc();
 }
+/* ═══════════════════════════════════════════
+   PREP TAB — 旋回半径 / 勾配計算
+═══════════════════════════════════════════ */
+function prepTurnCalc() {
+  const v    = parseFloat($('prep-turn-spd').value);
+  const bank = parseFloat($('prep-turn-bank').value);
+  const el   = $('prep-turn-result');
+  if (!el) return;
+  if (isNaN(v) || isNaN(bank) || v <= 0 || bank <= 0 || bank >= 90) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">速度とバンク角を入力してください</p>';
+    return;
+  }
+  const bankR = bank * Math.PI / 180;
+  const R     = v * v / (9.81 * Math.tan(bankR) * 68579);      // NM
+  const rot   = 1091 * Math.tan(bankR) / v;                     // °/sec
+  const t180  = Math.round(180 / rot);                          // sec for 180°
+  const t360  = Math.round(360 / rot);
+  const gc    = R < 1.5 ? '#00e698' : R < 3.0 ? '#ff8c42' : '#ff4560';
+  el.innerHTML = `
+    <div class="prep-result-row">
+      <div class="prep-result-item">
+        <div class="lbl">旋回半径</div>
+        <div class="val" style="color:${gc}">${R.toFixed(2)}<span class="unit"> NM</span></div>
+      </div>
+      <div class="prep-result-item">
+        <div class="lbl">旋回率</div>
+        <div class="val">${rot.toFixed(2)}<span class="unit"> °/sec</span></div>
+      </div>
+      <div class="prep-result-item">
+        <div class="lbl">180° 所要</div>
+        <div class="val">${t180}<span class="unit"> sec</span></div>
+      </div>
+      <div class="prep-result-item">
+        <div class="lbl">360° 所要</div>
+        <div class="val">${t360}<span class="unit"> sec</span></div>
+      </div>
+    </div>`;
+}
+
+function prepGradCalc(src) {
+  const pctEl = $('prep-grad-pct');
+  const degEl = $('prep-grad-deg');
+  const el    = $('prep-grad-result');
+  if (!el) return;
+  if (src === 'pct') {
+    const pct = parseFloat(pctEl.value);
+    if (isNaN(pct)) { el.innerHTML = ''; return; }
+    const deg = Math.atan(pct / 100) * 180 / Math.PI;
+    degEl.value = deg.toFixed(3);
+    el.innerHTML = `<div class="prep-result-row">
+      <div class="prep-result-item"><div class="lbl">勾配</div><div class="val">${pct}<span class="unit"> %</span></div></div>
+      <div class="prep-result-item"><div class="lbl">角度</div><div class="val">${deg.toFixed(3)}<span class="unit"> °</span></div></div>
+      <div class="prep-result-item"><div class="lbl">ft / NM</div><div class="val">${Math.round(pct/100*6076.115)}<span class="unit"> ft/NM</span></div></div>
+    </div>`;
+  } else {
+    const deg = parseFloat(degEl.value);
+    if (isNaN(deg)) { el.innerHTML = ''; return; }
+    const pct = Math.tan(deg * Math.PI / 180) * 100;
+    pctEl.value = pct.toFixed(3);
+    el.innerHTML = `<div class="prep-result-row">
+      <div class="prep-result-item"><div class="lbl">角度</div><div class="val">${deg}<span class="unit"> °</span></div></div>
+      <div class="prep-result-item"><div class="lbl">勾配</div><div class="val">${pct.toFixed(3)}<span class="unit"> %</span></div></div>
+      <div class="prep-result-item"><div class="lbl">ft / NM</div><div class="val">${Math.round(pct/100*6076.115)}<span class="unit"> ft/NM</span></div></div>
+    </div>`;
+  }
+}
+
+let _prepTblBuilt = false;
+function _initPrepTable() {
+  if (_prepTblBuilt) return;
+  const el = $('prep-turn-tbl');
+  if (!el) return;
+  _prepTblBuilt = true;
+
+  const SPEEDS = [150,160,170,180,190,200,210,220,240,260,280,300];
+  const BANKS  = [15, 20, 25, 30, 35, 45];
+
+  let h = `<div class="tmt-wrap"><table class="tmt"><thead>
+    <tr><th rowspan="2">Speed<br>(kt)</th>${BANKS.map(b=>`<th>Bank ${b}°</th>`).join('')}</tr>
+    <tr>${BANKS.map(()=>'<th style="font-size:9px;color:#aaa">R (NM)</th>').join('')}</tr>
+    </thead><tbody>`;
+
+  for (const v of SPEEDS) {
+    h += `<tr><td class="tmt-fl">${v}</td>`;
+    for (const b of BANKS) {
+      const R = v * v / (9.81 * Math.tan(b * Math.PI / 180) * 68579);
+      const c = R < 1.0 ? ' style="color:#00e698"' : R < 2.0 ? '' : R > 3.5 ? ' style="color:#ff4560"' : ' style="color:#ff8c42"';
+      h += `<td${c}>${R.toFixed(2)}</td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
 function crzCalcFrom(src) {
   if (src === 'mach') $('crz-ias').value  = '';
   else                $('crz-mach').value = '';
@@ -5490,6 +5598,84 @@ restoreState();
 
 </div><!-- /tab-content -->
 </div><!-- /tab-des -->
+
+<!-- ════════════════════════════════════════
+     PREP TAB
+═════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-prep">
+<div class="tab-content">
+
+<!-- ① 旋回半径 -->
+<div class="card">
+  <div class="card-title">旋回半径 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Turn Radius</span></div>
+  <div class="prep-formula">R (NM) = V² ÷ (g × tanθ × 68579)<br>旋回率 (°/sec) = 1091 × tanθ ÷ V</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Speed (kt)</label>
+      <input type="number" id="prep-turn-spd" step="5" min="100" max="400"
+             inputmode="numeric" placeholder="e.g. 200" oninput="prepTurnCalc()">
+    </div>
+    <div class="fg">
+      <label>Bank Angle (°)</label>
+      <input type="number" id="prep-turn-bank" step="5" min="5" max="89"
+             inputmode="numeric" placeholder="e.g. 25" oninput="prepTurnCalc()">
+    </div>
+  </div>
+  <div id="prep-turn-result" style="margin-top:6px">
+    <p style="font-size:0.78em;color:var(--muted)">速度とバンク角を入力してください</p>
+  </div>
+
+  <!-- Reference Table -->
+  <div class="tmt-section-lbl" style="margin-top:14px">▸ 旋回半径 参照表 (NM)</div>
+  <div id="prep-turn-tbl"></div>
+  <ul class="footnote" style="margin-top:5px">
+    <li>緑 &lt; 1.0 NM &nbsp;/&nbsp; 橙 1.0–3.5 NM &nbsp;/&nbsp; 赤 &gt; 3.5 NM</li>
+    <li>R = V² ÷ (9.81 × tanθ × 68579) &nbsp;—&nbsp; 参考: aviate1st.com</li>
+  </ul>
+</div>
+
+<!-- ② 勾配計算 -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">勾配計算 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Gradient ↔ Angle</span></div>
+  <div class="prep-formula">θ (°) = tan⁻¹(勾配% ÷ 100)<br>勾配% = tan(θ°) × 100</div>
+  <div class="row2">
+    <div class="fg">
+      <label>勾配 (%)</label>
+      <input type="number" id="prep-grad-pct" step="0.1" inputmode="decimal"
+             placeholder="e.g. 0.5" oninput="prepGradCalc('pct')">
+    </div>
+    <div class="fg">
+      <label>角度 (°)</label>
+      <input type="number" id="prep-grad-deg" step="0.1" inputmode="decimal"
+             placeholder="e.g. 3.0" oninput="prepGradCalc('deg')">
+    </div>
+  </div>
+  <div id="prep-grad-result" style="margin-top:8px"></div>
+
+  <!-- Reference Table: common gradients -->
+  <div class="tmt-section-lbl" style="margin-top:14px">▸ よく使う勾配・角度・ft/NM</div>
+  <div class="ecl-tbl-wrap">
+    <table class="ecl-tbl">
+      <thead><tr><th>勾配 (%)</th><th>角度 (°)</th><th>ft / NM</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>0.3</td><td>0.17</td><td>18</td>   <td style="text-align:left;color:var(--muted)">滑走路最大勾配（B747-8）</td></tr>
+        <tr><td>0.5</td><td>0.29</td><td>30</td>   <td style="text-align:left;color:var(--muted)">一般的な滑走路勾配</td></tr>
+        <tr><td>2.5</td><td>1.43</td><td>152</td>  <td style="text-align:left;color:var(--muted)">最低降下勾配目安</td></tr>
+        <tr><td style="color:#00e698;font-weight:700">3.0</td><td style="color:#00e698;font-weight:700">1.72</td><td style="color:#00e698;font-weight:700">182</td><td style="text-align:left;color:var(--muted)">ILS グライドスロープ (標準)</td></tr>
+        <tr><td>3.2</td><td>1.83</td><td>194</td>  <td style="text-align:left;color:var(--muted)">OEI 上昇勾配要件</td></tr>
+        <tr><td>5.0</td><td>2.86</td><td>304</td>  <td style="text-align:left;color:var(--muted)">TO 上昇勾配目安</td></tr>
+        <tr><td>5.24</td><td>3.00</td><td>318</td> <td style="text-align:left;color:var(--muted)">3° 降下 (318 ft/NM)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="footnote" style="margin-top:5px">
+    <li>ft/NM = 勾配% ÷ 100 × 6076.115</li>
+    <li>参考: aviate1st.com — パイロット頻繁に使う計算</li>
+  </ul>
+</div>
+
+</div><!-- /tab-content -->
+</div><!-- /tab-prep -->
 
 <!-- ════════════════════════════════════════
      FLIGHT LOOKUP TAB
