@@ -4695,7 +4695,7 @@ function ldgWcaCalc() {
         </tr>
         <tr>
           <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);color:var(--muted)">VREF + ${addUsed.toFixed(0)} kt（計算値）</td>
-          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${asAdj} kt</td>
+          <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700">${Math.round(asAdj)} kt</td>
           <td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.07);text-align:center;font-weight:700;color:${wcaColor(wcaAdj)}">${wcaAdj.toFixed(1)}° ${xwDir}</td>
         </tr>
       </tbody>
