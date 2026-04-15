@@ -1950,9 +1950,9 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
   const asfC = isDay ? '#6a7068' : '#28353e';
   const mrkC = 'rgba(255,255,255,0.92)';
 
-  // Rotation offset so active runway points DOWN (180°)
-  // rotOff = 180 - rwyHdg  → runway heading lands at bottom
-  const rotOff = isNaN(rwyHdg) ? 0 : (180 - rwyHdg);
+  // Rotation offset so active runway points UP (TOP = RW HDG direction)
+  // rotOff = -rwyHdg  → runway heading lands at top
+  const rotOff = isNaN(rwyHdg) ? 0 : -rwyHdg;
 
   // 36-division compass ticks
   const ticks = Array.from({length:36}, (_,i) => {
@@ -2000,10 +2000,10 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
         ${thr}${cl}
         <text x="0" y="${-rwL+26}" text-anchor="middle"
               fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
-              transform="rotate(${-rotOff} 0 ${-rwL+26})">${rnStr}</text>
+              transform="rotate(${-rotOff} 0 ${-rwL+26})">${rnOppStr}</text>
         <text x="0" y="${rwL-16}" text-anchor="middle"
               fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
-              transform="rotate(${-rotOff} 0 ${rwL-16})">${rnOppStr}</text>
+              transform="rotate(${-rotOff} 0 ${rwL-16})">${rnStr}</text>
       </g>`;
   }
 
