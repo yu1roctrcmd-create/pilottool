@@ -170,9 +170,10 @@
     body.day .fdp-lim-day     { color: var(--muted); }
     body.day .fdp-ext-note    { color: var(--muted); }
     /* Drum pickers */
-    body.day .tgl.on        { color: #fff; }
-    body.day .tgl.on-green  { color: #fff; }
-    body.day .tgl.on-purple { color: #fff; }
+    body.day .tgl.on        { background: rgba(18,100,160,0.10); color: var(--accent); }
+    body.day .tgl.on-green  { background: rgba(0,180,120,0.10);  color: var(--green);  }
+    body.day .tgl.on-purple { background: rgba(88,56,160,0.10);  color: var(--purple); }
+    body.day .tgl           { color: var(--muted); }
     /* Gantt segments */
     body.day .seg-buffer    { background: #ddd8d0; color: var(--muted); }
     body.day .seg-duty      { background: #d4cec5; color: var(--muted); }
@@ -1846,7 +1847,7 @@ function switchTab(name, btn) {
   if (name === 'crew')   requestAnimationFrame(initCrewDrums);
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
-  if (name === 'clb')    requestAnimationFrame(_initTasMachTable);
+  if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
   if (name === 'crz')    requestAnimationFrame(_initCrzTmt);
   if (name === 'des')    requestAnimationFrame(_initDesTmt);
   if (name === 'prep')   requestAnimationFrame(_initPrepTable);
