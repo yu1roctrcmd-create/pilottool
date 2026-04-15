@@ -1999,11 +1999,9 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
         <rect x="${-rwW/2}" y="${-rwL}" width="${rwW}" height="${rwL*2}" fill="${asfC}" rx="1.5"/>
         ${thr}${cl}
         <text x="0" y="${-rwL+26}" text-anchor="middle"
-              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
-              transform="rotate(${-rotOff} 0 ${-rwL+26})">${rnOppStr}</text>
+              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1">${rnOppStr}</text>
         <text x="0" y="${rwL-16}" text-anchor="middle"
-              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1"
-              transform="rotate(${-rotOff} 0 ${rwL-16})">${rnStr}</text>
+              fill="${mrkC}" font-size="10" font-weight="700" letter-spacing="1">${rnStr}</text>
       </g>`;
   }
 
@@ -2014,8 +2012,8 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
       <circle cx="0" cy="0" r="${R}" fill="${gndC}" opacity="0.3"/>
       <g transform="rotate(${rotOff})">
         ${ticks}${runwaySVG}
+        ${compassLbls}
       </g>
-      ${compassLbls}
       ${isNaN(rwyHdg) ? `<text x="0" y="5" text-anchor="middle" fill="${dimC}" font-size="12">—</text>` : ''}`;
     return;
   }
@@ -2060,6 +2058,7 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
     <circle cx="0" cy="0" r="${R}" fill="${gndC}" opacity="0.3"/>
     <g transform="rotate(${rotOff})">
       ${ticks}${runwaySVG}
+      ${compassLbls}
       <path d="${arcD}" fill="none" stroke="rgba(255,209,102,0.5)" stroke-width="2" stroke-dasharray="4,3"/>
       <line x1="${wFx.toFixed(1)}" y1="${wFy.toFixed(1)}" x2="3" y2="3"
             stroke="#ff8c42" stroke-width="3" stroke-linecap="round" marker-end="url(#mw${sid})"/>
@@ -2069,7 +2068,6 @@ function drawDiagram(rwyHdg, windDirMag, windData, headComp, crossSigned, svgId)
       <line x1="0" y1="0" x2="${cx2.toFixed(1)}" y2="${cy2.toFixed(1)}"
             stroke="#ffd166" stroke-width="2.5" marker-end="url(#mc${sid})" opacity="0.9"/>
     </g>
-    ${compassLbls}
     ${angLbl}
     <circle cx="0" cy="0" r="4" fill="${dimC}" opacity="0.35"/>`;
 }
