@@ -4719,7 +4719,7 @@ function desPathCalc() {
   const stdFtNM = Math.round(Math.tan(3 * Math.PI / 180) * 6076.115);  // ≈ 318 ft/NM
   const stdGrad = (Math.tan(3 * Math.PI / 180) * 100).toFixed(1);
 
-  const GS_LIST = [350, 380, 400, 420, 450, 480, 500];
+  const GS_LIST = Array.from({length: 36}, (_, i) => 150 + i * 10); // 150〜500 kt, step 10
   const rdcRows = GS_LIST.map(gs => {
     const t_min = (dist / gs) * 60;
     return { gs, fpm: Math.round(alt / t_min) };
@@ -4744,10 +4744,12 @@ function desPathCalc() {
         <div style="font-size:0.62em;color:var(--muted)">標準3°: ${stdFtNM} ft/NM (${stdGrad}%)</div>
       </div>
     </div>
-    <table class="path-gs-tbl">
-      <thead><tr><th>GS (kt)</th>${rdcRows.map(r=>`<th>${r.gs}</th>`).join('')}</tr></thead>
-      <tbody><tr><td style="color:var(--muted);font-weight:600">ROD (fpm)</td>${rdcRows.map(r=>`<td>${r.fpm}</td>`).join('')}</tr></tbody>
-    </table>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="path-gs-tbl" style="min-width:max-content">
+        <thead><tr><th>GS (kt)</th>${rdcRows.map(r=>`<th>${r.gs}</th>`).join('')}</tr></thead>
+        <tbody><tr><td style="color:var(--muted);font-weight:600;white-space:nowrap">ROD (fpm)</td>${rdcRows.map(r=>`<td>${r.fpm}</td>`).join('')}</tr></tbody>
+      </table>
+    </div>
     <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 降下</p>`;
 }
 
@@ -5074,6 +5076,43 @@ function crzCalcFrom(src) {
   crzCalc();
 }
 
+/* CRZ SAT ↔ ΔT bidirectional sync */
+function _crzIsaC(fl) {
+  const h = fl * 100;
+  return (h <= 36089 ? 288.15 - 0.001981 * h : 216.65) - 273.15;
+}
+function crzFlChanged() {
+  const fl = parseFloat($('crz-fl').value);
+  if (!isNaN(fl)) {
+    const sat = parseFloat($('crz-sat').value);
+    if (!isNaN(sat)) {
+      $('crz-disa').value = Math.round(sat - _crzIsaC(fl));
+    } else {
+      const disa = parseFloat($('crz-disa').value) || 0;
+      $('crz-sat').value = (_crzIsaC(fl) + disa).toFixed(1);
+    }
+  }
+  crzCalc();
+}
+function crzDisaChanged() {
+  const fl = parseFloat($('crz-fl').value);
+  if (!isNaN(fl)) {
+    const disa = parseFloat($('crz-disa').value) || 0;
+    $('crz-sat').value = (_crzIsaC(fl) + disa).toFixed(1);
+  }
+  crzCalc();
+}
+function crzSatChanged() {
+  const fl = parseFloat($('crz-fl').value);
+  if (!isNaN(fl)) {
+    const sat = parseFloat($('crz-sat').value);
+    if (!isNaN(sat)) {
+      $('crz-disa').value = Math.round(sat - _crzIsaC(fl));
+    }
+  }
+  crzCalc();
+}
+
 function crzCalc() {
   const flRaw   = parseFloat($('crz-fl').value);
   const dISA    = parseFloat($('crz-disa').value) || 0;
@@ -5252,7 +5291,7 @@ clbCalc();
 _initTasMachTable();
 
 /* CRZ */
-crzCalc();
+crzDisaChanged();  // initialize SAT from default FL350 / ΔT=0
 
 /* ══════════════════════════════════════════
    STATE PERSISTENCE (6h)
@@ -5481,12 +5520,19 @@ restoreState();
     <div class="fg">
       <label>Flight Level (FL)</label>
       <input type="number" id="crz-fl" value="350" step="10" min="100" max="450"
-             inputmode="numeric" oninput="crzCalc()">
+             inputmode="numeric" oninput="crzFlChanged()">
     </div>
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
       <input type="number" id="crz-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="crzCalc()">
+             inputmode="numeric" placeholder="0" oninput="crzDisaChanged()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>SAT (°C) <span style="font-size:0.75em;font-weight:400;color:var(--muted)">Static Air Temp</span></label>
+      <input type="number" id="crz-sat" step="1"
+             inputmode="decimal" placeholder="自動計算" oninput="crzSatChanged()">
     </div>
   </div>
   <div class="row2" style="margin-top:8px">
