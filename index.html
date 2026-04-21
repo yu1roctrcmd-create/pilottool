@@ -1240,6 +1240,70 @@
       </div>
     </div>
   </div>
+
+  <!-- OWL: Overweight Landing inputs -->
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <div style="font-size:0.55rem;color:var(--warn);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+      <span style="flex:1;height:1px;background:rgba(255,140,66,0.25);display:inline-block"></span>
+      OVERWEIGHT LANDING CHECK
+      <span style="flex:1;height:1px;background:rgba(255,140,66,0.25);display:inline-block"></span>
+    </div>
+    <div class="row2">
+      <div class="fg">
+        <label>Dest OAT (°C)</label>
+        <input type="number" id="owl-oat" step="1" inputmode="numeric"
+               placeholder="e.g. 25" oninput="atbCalc()">
+      </div>
+      <div class="fg">
+        <label>Airport PA (ft)</label>
+        <select id="owl-pa" onchange="atbCalc()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px 12px;width:100%;font-family:inherit;font-size:1em">
+          <option value="0">0 ft (SL)</option>
+          <option value="2000">2,000 ft</option>
+          <option value="4000">4,000 ft</option>
+          <option value="6000">6,000 ft</option>
+          <option value="8000">8,000 ft</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:8px">
+      <label>Engine Config</label>
+      <div class="tgl-group">
+        <button id="owl-eng-all" class="tgl on"  onclick="setOwlEng('all')">ALL NORMAL</button>
+        <button id="owl-eng-one" class="tgl"      onclick="setOwlEng('one')">1 ENG INOP / REDUCED</button>
+        <button id="owl-eng-two" class="tgl"      onclick="setOwlEng('two')">2 ENG INOP</button>
+      </div>
+    </div>
+    <div class="row2" style="margin-top:8px">
+      <div class="fg">
+        <label>Packs</label>
+        <div class="tgl-group">
+          <button id="owl-packs-on"  class="tgl on" onclick="setOwlPacks(false)">ON</button>
+          <button id="owl-packs-off" class="tgl"    onclick="setOwlPacks(true)">OFF +8.2k</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Anti-Ice</label>
+        <div class="tgl-group">
+          <button id="owl-ai-off" class="tgl on" onclick="setOwlAi(false)">OFF</button>
+          <button id="owl-ai-on"  class="tgl"    onclick="setOwlAi(true)">ON −9.9k</button>
+        </div>
+      </div>
+    </div>
+    <div class="row2" style="margin-top:8px">
+      <div class="fg">
+        <label>Icing Cond (OAT ≤10°C)</label>
+        <div class="tgl-group">
+          <button id="owl-ice-no"  class="tgl on" onclick="setOwlIce(false)">NO</button>
+          <button id="owl-ice-yes" class="tgl"    onclick="setOwlIce(true)">YES −48.3k</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Wind Additive (kt)</label>
+        <input type="number" id="owl-add" step="1" min="5" max="20" value="5"
+               inputmode="numeric" oninput="atbCalc()">
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ATB: Results -->
@@ -2998,6 +3062,155 @@ function dumpTimeInterp(fuelDump, key) {
   return null;
 }
 
+/* ═══ OWL — Overweight Landing ═══ */
+let _owlEng = 'all', _owlPacksOff = false, _owlAiOn = false, _owlIceYes = false;
+function setOwlEng(v)     { _owlEng = v; ['all','one','two'].forEach(k => $('owl-eng-'+k).className = k===v?'tgl on':'tgl'); atbCalc(); }
+function setOwlPacks(v)   { _owlPacksOff = v; $('owl-packs-on').className = v?'tgl':'tgl on'; $('owl-packs-off').className = v?'tgl on':'tgl'; atbCalc(); }
+function setOwlAi(v)      { _owlAiOn = v;     $('owl-ai-off').className = v?'tgl':'tgl on'; $('owl-ai-on').className = v?'tgl on':'tgl'; atbCalc(); }
+function setOwlIce(v)     { _owlIceYes = v;   $('owl-ice-no').className = v?'tgl':'tgl on'; $('owl-ice-yes').className = v?'tgl on':'tgl'; atbCalc(); }
+
+/* Approach / Landing Climb Limited Weight table
+   Valid: Flaps 20 approach, Flaps 30 landing, Packs ON, Anti-ice OFF
+   OAT descending, PA ascending (0/2k/4k/6k/8k) × 1000 LB */
+const OWL_OATS = [54,52,50,48,46,44,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,-40];
+const OWL_PAS  = [0, 2000, 4000, 6000, 8000];
+const OWL_WT   = [
+  [729.1,   null,   null,   null,   null],
+  [746.6,   null,   null,   null,   null],
+  [766.5,  740.7,   null,   null,   null],
+  [784.4,  759.8,   null,   null,   null],
+  [802.6,  778.0,  727.3,   null,   null],
+  [820.8,  796.3,  743.0,   null,   null],
+  [839.2,  814.9,  761.7,  699.1,   null],
+  [858.2,  833.2,  778.5,  715.0,   null],
+  [878.7,  851.9,  795.2,  731.2,  671.4],
+  [898.4,  870.6,  812.3,  746.1,  684.3],
+  [915.9,  889.2,  829.4,  762.0,  697.6],
+  [930.6,  905.6,  846.4,  776.2,  710.2],
+  [945.5,  920.6,  859.3,  790.5,  721.8],
+  [946.1,  934.1,  871.9,  805.1,  733.5],
+  [946.6,  947.1,  884.4,  824.2,  745.1],
+  [947.1,  947.5,  896.5,  834.3,  758.2],
+  [947.6,  947.9,  907.6,  843.8,  778.2],
+  [948.1,  948.3,  908.0,  852.7,  788.0],
+  [948.6,  948.7,  908.3,  860.9,  796.5],
+  [949.1,  949.1,  908.6,  861.1,  803.8],
+  [949.5,  949.4,  908.8,  861.2,  810.5],
+  [949.7,  949.8,  909.0,  861.3,  810.7],
+  [950.0,  950.1,  909.2,  861.4,  810.8],
+  [951.8,  951.8,  915.3,  864.1,  812.7],
+];
+
+function _owlLookup(oat, pa) {
+  // Bilinear interpolation in OWL_WT table
+  // OAT rows are descending, PA cols are ascending
+  const oats = OWL_OATS, pas = OWL_PAS, wt = OWL_WT;
+
+  // Clamp and find bracketing PA columns
+  const pa_c = Math.max(0, Math.min(8000, pa));
+  let pi = pas.findIndex(p => p >= pa_c);
+  if (pi < 0) pi = pas.length - 1;
+  const pi0 = pi === 0 ? 0 : pi - 1;
+  const pi1 = pi;
+  const pFrac = pi0 === pi1 ? 0 : (pa_c - pas[pi0]) / (pas[pi1] - pas[pi0]);
+
+  // Clamp and find bracketing OAT rows (descending order)
+  const oat_c = Math.max(-40, Math.min(54, oat));
+  let oi = oats.findIndex(o => o <= oat_c);
+  if (oi < 0) oi = oats.length - 1;
+  const oi0 = oi === 0 ? 0 : oi - 1;
+  const oi1 = oi;
+  const oFrac = oi0 === oi1 ? 0 : (oats[oi0] - oat_c) / (oats[oi0] - oats[oi1]);
+
+  // Interpolate at two OAT rows for two PA cols, then combine
+  function interp2(r0, r1, f) {
+    const v0 = wt[r0][pi0], v1 = wt[r0][pi1];
+    const v2 = wt[r1][pi0], v3 = wt[r1][pi1];
+    if (v0 === null || v1 === null || v2 === null || v3 === null) return null;
+    const vA = v0 + (v1 - v0) * pFrac;
+    const vB = v2 + (v3 - v2) * pFrac;
+    return vA + (vB - vA) * f;
+  }
+  return interp2(oi0, oi1, oFrac);
+}
+
+function owlCalc(lw) {
+  /* Returns HTML string for OWL decision */
+  const oat = parseFloat($('owl-oat').value);
+  const pa  = parseInt($('owl-pa').value) || 0;
+  const add = parseFloat($('owl-add').value) || 5;
+
+  if (isNaN(oat)) return `<p style="font-size:0.75em;color:var(--muted)">OWT確認: Dest OAT を入力してください</p>`;
+
+  // Step 1: Engine config
+  if (_owlEng === 'two') {
+    return `<div class="breakdown" style="display:block">
+      <div style="color:var(--warn);font-weight:700;margin-bottom:6px">⚠ STEP 1: 2 Engines Inoperative</div>
+      <div class="brow"><span>→ Go to Two Engines Inop Checklist (p7.36)</span><span class="v" style="color:var(--error)">STOP</span></div>
+    </div>`;
+  }
+  if (_owlEng === 'one') {
+    const vref25 = calcVref(lw, 'F25');
+    return `<div class="breakdown" style="display:block">
+      <div style="color:var(--warn);font-weight:700;margin-bottom:6px">⚠ STEP 1: 1 Engine Inop / Reduced Thrust</div>
+      <div class="brow"><span>Use Flaps 25 and VREF 25 for landing</span></div>
+      <div class="brow"><span>VREF 25 — ${lw.toFixed(0)} × 1000 LB</span><span class="v" style="color:var(--warn)">${vref25 ?? '—'} KIAS</span></div>
+    </div>`;
+  }
+
+  // Step 2&3: Climb Limited Weight lookup
+  let baseWt = _owlLookup(oat, pa);
+  if (baseWt === null) {
+    return `<div class="breakdown" style="display:block">
+      <div class="brow"><span style="color:var(--error)">⚠ OAT/PA 組み合わせが表外です</span></div>
+    </div>`;
+  }
+  // Apply corrections
+  let limWt = baseWt;
+  if (_owlPacksOff) limWt += 8.2;
+  if (_owlAiOn)     limWt -= 9.9;
+  if (_owlIceYes)   limWt -= 48.3;
+
+  const above = lw > limWt;
+
+  // Step 4&5 (only if lw ≤ limWt)
+  const vref30 = calcVref(lw, 'F30');
+  const vref25 = calcVref(lw, 'F25');
+  const appSpd = vref30 !== null ? vref30 + add : null;
+  const ok175  = appSpd !== null && appSpd <= 175;
+
+  const corrNote = [
+    _owlPacksOff ? '+8.2k (Packs OFF)' : '',
+    _owlAiOn     ? '−9.9k (Anti-Ice ON)' : '',
+    _owlIceYes   ? '−48.3k (Icing)' : '',
+  ].filter(Boolean).join(', ');
+
+  let html = `<div class="breakdown" style="display:block">
+    <div class="brow"><span>All Engines Normal</span><span class="v" style="color:var(--green)">✓</span></div>
+    <div class="brow"><span>Climb Limited Wt (OAT ${oat}°C, PA ${pa.toLocaleString()} ft)</span><span class="v">${baseWt.toFixed(1)} × 1000 LB</span></div>
+    ${corrNote ? `<div class="brow"><span>Corrections: ${corrNote}</span><span class="v">${limWt.toFixed(1)} × 1000 LB</span></div>` : ''}
+    <div class="brow"><span>Landing Wt (TOW)</span><span class="v" style="color:${above?'var(--error)':'var(--green)'}">
+      ${lw.toFixed(0)} ${above ? '> ABOVE LIMIT' : '≤ OK'}</span></div>`;
+
+  if (above) {
+    html += `<div class="brow" style="margin-top:4px"><span style="color:var(--warn);font-weight:700">→ Use Flaps 25 and VREF 25</span></div>
+      <div class="brow"><span>VREF 25 — ${lw.toFixed(0)} × 1000 LB</span><span class="v" style="color:var(--warn)">${vref25 ?? '—'} KIAS</span></div>`;
+  } else {
+    html += `<div class="brow"><span>VREF 30 + Additive (${add} kt)</span><span class="v" style="color:${ok175?'var(--green)':'var(--error)'}">
+      ${appSpd !== null ? appSpd.toFixed(0) : '—'} KIAS ${appSpd !== null ? (ok175 ? '≤ 175 ✓' : '> 175 ✗') : ''}</span></div>`;
+    if (ok175) {
+      html += `<div class="brow" style="margin-top:4px"><span style="color:var(--green);font-weight:700">→ F25 or F30 available (land normally)</span></div>
+        <div class="brow"><span>VREF 30 — ${lw.toFixed(0)} × 1000 LB</span><span class="v" style="color:var(--accent)">${vref30 ?? '—'} KIAS</span></div>
+        <div class="brow"><span>VREF 25 — ${lw.toFixed(0)} × 1000 LB</span><span class="v" style="color:var(--muted)">${vref25 ?? '—'} KIAS</span></div>`;
+    } else {
+      html += `<div class="brow" style="margin-top:4px"><span style="color:var(--warn);font-weight:700">→ VREF30+Add > 175 kt: Use Flaps 25 and VREF 25</span></div>
+        <div class="brow"><span>VREF 25 — ${lw.toFixed(0)} × 1000 LB</span><span class="v" style="color:var(--warn)">${vref25 ?? '—'} KIAS</span></div>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
 let atbFlap = 'F25';
 function setAtbFlap(v) {
   atbFlap = v;
@@ -3166,6 +3379,12 @@ function atbCalc() {
           <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
         </div>
       </div>
+    </div>`;
+
+    /* ── OWL: Overweight Landing Check ── */
+    html += `<div class="atb-ref-hdr" style="color:var(--warn)">Overweight Landing Check</div>`;
+    html += `<div class="atb-row" style="flex-direction:column;gap:4px;align-items:stretch;border-color:rgba(255,140,66,0.3);background:rgba(255,140,66,0.04)">
+      ${owlCalc(immW)}
     </div>`;
   }
 
