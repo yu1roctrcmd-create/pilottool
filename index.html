@@ -3386,6 +3386,73 @@ function atbCalc() {
     html += `<div class="atb-row" style="flex-direction:column;gap:4px;align-items:stretch;border-color:rgba(255,140,66,0.3);background:rgba(255,140,66,0.04)">
       ${owlCalc(immW)}
     </div>`;
+
+    /* ── EFB Enroute Landing Distance Reference (NRT 34R) ── */
+    html += `<div class="atb-ref-hdr" style="color:var(--sub)">Enroute Landing Dist Ref <span style="font-weight:400;font-size:10px;margin-left:4px">NRT 34R / DRY / OAT 30°C / F25 / All Rev / All Brk / LDA 8,202 ft</span></div>`;
+    html += `<div class="atb-row" style="flex-direction:column;padding:0;border-color:rgba(100,120,160,0.2);background:rgba(100,120,160,0.03);overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px">
+        <thead>
+          <tr style="color:var(--muted);border-bottom:1px solid var(--border)">
+            <th style="padding:5px 6px;text-align:left;font-weight:500">Weight</th>
+            <th style="padding:5px 6px;text-align:center;font-weight:500">Wind</th>
+            <th style="padding:5px 6px;text-align:center;font-weight:500">VREF+5</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#34c759">MM</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#34c759">MA</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#f4a836">ABK4</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#f4a836">ABK3</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#f4a836">ABK2</th>
+            <th style="padding:5px 4px;text-align:center;font-weight:500;color:#f4a836">ABK1</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--label);font-weight:600">763k lb</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--sub)">0 KT</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--label);font-weight:600">168 kt</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">6,276</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">7,245</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">9,148</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">10,429</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">11,854</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">13,414</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--label);font-weight:600">763k lb</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--warn)">5 TW</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--label);font-weight:600">168 kt</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">6,696</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">7,722</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">9,790</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">11,180</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">12,727</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">14,451</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:5px 6px;color:var(--label);font-weight:600">875k lb</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--sub)">0 KT</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--label);font-weight:600">178 kt</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">7,249</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">7,984</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">10,112</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">11,558</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">13,192</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">15,125</td>
+          </tr>
+          <tr>
+            <td style="padding:5px 6px;color:var(--label);font-weight:600">975k lb</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--sub)">0 KT</td>
+            <td style="padding:5px 6px;text-align:center;color:var(--label);font-weight:600">188 kt</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">8,322</td>
+            <td style="padding:5px 4px;text-align:center;color:#34c759;font-weight:700">8,828</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">11,100</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">12,718</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">14,546</td>
+            <td style="padding:5px 4px;text-align:center;color:#f4a836">16,802</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:4px 8px 6px;font-size:10px;color:var(--muted)">MM=Max Manual　MA=Max Auto　ABK=Auto Brake　単位 ft　※参考値（EFB出力）</div>
+    </div>`;
   }
 
   html += `</div>`;
@@ -6187,7 +6254,8 @@ restoreState();
       <button class="flt-itab flt-on" onclick="FLT.tab(0)">一覧</button>
       <button class="flt-itab" onclick="FLT.tab(1)">追加・編集</button>
       <button class="flt-itab" onclick="FLT.tab(2)">CSVインポート</button>
-      <button class="flt-itab" onclick="FLT.tab(3)">⚙ 設定</button>
+      <button class="flt-itab" onclick="FLT.tab(3)">📄 PDF</button>
+      <button class="flt-itab" onclick="FLT.tab(4)">⚙ 設定</button>
     </div>
 
     <!-- Pane 0: List -->
@@ -6255,8 +6323,19 @@ restoreState();
       </div>
     </div>
 
-    <!-- Pane 3: Settings -->
+    <!-- Pane 3: PDF -->
     <div class="flt-pane" id="p3">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:600;color:var(--label)">📄 便名フォルダ PDFファイル</div>
+        <button class="flt-btn btn-muted btn-sm" onclick="FLT.refreshPdf()">🔄 更新</button>
+      </div>
+      <div id="pdfList" style="font-size:13px;color:var(--sub)">
+        <span style="color:var(--muted)">読み込み中…</span>
+      </div>
+    </div>
+
+    <!-- Pane 4: Settings -->
+    <div class="flt-pane" id="p4">
       <div class="fg">
 
         <div class="s2">
@@ -6599,6 +6678,7 @@ async function scanFolder() {
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
+    renderPdfList(data.pdf_files || []);
     const found = data.flights || {};
     const count = Object.keys(found).length;
     if (count === 0) {
@@ -6614,6 +6694,59 @@ async function scanFolder() {
     out.innerHTML = `<span style="color:#34c759">✓ ${n}件追加しました（${files}）</span>`;
   } catch(e) {
     out.innerHTML = '<span style="color:#ff453a">⚠ サーバーに接続できません。<br><code>python3 /tmp/serve_flight.py</code> を起動してください。</span>';
+  }
+}
+
+function renderPdfList(pdfs) {
+  const el = document.getElementById('pdfList');
+  if (!el) return;
+  if (!pdfs || pdfs.length === 0) {
+    el.innerHTML = '<span style="color:var(--muted)">便名フォルダにPDFファイルがありません</span>';
+    return;
+  }
+  const rows = pdfs.map(p => {
+    const kb = p.size ? (p.size / 1024).toFixed(0) + ' KB' : '';
+    const url = `http://localhost:5050/api/pdf?f=${encodeURIComponent(p.name)}`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:20px">📄</span>
+      <div style="flex:1;min-width:0">
+        <a href="${url}" target="_blank" rel="noopener"
+           style="color:var(--accent);font-weight:600;text-decoration:none;word-break:break-all"
+           onclick="return openPdf(event,'${url}','${p.name.replace(/'/g,'\\\'')}')">${esc(p.name)}</a>
+        ${kb ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">${kb}</span>` : ''}
+      </div>
+      <a href="${url}" target="_blank" rel="noopener"
+         style="flex-shrink:0;font-size:11px;padding:4px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:6px;text-decoration:none"
+         onclick="return openPdf(event,'${url}','${p.name.replace(/'/g,'\\\'')}')"
+      >開く</a>
+    </div>`;
+  }).join('');
+  el.innerHTML = rows;
+}
+
+function openPdf(evt, url, name) {
+  evt.preventDefault();
+  // Try to open in new tab; if blocked try window.open
+  const w = window.open(url, '_blank');
+  if (!w) {
+    // Fallback: create a hidden anchor and click it
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  return false;
+}
+
+async function refreshPdf() {
+  const el = document.getElementById('pdfList');
+  if (el) el.innerHTML = '<span style="color:var(--muted)">更新中…</span>';
+  try {
+    const resp = await fetch('http://localhost:5050/api/refresh-cache', {signal: AbortSignal.timeout(15000)});
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    renderPdfList(data.pdf_files || []);
+  } catch(e) {
+    if (el) el.innerHTML = '<span style="color:#ff453a">⚠ サーバーに接続できません。<br><code>python3 /tmp/serve_flight.py</code> を起動してください。</span>';
   }
 }
 
@@ -6818,6 +6951,8 @@ function tab(n) {
       {signal: AbortSignal.timeout(3000)});
     if (!resp.ok) return;
     const data = await resp.json();
+    // Always populate PDF list if server is running
+    renderPdfList(data.pdf_files || []);
     if (!data.flights) return;
     const d = db(); let n = 0;
     for (const [k, v] of Object.entries(data.flights)) {
@@ -6832,7 +6967,11 @@ function tab(n) {
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
-  } catch(e) { /* server not running — silently ignore */ }
+  } catch(e) {
+    // Server not running — show placeholder in PDF pane
+    const el = document.getElementById('pdfList');
+    if (el) el.innerHTML = '<span style="color:var(--muted)">サーバー未起動 — <code>python3 /tmp/serve_flight.py</code> を起動してください</span>';
+  }
 })();
 
 
@@ -6841,7 +6980,7 @@ function tab(n) {
     go, go2, tab, render,
     setFilter, onAlDropdown, onQInput,
     edit, del, saveFlight,
-    doImport, doExport, scanFolder,
+    doImport, doExport, scanFolder, refreshPdf,
     saveSettings, clearAll, updateApiStatus,
     _ready: false
   };
