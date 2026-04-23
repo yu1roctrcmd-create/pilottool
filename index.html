@@ -4851,6 +4851,49 @@ function resetClbWeight() {
 }
 
 /* ───────────────────────────────────────────
+   Crossover Altitude Calculator
+─────────────────────────────────────────── */
+function clbXoverCalc() {
+  const el   = $('clb-xover-result');
+  if (!el) return;
+  const ias  = parseFloat($('clb-xo-ias').value);
+  const mach = parseFloat($('clb-xo-mach').value);
+  const disa = parseFloat($('clb-disa').value) || 0;
+
+  if (isNaN(ias) || isNaN(mach) || ias <= 0 || mach <= 0) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">IAS と Mach を入力してください</p>';
+    return;
+  }
+
+  // Crossover altitude (binary search, ISA+dISA)
+  const xoAlt = _clbCrossoverAlt(ias, mach, disa);
+  const xoFL  = Math.round(xoAlt / 100);
+
+  // Atmosphere at crossover
+  const sp = _casToSpeeds(ias, xoAlt, disa);
+  const tas = Math.round(sp.TAS);
+  const oat = Math.round((sp.T - 273.15) * 10) / 10;
+  const machAtXo = sp.M.toFixed(3);
+
+  // ISA label
+  const disaLbl = disa === 0 ? 'ISA' : `ISA${disa > 0 ? '+' : ''}${disa}`;
+
+  el.innerHTML = `
+    <div class="breakdown" style="display:block">
+      <div class="brow">
+        <span>${ias} KIAS ↔ M${mach.toFixed(2)} クロスオーバー</span>
+        <span class="v" style="color:var(--accent);font-size:1.15em;font-weight:700">FL${xoFL}</span>
+      </div>
+      <div class="brow"><span>TAS at FL${xoFL} (${disaLbl})</span>
+        <span class="v" style="color:var(--green);font-weight:700">${tas} kt</span></div>
+      <div class="brow"><span>OAT at FL${xoFL} (${disaLbl})</span>
+        <span class="v">${oat} °C</span></div>
+      <div class="brow"><span>Mach（確認）</span>
+        <span class="v">M${machAtXo}</span></div>
+    </div>`;
+}
+
+/* ───────────────────────────────────────────
    Path Angle / Required ROC Calculator
 ─────────────────────────────────────────── */
 function clbPathCalc() {
@@ -5574,6 +5617,7 @@ gaCalc();
 /* CLB */
 syncClbWeight();
 clbCalc();
+clbXoverCalc();
 _initTasMachTable();
 
 /* CRZ */
@@ -5737,7 +5781,7 @@ restoreState();
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
       <input type="number" id="clb-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="clbCalc()">
+             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc()">
     </div>
   </div>
   <div id="clb-result" style="margin-top:10px">
@@ -5749,6 +5793,24 @@ restoreState();
 <div class="card" style="margin-top:12px">
   <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
   <div id="clb-std-result" style="margin-top:4px"></div>
+</div>
+
+<!-- Crossover Altitude Calculator -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">クロスオーバー高度 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">IAS / Mach 入力 → 交差高度 · TAS</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>IAS (kt)</label>
+      <input type="number" id="clb-xo-ias" step="5" min="200" max="400"
+             inputmode="numeric" placeholder="310" value="310" oninput="clbXoverCalc()">
+    </div>
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="clb-xo-mach" step="0.01" min="0.50" max="0.99"
+             inputmode="decimal" placeholder="0.83" value="0.83" oninput="clbXoverCalc()">
+    </div>
+  </div>
+  <div id="clb-xover-result" style="margin-top:8px"></div>
 </div>
 
 <ul class="footnote">
