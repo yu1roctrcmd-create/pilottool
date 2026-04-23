@@ -4894,6 +4894,44 @@ function clbXoverCalc() {
 }
 
 /* ───────────────────────────────────────────
+   Mach + FL → IAS / TAS Calculator
+─────────────────────────────────────────── */
+function clbMachIasCalc() {
+  const el   = $('clb-mi-result');
+  if (!el) return;
+  const mach = parseFloat($('clb-mi-mach').value);
+  const fl   = parseFloat($('clb-mi-fl').value);
+  const disa = parseFloat($('clb-disa').value) || 0;
+
+  if (isNaN(mach) || isNaN(fl) || mach <= 0 || fl <= 0) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>';
+    return;
+  }
+
+  const h = fl * 100;
+  const { T, P, a, P0, a0 } = _crzAtmos(h, disa);
+  const tas = Math.round(mach * a);
+  const qc  = P * (Math.pow(1 + 0.2 * mach * mach, 3.5) - 1);
+  const ias  = Math.round(a0 * Math.sqrt(5 * (Math.pow(qc / P0 + 1, 2/7) - 1)));
+  const oat  = Math.round((T - 273.15) * 10) / 10;
+  const disaLbl = disa === 0 ? 'ISA' : `ISA${disa > 0 ? '+' : ''}${disa}`;
+
+  el.innerHTML = `
+    <div class="breakdown" style="display:block">
+      <div class="brow">
+        <span>IAS &nbsp;<span style="color:var(--muted);font-size:0.85em">at FL${fl} / M${mach.toFixed(2)}</span></span>
+        <span class="v" style="color:var(--accent);font-size:1.15em;font-weight:700">${ias} kt</span>
+      </div>
+      <div class="brow"><span>TAS</span>
+        <span class="v" style="color:var(--green);font-weight:700">${tas} kt</span></div>
+      <div class="brow"><span>OAT (${disaLbl})</span>
+        <span class="v">${oat} °C</span></div>
+      <div class="brow"><span>音速 a</span>
+        <span class="v">${Math.round(a)} kt</span></div>
+    </div>`;
+}
+
+/* ───────────────────────────────────────────
    Path Angle / Required ROC Calculator
 ─────────────────────────────────────────── */
 function clbPathCalc() {
@@ -5618,6 +5656,7 @@ gaCalc();
 syncClbWeight();
 clbCalc();
 clbXoverCalc();
+clbMachIasCalc();
 _initTasMachTable();
 
 /* CRZ */
@@ -5781,7 +5820,7 @@ restoreState();
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
       <input type="number" id="clb-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc()">
+             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc(); clbMachIasCalc()">
     </div>
   </div>
   <div id="clb-result" style="margin-top:10px">
@@ -5811,6 +5850,25 @@ restoreState();
     </div>
   </div>
   <div id="clb-xover-result" style="margin-top:8px"></div>
+
+  <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+
+  <div style="font-size:0.75em;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">▸ Mach / ALT → IAS / TAS</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="clb-mi-mach" step="0.01" min="0.50" max="0.99"
+             inputmode="decimal" placeholder="0.83" oninput="clbMachIasCalc()">
+    </div>
+    <div class="fg">
+      <label>FL (高度層)</label>
+      <input type="number" id="clb-mi-fl" step="10" min="50" max="450"
+             inputmode="numeric" placeholder="350" oninput="clbMachIasCalc()">
+    </div>
+  </div>
+  <div id="clb-mi-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>
+  </div>
 </div>
 
 <ul class="footnote">
