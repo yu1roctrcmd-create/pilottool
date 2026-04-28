@@ -6210,6 +6210,71 @@ restoreState();
   </div>
 </div>
 
+<!-- Climb Angle Reference Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">上昇角の目安
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">SID / Obstacle Clearance</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:0.82em">
+    <thead>
+      <tr style="color:var(--muted);font-size:0.68em;border-bottom:2px solid var(--border)">
+        <th style="text-align:right;padding:3px 6px;font-weight:600">ft/NM</th>
+        <th style="text-align:right;padding:3px 6px;font-weight:600">勾配 %</th>
+        <th style="text-align:right;padding:3px 6px;font-weight:600">角度 °</th>
+        <th style="text-align:left;padding:3px 6px;font-weight:600">基準・用途</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1)">
+        <td style="text-align:right;padding:4px 6px;color:#ff4560;font-weight:700">200</td>
+        <td style="text-align:right;padding:4px 6px;color:#ff4560">3.3%</td>
+        <td style="text-align:right;padding:4px 6px;color:#ff4560">1.9°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">ICAO SID 最低基準</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1)">
+        <td style="text-align:right;padding:4px 6px;font-weight:600">250</td>
+        <td style="text-align:right;padding:4px 6px">4.1%</td>
+        <td style="text-align:right;padding:4px 6px">2.4°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">SID（中程度）</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1)">
+        <td style="text-align:right;padding:4px 6px;font-weight:600">300</td>
+        <td style="text-align:right;padding:4px 6px">4.9%</td>
+        <td style="text-align:right;padding:4px 6px">2.8°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">SID</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1);background:rgba(0,230,152,0.05)">
+        <td style="text-align:right;padding:4px 6px;font-weight:700;color:var(--accent)">318</td>
+        <td style="text-align:right;padding:4px 6px;color:var(--accent)">5.2%</td>
+        <td style="text-align:right;padding:4px 6px;color:var(--accent)">3.0°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">ILS G/S 3.0° 相当</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1)">
+        <td style="text-align:right;padding:4px 6px;font-weight:600">400</td>
+        <td style="text-align:right;padding:4px 6px">6.6%</td>
+        <td style="text-align:right;padding:4px 6px">3.8°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">SID 急勾配</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.1)">
+        <td style="text-align:right;padding:4px 6px;font-weight:600">437</td>
+        <td style="text-align:right;padding:4px 6px">7.2%</td>
+        <td style="text-align:right;padding:4px 6px">4.1°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">ILS G/S 4.1° 相当</td>
+      </tr>
+      <tr>
+        <td style="text-align:right;padding:4px 6px;font-weight:600">500</td>
+        <td style="text-align:right;padding:4px 6px">8.2%</td>
+        <td style="text-align:right;padding:4px 6px">4.7°</td>
+        <td style="padding:4px 6px;font-size:0.85em;color:var(--muted)">SID 急勾配 (上限目安)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.58em;color:var(--muted);margin-top:8px;line-height:1.7">
+    勾配 % = ft/NM ÷ 6,076 × 100 &nbsp;·&nbsp; 角度 = arctan(勾配/100)<br>
+    &#9888; 3.3%（200 ft/NM）未満は ICAO 最低基準以下 — 障害物回避に注意
+  </p>
+</div>
+
 <!-- Mach/IAS/TAS Reference Table Card -->
 <div class="card" style="margin-top:12px">
   <div class="card-title">Mach / IAS / TAS 換算表 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA 標準大気</span></div>
