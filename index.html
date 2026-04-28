@@ -326,6 +326,14 @@
     .xwft-sub  { font-size: 0.6rem; color: var(--muted); text-align: center; letter-spacing: 1px; margin-bottom: 8px; }
     .xwft-hdr  { display: flex; justify-content: space-between; font-size: 0.58rem; color: #4a6a99; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; padding: 0 2px; }
     .xwft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+    /* NNC row selectable */
+    .nnc-row { cursor: pointer; transition: background 0.15s; }
+    .nnc-row:hover td { background: rgba(128,128,128,0.07); }
+    .nnc-row.nnc-active td { background: rgba(255,165,0,0.13) !important; }
+    .nnc-row.nnc-active .nnc-name { color: var(--warn) !important; font-weight: 700; }
+    .nnc-row.nnc-active .nnc-lim  { color: var(--warn) !important; }
+    .nnc-check { display:inline-block;width:14px;opacity:0;transition:opacity 0.15s;color:var(--warn) }
+    .nnc-active .nnc-check { opacity:1 }
     .xwft-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 4px; text-align: center; }
     .xwft-d    { font-size: 0.62rem; color: #4a6a99; letter-spacing: 0.8px; }
     .xwft-s    { font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -1597,8 +1605,151 @@
       <button id="ldg-btnTw15" class="tgl"    onclick="setTwLimitLdg(15)">15 KT</button>
     </div>
   </div>
+  <div id="ldg-nnc-active" style="display:none;margin:4px 0 10px;padding:6px 10px;background:rgba(255,165,0,0.1);border-left:3px solid var(--warn);border-radius:4px;font-size:0.78em;line-height:1.5"></div>
   <div class="xwft-hdr"><span>◄ L</span><span>R ►</span></div>
   <div class="xwft-grid" id="ldg-xwftGrid"></div>
+</div>
+
+<!-- QRH Non-Normal Crosswind Limits -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">QRH Non-Normal — 横風制限 特例
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">計 9 Checklist</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:0.81em">
+    <thead>
+      <tr style="color:var(--muted);font-size:0.68em;border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:3px 0;font-weight:500">Checklist</th>
+        <th style="text-align:center;padding:3px 4px;font-weight:500;white-space:nowrap">XW Limit</th>
+        <th style="text-align:left;padding:3px 4px;font-weight:500">備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 20 KT group -->
+      <tr>
+        <td colspan="3" style="padding:7px 0 3px;font-size:0.68em;color:var(--warn);font-weight:700;letter-spacing:0.5px;border-bottom:1px solid var(--border)">
+          ▸ 横風制限 20 KT &nbsp;<span style="font-weight:400;font-size:0.85em;opacity:0.7">タップで Per Direction に適用</span>
+        </td>
+      </tr>
+      <tr class="nnc-row" data-nnc="AILERON OUTBD" onclick="setNncXw(20,'AILERON OUTBD')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">AILERON OUTBD</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">—</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="RUD RATIO SNGL" onclick="setNncXw(20,'RUD RATIO SNGL')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">RUD RATIO SNGL</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">—</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 1+4" onclick="setNncXw(20,'HYD PRESS 1+4')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 1+4</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">Use F25 VREF30+20kt</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 2+3" onclick="setNncXw(20,'HYD PRESS 2+3')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 2+3</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">Use F25 VREF30+20kt</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 1" onclick="setNncXw(20,'HYD PRESS 1')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 1</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">≥2 SYS MSG 表示時</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 2" onclick="setNncXw(20,'HYD PRESS 2')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 2</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">≥2 SYS MSG 表示時</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 3" onclick="setNncXw(20,'HYD PRESS 3')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 3</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">≥2 SYS MSG 表示時</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="HYD PRESS 4" onclick="setNncXw(20,'HYD PRESS 4')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 20KT を Per Direction に適用">
+        <td style="padding:5px 0"><span class="nnc-check">✓</span><span class="nnc-name">HYD PRESS 4</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--warn);white-space:nowrap">20 KT</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">≥2 SYS MSG 表示時</td>
+      </tr>
+      <!-- 10 KT group -->
+      <tr>
+        <td colspan="3" style="padding:10px 0 3px;font-size:0.68em;color:var(--error);font-weight:700;letter-spacing:0.5px;border-bottom:1px solid var(--border)">
+          ▸ 横風制限 10 KT &nbsp;<span style="font-weight:400;font-size:0.85em;opacity:0.7">タップで Per Direction に適用</span>
+        </td>
+      </tr>
+      <tr class="nnc-row" data-nnc="RUD RATIO DUAL" onclick="setNncXw(10,'RUD RATIO DUAL')" title="タップで XW 10KT を Per Direction に適用">
+        <td style="padding:5px 0;vertical-align:top"><span class="nnc-check">✓</span><span class="nnc-name">RUD RATIO DUAL</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--error);white-space:nowrap;vertical-align:top">10 KT</td>
+        <td style="padding:5px 4px;font-size:0.8em;line-height:1.9;vertical-align:top">
+          Manual: 10 kt<br>
+          Autoland (all eng): 10 kt<br>
+          Autoland + OEI: <span style="color:var(--error);font-weight:700">5 kt</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.58em;color:var(--muted);margin-top:8px;line-height:1.6">
+    出典: B747-8F QRH Non-Normal Checklists / NCA飛行機運用規程<br>
+    HYD PRESS は "More than one HYD PRESS SYS message shows" の場合に適用
+  </p>
+</div>
+
+<!-- CAT Operations Crosswind Limits -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">CAT 運航 最大横風値
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">NCA運航規程 5-3-7〜9</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:0.81em">
+    <thead>
+      <tr style="color:var(--muted);font-size:0.68em;border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:3px 0;font-weight:500">CAT</th>
+        <th style="text-align:left;padding:3px 4px;font-weight:500">条件</th>
+        <th style="text-align:center;padding:3px 4px;font-weight:500;white-space:nowrap">XW Limit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(128,128,128,0.12)">
+        <td style="padding:5px 0;white-space:nowrap">CAT I</td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">RVR ≥ 1200m</td>
+        <td style="text-align:center;padding:5px 4px;color:var(--muted);font-size:0.8em">運用規程の値</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="CAT I (<1200m)" onclick="setNncXw(10,'CAT I (\u003C1200m)')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 10KT を Per Direction に適用">
+        <td style="padding:5px 0;white-space:nowrap"><span class="nnc-check">✓</span><span class="nnc-name">CAT I</span></td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">RVR &lt; 1200m<br><span style="font-size:0.88em">(Company Minima 使用時)</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--error);white-space:nowrap">10 KT</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="CAT II" onclick="setNncXw(10,'CAT II')" style="border-bottom:1px solid rgba(128,128,128,0.12)" title="タップで XW 10KT を Per Direction に適用">
+        <td style="padding:5px 0;white-space:nowrap"><span class="nnc-check">✓</span><span class="nnc-name">CAT II</span></td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">全条件<br><span style="font-size:0.88em">(飛行機運用規程の値にかかわらず)</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--error);white-space:nowrap">10 KT</td>
+      </tr>
+      <tr class="nnc-row" data-nnc="CAT III" onclick="setNncXw(10,'CAT III')" title="タップで XW 10KT を Per Direction に適用">
+        <td style="padding:5px 0;white-space:nowrap"><span class="nnc-check">✓</span><span class="nnc-name">CAT III</span></td>
+        <td style="padding:5px 4px;color:var(--muted);font-size:0.8em">全条件<br><span style="font-size:0.88em">(飛行機運用規程の値にかかわらず)</span></td>
+        <td class="nnc-lim" style="text-align:center;font-weight:700;color:var(--error);white-space:nowrap">10 KT</td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Wind check decision -->
+  <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+    <div style="font-size:0.68em;font-weight:700;color:var(--muted);letter-spacing:0.5px;margin-bottom:6px">▸ 風速確認タイミング（AOR）</div>
+    <div style="font-size:0.78em;line-height:1.9">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
+        <span style="min-width:6px;color:var(--accent)">①</span>
+        <span><b>Landing Clearance 受領時</b> — Allowable Values 内か確認</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px">
+        <span style="min-width:6px;color:var(--accent)">②</span>
+        <span><b>500 ft AFE 以前</b> — 再確認。範囲外なら <span style="color:var(--error);font-weight:600">G/A</span></span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span style="min-width:6px;color:var(--muted)">③</span>
+        <span style="color:var(--muted)"><b>500 ft 以下</b> — 機体コントロールに集中。風速超過でも継続可（安定確認）</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:0.58em;color:var(--muted);margin-top:8px;line-height:1.6">
+    出典: NCA運航規程 5-3-7(7) · 5-3-8(6) · 5-3-9(6) / Airplane Operations Reference (AOR)
+  </p>
 </div>
 
 <!-- Approach Pitch & N1 -->
@@ -2560,6 +2711,8 @@ let ldgAutoland   = false;
 let ldgAtEngaged  = false;
 let ldgApprFlap   = 'F25';
 let twLimitLdg    = 10;
+let _nncXwOverride = null;   // NNC override: null=normal, 20=20kt, 10=10kt
+let _nncXwSelected = null;   // active NNC checklist name
 let _ldgDrumReady = false;
 let _ldgLastTarget = null;
 let _ldgLastVref   = 160;
@@ -2636,6 +2789,7 @@ function onLdgRwySelect() {
 }
 function getLdgCond()   { return RWY_COND.find(c => c.key === $('ldg-rwyCond').value) || null; }
 function getXwLimitLdg() {
+  if (_nncXwOverride !== null) return _nncXwOverride;
   const cond = getLdgCond();
   if (!cond) return null;
   return ldgLen === 'SHORT' && cond.star ? cond.xwShort : cond.xw;
@@ -2678,6 +2832,41 @@ function setTwLimitLdg(v) {
   $('ldg-btnTw10').className = v === 10 ? 'tgl on' : 'tgl';
   $('ldg-btnTw15').className = v === 15 ? 'tgl on' : 'tgl';
   buildXwTableLdg();
+}
+function setNncXw(limit, name) {
+  if (_nncXwSelected === name) {
+    // toggle off
+    _nncXwOverride = null;
+    _nncXwSelected = null;
+  } else {
+    _nncXwOverride = limit;
+    _nncXwSelected = name;
+  }
+  // update row highlight
+  document.querySelectorAll('.nnc-row').forEach(el => {
+    el.classList.toggle('nnc-active', el.dataset.nnc === (_nncXwSelected || ''));
+  });
+  // update NNC indicator inside Per Direction card
+  const ind = $('ldg-nnc-active');
+  if (ind) {
+    if (_nncXwSelected) {
+      ind.style.display = 'block';
+      ind.innerHTML = `⚠ NNC Override: <b>${_nncXwSelected}</b> — XW Limit <b>${_nncXwOverride} KT</b>
+        <span onclick="setNncXw(null,null)" style="float:right;cursor:pointer;color:var(--muted);font-size:0.85em">[解除]</span>`;
+    } else {
+      ind.style.display = 'none';
+    }
+  }
+  // refresh Per Direction + limit bars
+  buildXwTableLdg();
+  calcLdg();
+  // scroll to Per Direction card if visible
+  if (_nncXwSelected) {
+    const card = $('ldg-xwftCard');
+    if (card && card.style.display !== 'none') {
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
+  }
 }
 function onCondChangeLdg() {
   const cond = getLdgCond();
@@ -5226,6 +5415,61 @@ function _initTasMachTable() {   // CLB: IAS → Mach/TAS のみ
 function _initCrzTmt() {         // CRZ
   if (_tmtBuilt.crz) return;
   if (_tmtInject('crz-tmt-upper','crz-tmt-lower')) _tmtBuilt.crz = true;
+  buildDevFuelTable();
+}
+
+/* ── Deviation Fuel Table ──
+   Extra distance = 2W(2-√3) nm  (W = lateral offset, 30° turn in/out)
+   No wind. F/F fixed 20,000 lb/hr. FL310/350/410 at user Mach, ISA.    */
+function buildDevFuelTable() {
+  const el = $('crz-dev-fuel-table');
+  if (!el) return;
+
+  const machEl = $('dev-mach');
+  const MACH   = machEl ? Math.max(0.70, Math.min(0.92, parseFloat(machEl.value) || 0.84)) : 0.84;
+  const FF     = 20000;                        // lbs/hr (fixed)
+  const K      = 2 * (2 - Math.sqrt(3));      // ≈ 0.5359  extra dist factor
+
+  const offsets = [5, 10, 15, 20, 25, 30, 35, 40, 50];
+  const FLS     = [310, 350, 410];
+
+  // TAS at each FL, ISA, given Mach
+  const tasFL = FLS.map(fl => {
+    const atm = _crzAtmos(fl * 100, 0);
+    return MACH * atm.a;
+  });
+
+  let rows = '';
+  for (const W of offsets) {
+    const extraDist = K * W;
+    const fuels     = tasFL.map(t => Math.round(FF * extraDist / t));
+    const topBorder = W === 30 ? 'border-top:1px solid var(--border);' : '';
+    rows += `<tr style="${topBorder}border-bottom:1px solid rgba(128,128,128,0.08)">
+      <td style="padding:5px 0;font-weight:${W >= 30 ? '700' : '400'}">${W}</td>
+      <td style="text-align:right;padding:5px 4px;color:var(--muted)">${extraDist.toFixed(1)}</td>
+      <td style="text-align:right;padding:5px 4px">${fuels[0].toLocaleString()}</td>
+      <td style="text-align:right;padding:5px 4px;color:var(--accent);font-weight:600">${fuels[1].toLocaleString()}</td>
+      <td style="text-align:right;padding:5px 4px">${fuels[2].toLocaleString()}</td>
+    </tr>`;
+  }
+
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.82em">
+      <thead>
+        <tr style="color:var(--muted);font-size:0.68em;border-bottom:2px solid var(--border)">
+          <th style="text-align:left;padding:4px 0;font-weight:600">Offset<br><span style="font-weight:400">nm</span></th>
+          <th style="text-align:right;padding:4px 4px;font-weight:600">+Dist<br><span style="font-weight:400">nm</span></th>
+          <th style="text-align:right;padding:4px 4px;font-weight:600">FL310<br><span style="font-weight:400">lb</span></th>
+          <th style="text-align:right;padding:4px 4px;font-weight:600;color:var(--accent)">FL350<br><span style="font-weight:400">lb</span></th>
+          <th style="text-align:right;padding:4px 4px;font-weight:600">FL410<br><span style="font-weight:400">lb</span></th>
+        </tr>
+      </thead>
+      <tbody style="color:var(--text)">${rows}</tbody>
+    </table>
+    <p style="font-size:0.6em;color:var(--muted);margin-top:8px;line-height:1.8">
+      M${MACH.toFixed(2)} · ISA · FL310: ${tasFL[0].toFixed(0)} kt / FL350: ${tasFL[1].toFixed(0)} kt / FL410: ${tasFL[2].toFixed(0)} kt<br>
+      往路 2W nm + 復路 2W nm = 合計 4W nm 飛行 ÷ 直進短縮 2W√3 nm = 追加 ${(K).toFixed(4)}W nm
+    </p>`;
 }
 function _initDesTmt() {         // DES: Mach → IAS/TAS のみ
   if (_tmtBuilt.des) return;
@@ -5546,6 +5790,53 @@ function crzCalc() {
       <div class="brow"><span>ΔTAS</span><span class="v" style="color:var(--green)">+${dTAS.toFixed(1)} KT</span></div>
     </div>`;
   _crzRenderTable(h_ft, dISA, sp.M, sp.CAS);
+  crzAmberCalc();
+}
+
+function crzAmberCalc() {
+  const el = $('crz-amber-result');
+  if (!el) return;
+  const amberIas = parseFloat($('crz-amber-ias').value);
+  if (isNaN(amberIas) || $('crz-amber-ias').value === '') { el.innerHTML = ''; return; }
+  const flRaw = parseFloat($('crz-fl').value);
+  const dISA  = parseFloat($('crz-disa').value) || 0;
+  if (isNaN(flRaw)) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">FL を入力してください</p>';
+    return;
+  }
+  const h_ft    = flRaw * 100;
+  const minSpd  = amberIas + 10;
+  const sp      = _casToSpeeds(minSpd, h_ft, dISA);
+  const curMach = parseFloat($('crz-mach').value);
+  let cmpHtml = '';
+  if (!isNaN(curMach) && $('crz-mach').value !== '') {
+    const margin = curMach - sp.M;
+    const ok = margin >= -0.0001;
+    cmpHtml = `<div class="brow" style="margin-top:4px">
+      <span>Current M${curMach.toFixed(3)} vs Min</span>
+      <span class="v" style="color:${ok ? 'var(--green)' : 'var(--error)'}">
+        ${margin >= 0 ? '+' : ''}${margin.toFixed(3)}&nbsp;${ok ? '✓ OK' : '⚠ BELOW MIN'}
+      </span></div>`;
+  }
+  el.innerHTML = `
+    <div class="breakdown" style="display:block">
+      <div class="brow" style="color:var(--muted);font-size:0.7em">
+        <span>FL${flRaw} · ISA${dISA >= 0 ? '+' : ''}${dISA} · Amber ${amberIas} kt + 10</span>
+      </div>
+      <div class="brow">
+        <span>Minimum Speed (IAS)</span>
+        <span class="v" style="color:var(--accent);font-weight:700">${minSpd.toFixed(0)} KT</span>
+      </div>
+      <div class="brow">
+        <span>Minimum Mach</span>
+        <span class="v" style="color:var(--gold);font-weight:700">M${sp.M.toFixed(3)}</span>
+      </div>
+      <div class="brow">
+        <span>TAS at Min Speed</span>
+        <span class="v">${sp.TAS.toFixed(0)} KT</span>
+      </div>
+      ${cmpHtml}
+    </div>`;
 }
 
 function _crzRenderTable(curH, dISA, mach, cas) {
@@ -5963,6 +6254,14 @@ restoreState();
   <div id="crz-delta" style="margin-top:4px">
     <p style="font-size:0.78em;color:var(--muted)">上記で計算後に表示</p>
   </div>
+  <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+  <div style="font-size:0.72em;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.6px">▸ Minimum Maneuvering Speed</div>
+  <div style="font-size:0.7em;color:var(--muted);margin-bottom:10px">FCT 747: lower amber band <b>+10 kt</b> 以上を維持 · bank ≤10°<br>ISA DEV は上記 ΔT を参照</div>
+  <div class="fg">
+    <label>Lower Amber Band IAS (kt) — FMCから入力</label>
+    <input type="number" id="crz-amber-ias" placeholder="例: 248" oninput="crzAmberCalc()">
+  </div>
+  <div id="crz-amber-result" style="margin-top:8px"></div>
 </div>
 
 <div class="card" style="margin-top:12px">
@@ -6001,6 +6300,24 @@ restoreState();
   <li>ΔT from ISA: 非標準大気での音速・TAS 補正（例: ISA+10 → +10 を入力）</li>
   <li>コンプレッシビリティ補正 (qc/P 法) を適用した高精度計算</li>
 </ul>
+
+<!-- Deviation Fuel Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Deviation Fuel
+    <span style="float:right;font-size:0.8rem;font-weight:400;color:var(--muted)">無風 · F/F 20,000 lb/hr</span>
+  </div>
+  <div style="font-size:0.7em;color:var(--muted);margin-bottom:10px;line-height:1.7">
+    30° 変針でルート離脱 → 平行飛行 → 復帰するまでの追加距離・燃料<br>
+    <span style="font-family:monospace;font-size:0.95em;color:var(--accent)">+Dist = 2W × (2−√3) ≈ 0.536 × W nm</span>
+    &nbsp;（平行区間の長さによらず一定）
+  </div>
+  <div class="fg" style="margin-bottom:12px">
+    <label>Cruise Mach</label>
+    <input type="number" id="dev-mach" value="0.84" step="0.01" min="0.70" max="0.92"
+           inputmode="decimal" oninput="buildDevFuelTable()">
+  </div>
+  <div id="crz-dev-fuel-table"></div>
+</div>
 
 </div><!-- /tab-content -->
 </div><!-- /tab-crz -->
