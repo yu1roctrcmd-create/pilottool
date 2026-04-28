@@ -5135,14 +5135,28 @@ function clbPathCalc() {
   const theta = Math.atan(grad / 100) * 180 / Math.PI;
   const ftNM  = Math.round(alt / dist);
 
-  // ROC table at various GS
-  const GS_LIST = [350, 380, 400, 420, 450, 480, 500];
+  // ROC table: GS 250–500 in 10kt steps
+  const GS_LIST = [];
+  for (let gs = 250; gs <= 500; gs += 10) GS_LIST.push(gs);
   const rocRows = GS_LIST.map(gs => {
     const t_min = (dist / gs) * 60;
     return { gs, fpm: Math.round(alt / t_min) };
   });
 
   const gc = grad < 2.5 ? '#ff4560' : grad < 4.0 ? '#ff8c42' : '#00e698';
+
+  // Split into 2 columns for compact vertical layout
+  const half = Math.ceil(rocRows.length / 2);
+  const col1 = rocRows.slice(0, half);
+  const col2 = rocRows.slice(half);
+
+  const mkRows = rows => rows.map(r =>
+    `<tr><td style="text-align:center;color:var(--muted);font-weight:600;padding:3px 10px">${r.gs}</td>` +
+    `<td style="text-align:right;padding:3px 10px;color:var(--text)">${r.fpm.toLocaleString()}</td></tr>`
+  ).join('');
+
+  const tblStyle = `border-collapse:collapse;font-size:0.8em;flex:1`;
+  const thStyle  = `padding:3px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:0.72em;font-weight:600`;
 
   el.innerHTML = `
     <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
@@ -5159,11 +5173,18 @@ function clbPathCalc() {
         <div style="font-size:1.6em;font-weight:700">${ftNM}<span style="font-size:0.55em"> ft/NM</span></div>
       </div>
     </div>
-    <table class="path-gs-tbl">
-      <thead><tr><th>GS (kt)</th>${rocRows.map(r=>`<th>${r.gs}</th>`).join('')}</tr></thead>
-      <tbody><tr><td style="color:var(--muted);font-weight:600">ROC (fpm)</td>${rocRows.map(r=>`<td>${r.fpm}</td>`).join('')}</tr></tbody>
-    </table>
-    <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 上昇</p>`;
+    <div style="display:flex;gap:8px">
+      <table style="${tblStyle}">
+        <thead><tr><th style="${thStyle};text-align:center">GS (kt)</th><th style="${thStyle};text-align:right">ROC (fpm)</th></tr></thead>
+        <tbody>${mkRows(col1)}</tbody>
+      </table>
+      <div style="width:1px;background:var(--border);flex-shrink:0"></div>
+      <table style="${tblStyle}">
+        <thead><tr><th style="${thStyle};text-align:center">GS (kt)</th><th style="${thStyle};text-align:right">ROC (fpm)</th></tr></thead>
+        <tbody>${mkRows(col2)}</tbody>
+      </table>
+    </div>
+    <p style="font-size:0.65em;color:var(--muted);margin-top:6px">${dist} NM で ${alt.toLocaleString()} ft 上昇 · GS 250–500 kt</p>`;
 }
 
 /* ───────────────────────────────────────────
