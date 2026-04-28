@@ -6115,83 +6115,8 @@ restoreState();
 <div class="tab-panel" id="tab-clb">
 <div class="tab-content">
 
-<!-- Max Rate Climb Card -->
+<!-- 1. Path Angle / Required ROC Card -->
 <div class="card">
-  <div class="card-title">Max Rate Climb &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">747-8 · VREF30 + 120 kt → M0.83</span></div>
-  <div class="row2">
-    <div class="fg">
-      <label>Weight (×1000 LB)
-        <span id="clb-wt-sync-lbl" style="font-size:0.75em;font-weight:400;opacity:0.6;margin-left:4px">← TOW連動</span>
-        <button id="clb-wt-reset" onclick="resetClbWeight()"
-          style="display:none;font-size:0.7em;padding:1px 6px;margin-left:4px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">← TOW戻す</button>
-      </label>
-      <input type="number" id="clb-weight" step="1" min="400" max="1000"
-             inputmode="numeric" placeholder="e.g. 750"
-             oninput="_clbWtManual=true; $('clb-wt-sync-lbl').style.display='none'; $('clb-wt-reset').style.display=''; clbCalc();">
-    </div>
-    <div class="fg">
-      <label>ΔT from ISA (°C)</label>
-      <input type="number" id="clb-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc(); clbMachIasCalc()">
-    </div>
-  </div>
-  <div id="clb-result" style="margin-top:10px">
-    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
-  </div>
-</div>
-
-<!-- Standard Climb Schedule Card -->
-<div class="card" style="margin-top:12px">
-  <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
-  <div id="clb-std-result" style="margin-top:4px"></div>
-</div>
-
-<!-- Crossover Altitude Calculator -->
-<div class="card" style="margin-top:12px">
-  <div class="card-title">クロスオーバー高度 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">IAS / Mach 入力 → 交差高度 · TAS</span></div>
-  <div class="row2">
-    <div class="fg">
-      <label>IAS (kt)</label>
-      <input type="number" id="clb-xo-ias" step="5" min="200" max="400"
-             inputmode="numeric" placeholder="310" value="310" oninput="clbXoverCalc()">
-    </div>
-    <div class="fg">
-      <label>Mach</label>
-      <input type="number" id="clb-xo-mach" step="0.01" min="0.50" max="0.99"
-             inputmode="decimal" placeholder="0.83" value="0.83" oninput="clbXoverCalc()">
-    </div>
-  </div>
-  <div id="clb-xover-result" style="margin-top:8px"></div>
-
-  <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
-
-  <div style="font-size:0.75em;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">▸ Mach / ALT → IAS / TAS</div>
-  <div class="row2">
-    <div class="fg">
-      <label>Mach</label>
-      <input type="number" id="clb-mi-mach" step="0.01" min="0.50" max="0.99"
-             inputmode="decimal" placeholder="0.83" oninput="clbMachIasCalc()">
-    </div>
-    <div class="fg">
-      <label>FL (高度層)</label>
-      <input type="number" id="clb-mi-fl" step="10" min="50" max="450"
-             inputmode="numeric" placeholder="350" oninput="clbMachIasCalc()">
-    </div>
-  </div>
-  <div id="clb-mi-result" style="margin-top:8px">
-    <p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>
-  </div>
-</div>
-
-<ul class="footnote">
-  <li>Max Rate Climb: VREF30 + 120 KT までIAS維持し、M0.83にインターセプト (AOM参照)</li>
-  <li>FMC は Max Rate Climb Speed を提供しない (Note: The FMC does not provide maximum rate climb speeds)</li>
-  <li>Standard: 250 KIAS below 10,000 ft → 310 KIAS → M0.83</li>
-  <li>クロスオーバー高度はISA標準大気による計算値。ΔTで補正可能</li>
-</ul>
-
-<!-- Path Angle / Required ROC Card -->
-<div class="card" style="margin-top:12px">
   <div class="card-title">Path Angle / 必要上昇率 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">距離・高度差から算出</span></div>
   <div class="row2">
     <div class="fg">
@@ -6210,7 +6135,30 @@ restoreState();
   </div>
 </div>
 
-<!-- Climb Angle Reference Card -->
+<!-- 2. 上昇角 ROT (ECL Rule of Thumb) -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">上昇角 ROT
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">Energy Control Leaflet</span>
+  </div>
+  <table class="ecl-tbl" style="width:100%">
+    <thead>
+      <tr><th>降下角</th><th>高度の目安</th><th>降下率の目安</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>2.5°</td><td>距離 ÷ 4</td><td>GS × 3</td></tr>
+      <tr><td style="color:#00e698;font-weight:700">3°</td><td>距離 × 3</td><td style="color:#00e698;font-weight:700">GS × 5</td></tr>
+      <tr><td>4°</td><td>距離 × 4</td><td>GS × 7</td></tr>
+      <tr><td>5°</td><td>距離 × 5</td><td>GS × 9</td></tr>
+      <tr><td>6°</td><td>距離 × 6</td><td>GS × 10</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.58em;color:var(--muted);margin-top:8px;line-height:1.7">
+    高度目安: 距離(NM) × 係数 = 高度(百ft) &nbsp;·&nbsp; 降下率: ROD(fpm) = GS(kt) × 係数<br>
+    例) 3° · GS 160kt → ROD = 160 × 5 = <b>800 fpm</b>
+  </p>
+</div>
+
+<!-- 3. 上昇角の目安 (SID / Obstacle Clearance gradient reference) -->
 <div class="card" style="margin-top:12px">
   <div class="card-title">上昇角の目安
     <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">SID / Obstacle Clearance</span>
@@ -6275,28 +6223,80 @@ restoreState();
   </p>
 </div>
 
-<!-- Descent Angle Reference (ECL) -->
+<!-- 4. Max Rate Climb Card -->
 <div class="card" style="margin-top:12px">
-  <div class="card-title">上昇角の目安
-    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">Energy Control Leaflet</span>
+  <div class="card-title">Max Rate Climb &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">747-8 · VREF30 + 120 kt → M0.83</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>Weight (×1000 LB)
+        <span id="clb-wt-sync-lbl" style="font-size:0.75em;font-weight:400;opacity:0.6;margin-left:4px">← TOW連動</span>
+        <button id="clb-wt-reset" onclick="resetClbWeight()"
+          style="display:none;font-size:0.7em;padding:1px 6px;margin-left:4px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">← TOW戻す</button>
+      </label>
+      <input type="number" id="clb-weight" step="1" min="400" max="1000"
+             inputmode="numeric" placeholder="e.g. 750"
+             oninput="_clbWtManual=true; $('clb-wt-sync-lbl').style.display='none'; $('clb-wt-reset').style.display=''; clbCalc();">
+    </div>
+    <div class="fg">
+      <label>ΔT from ISA (°C)</label>
+      <input type="number" id="clb-disa" value="0" step="1"
+             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc(); clbMachIasCalc()">
+    </div>
   </div>
-  <table class="ecl-tbl" style="width:100%">
-    <thead>
-      <tr><th>降下角</th><th>高度の目安</th><th>降下率の目安</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>2.5°</td><td>距離 ÷ 4</td><td>GS × 3</td></tr>
-      <tr><td style="color:#00e698;font-weight:700">3°</td><td>距離 × 3</td><td style="color:#00e698;font-weight:700">GS × 5</td></tr>
-      <tr><td>4°</td><td>距離 × 4</td><td>GS × 7</td></tr>
-      <tr><td>5°</td><td>距離 × 5</td><td>GS × 9</td></tr>
-      <tr><td>6°</td><td>距離 × 6</td><td>GS × 10</td></tr>
-    </tbody>
-  </table>
-  <p style="font-size:0.58em;color:var(--muted);margin-top:8px;line-height:1.7">
-    高度目安: 距離(NM) × 係数 = 高度(百ft) &nbsp;·&nbsp; 降下率: ROD(fpm) = GS(kt) × 係数<br>
-    例) 3° · GS 160kt → ROD = 160 × 5 = <b>800 fpm</b>
-  </p>
+  <div id="clb-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
+  </div>
 </div>
+
+<!-- 5. Standard Climb Schedule Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
+  <div id="clb-std-result" style="margin-top:4px"></div>
+</div>
+
+<!-- Crossover Altitude Calculator -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">クロスオーバー高度 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">IAS / Mach 入力 → 交差高度 · TAS</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>IAS (kt)</label>
+      <input type="number" id="clb-xo-ias" step="5" min="200" max="400"
+             inputmode="numeric" placeholder="310" value="310" oninput="clbXoverCalc()">
+    </div>
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="clb-xo-mach" step="0.01" min="0.50" max="0.99"
+             inputmode="decimal" placeholder="0.83" value="0.83" oninput="clbXoverCalc()">
+    </div>
+  </div>
+  <div id="clb-xover-result" style="margin-top:8px"></div>
+
+  <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
+
+  <div style="font-size:0.75em;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">▸ Mach / ALT → IAS / TAS</div>
+  <div class="row2">
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="clb-mi-mach" step="0.01" min="0.50" max="0.99"
+             inputmode="decimal" placeholder="0.83" oninput="clbMachIasCalc()">
+    </div>
+    <div class="fg">
+      <label>FL (高度層)</label>
+      <input type="number" id="clb-mi-fl" step="10" min="50" max="450"
+             inputmode="numeric" placeholder="350" oninput="clbMachIasCalc()">
+    </div>
+  </div>
+  <div id="clb-mi-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>
+  </div>
+</div>
+
+<ul class="footnote">
+  <li>Max Rate Climb: VREF30 + 120 KT までIAS維持し、M0.83にインターセプト (AOM参照)</li>
+  <li>FMC は Max Rate Climb Speed を提供しない (Note: The FMC does not provide maximum rate climb speeds)</li>
+  <li>Standard: 250 KIAS below 10,000 ft → 310 KIAS → M0.83</li>
+  <li>クロスオーバー高度はISA標準大気による計算値。ΔTで補正可能</li>
+</ul>
 
 <!-- Mach/IAS/TAS Reference Table Card -->
 <div class="card" style="margin-top:12px">
