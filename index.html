@@ -2133,8 +2133,8 @@ function setDrumVal(colId, dispId, suffix, value) {
 function onRwySelect() {
   const n = parseInt($('rwyNum').value);
   if (!isNaN(n) && n >= 1 && n <= 36) {
-    setDrumVal('xd-rwyhdg',  'disp-xd-rwyhdg',  '°', n * 10);
-    setDrumVal('xd-winddir', 'disp-xd-winddir', '°', n * 10);
+    setDrumVal('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
+    rebuildWindDirDrum(n * 10, 'xd-winddir', 'disp-xd-winddir', calc);
   }
   calc();
 }
@@ -2294,7 +2294,7 @@ function calc() {
   const windDirEl = document.getElementById('xd-winddir');
   const steadyEl  = document.getElementById('xd-steady');
   const rwyHdg  = rwyHdgEl  ? getColRangeVal(rwyHdgEl)  : NaN;
-  const windDir = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const windDir = windDirEl ? getWindDirVal(windDirEl) : NaN;
   const steady  = steadyEl  ? getColRangeVal(steadyEl)  : 0;
   const magVar  = parseFloat($('magVar').value) || 0;
   const gustRaw = $('gust').value.trim();
@@ -2424,7 +2424,7 @@ function buildXwTable() {
   const rwyHdgEl   = document.getElementById('xd-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
   const windDirEl  = document.getElementById('xd-winddir');
-  const windDirRaw = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const windDirRaw = windDirEl ? getWindDirVal(windDirEl) : NaN;
   const magVar     = parseFloat($('magVar').value) || 0;
   const windDirMag = $('windType').value === 'TRUE' ? norm360(windDirRaw - magVar) : norm360(windDirRaw);
   const curDir10   = isNaN(windDirMag) ? -1 : norm360(Math.round(windDirMag / 10) * 10);
@@ -2766,10 +2766,13 @@ function initLdgDrums() {
   if (_ldgDrumReady) return;
   _ldgDrumReady = true;
   buildColRange(document.getElementById('ldg-rwyhdg'),  1, 360, 3, 270);
-  buildColRange(document.getElementById('ldg-winddir'), 0, 360, 3, 270);
+  rebuildWindDirDrum(270, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
   buildColRange(document.getElementById('ldg-steady'),  0,  99, 2,  20);
-  wireXwindDrum('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°',   calcLdg);
-  wireXwindDrum('ldg-winddir', 'disp-ldg-winddir', '°',   calcLdg);
+  wireXwindDrum('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', () => {
+    const hdg = getColRangeVal(document.getElementById('ldg-rwyhdg'));
+    rebuildWindDirDrum(hdg, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
+    calcLdg();
+  });
   wireXwindDrum('ldg-steady',  'disp-ldg-steady',  ' KT', updateLdgGustOptions);
   updateLdgGustOptions();
   renderTasLdg();
@@ -2782,8 +2785,8 @@ function ldgToggleMagVar() {
 function onLdgRwySelect() {
   const n = parseInt($('ldg-rwyNum').value);
   if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
-    setDrumVal('ldg-rwyhdg',  'disp-ldg-rwyhdg',  '°', n * 10);
-    setDrumVal('ldg-winddir', 'disp-ldg-winddir', '°', n * 10);
+    setDrumVal('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
+    rebuildWindDirDrum(n * 10, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
   }
   calcLdg();
 }
@@ -2908,7 +2911,7 @@ function calcLdg() {
   const windDirEl = document.getElementById('ldg-winddir');
   const steadyEl  = document.getElementById('ldg-steady');
   const rwyHdg    = rwyHdgEl  ? getColRangeVal(rwyHdgEl)  : NaN;
-  const windDir   = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const windDir   = windDirEl ? getWindDirVal(windDirEl) : NaN;
   const steady    = steadyEl  ? getColRangeVal(steadyEl)  : 0;
   const magVar    = parseFloat($('ldg-magVar').value) || 0;
   const gustRaw   = $('ldg-gust').value.trim();
@@ -3038,7 +3041,7 @@ function buildXwTableLdg() {
   const rwyHdgEl   = document.getElementById('ldg-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
   const windDirEl  = document.getElementById('ldg-winddir');
-  const windDirRaw = windDirEl ? getColRangeVal(windDirEl) : NaN;
+  const windDirRaw = windDirEl ? getWindDirVal(windDirEl) : NaN;
   const magVar     = parseFloat($('ldg-magVar').value) || 0;
   const windDirMag = $('ldg-windType').value === 'TRUE' ? norm360(windDirRaw - magVar) : norm360(windDirRaw);
   const curDir10   = isNaN(windDirMag) ? -1 : norm360(Math.round(windDirMag / 10) * 10);
@@ -3115,7 +3118,7 @@ function renderTasLdg() {
     const windDirEl = document.getElementById('ldg-winddir');
     const steadyEl  = document.getElementById('ldg-steady');
     const rwyHdg    = getColRangeVal(rwyHdgEl);
-    const windDir   = getColRangeVal(windDirEl);
+    const windDir   = getWindDirVal(windDirEl);
     const steady    = getColRangeVal(steadyEl);
     if (!isNaN(rwyHdg) && !isNaN(windDir) && !isNaN(steady)) {
       const magVar     = parseFloat($('ldg-magVar').value) || 0;
@@ -3748,6 +3751,55 @@ function buildColRange(colEl, from, to, pad, initVal) {
 }
 function getColRangeVal(colEl) {
   return colEl._from + Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl.children.length - 1);
+}
+function getWindDirVal(colEl) {
+  if (colEl && colEl._vals) {
+    return colEl._vals[Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1)];
+  }
+  return colEl ? getColRangeVal(colEl) : NaN;
+}
+function rebuildWindDirDrum(rwyHdg, colId, dispId, calcFn) {
+  const colEl  = document.getElementById(colId);
+  const dispEl = document.getElementById(dispId);
+  if (!colEl || !dispEl) return;
+  /* preserve current wind dir across rebuilds */
+  const oldVal = colEl._vals
+    ? colEl._vals[Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1)]
+    : rwyHdg;
+  /* rebuild items: 361 values offset −180..+180 from rwyHdg */
+  colEl.innerHTML = '';
+  const vals = [];
+  for (let offset = -180; offset <= 180; offset++) {
+    const deg = ((rwyHdg + offset - 1 + 7200) % 360) + 1; // normalise to 1‒360
+    vals.push(deg);
+    const d = document.createElement('div');
+    d.className = 'drum-item';
+    d.textContent = String(deg).padStart(3, '0');
+    colEl.appendChild(d);
+  }
+  colEl._vals = vals;
+  delete colEl._from; // prevent getColRangeVal misread
+  /* find best index for preserved direction */
+  let bestIdx = 180, bestDiff = 999;
+  for (let i = 0; i < vals.length; i++) {
+    let diff = Math.abs(vals[i] - oldVal);
+    if (diff > 180) diff = 360 - diff;
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  colEl._skipNotify = true;
+  colEl.scrollTop = bestIdx * ITEM_H;
+  dispEl.textContent = String(vals[bestIdx]).padStart(3, '0') + '°';
+  /* wire scroll only once */
+  if (!colEl._windDirWired) {
+    colEl._windDirWired = true;
+    onColScroll(colEl, () => {
+      const idx = Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1);
+      const v = colEl._vals[idx];
+      dispEl.textContent = String(v).padStart(3, '0') + '°';
+      calcFn();
+    });
+  }
+  requestAnimationFrame(() => { colEl._skipNotify = false; });
 }
 function wireXwindDrum(colId, dispId, suffix, onChange) {
   const colEl  = document.getElementById(colId);
@@ -5206,7 +5258,7 @@ function ldgWcaCalc() {
   const gust    = gustRaw !== '' ? parseFloat(gustRaw) : NaN;
 
   // Wind direction with mag/true correction
-  let wDir = wdEl ? getColRangeVal(wdEl) : NaN;
+  let wDir = wdEl ? getWindDirVal(wdEl) : NaN;
   if ($('ldg-windType') && $('ldg-windType').value === 'TRUE') {
     const magV = parseFloat($('ldg-magVar') ? $('ldg-magVar').value : '0') || 0;
     wDir = ((wDir - magV) % 360 + 360) % 360;
@@ -5916,10 +5968,13 @@ toggleMagVar();
 
 /* XWIND drums */
 buildColRange(document.getElementById('xd-rwyhdg'),  1, 360, 3, 270);
-buildColRange(document.getElementById('xd-winddir'), 0, 360, 3, 270);
+rebuildWindDirDrum(270, 'xd-winddir', 'disp-xd-winddir', calc);
 buildColRange(document.getElementById('xd-steady'),  0,  99, 2,  20);
-wireXwindDrum('xd-rwyhdg',  'disp-xd-rwyhdg',  '°',   calc);
-wireXwindDrum('xd-winddir', 'disp-xd-winddir', '°',   calc);
+wireXwindDrum('xd-rwyhdg', 'disp-xd-rwyhdg', '°', () => {
+  const hdg = getColRangeVal(document.getElementById('xd-rwyhdg'));
+  rebuildWindDirDrum(hdg, 'xd-winddir', 'disp-xd-winddir', calc);
+  calc();
+});
 wireXwindDrum('xd-steady',  'disp-xd-steady',  ' KT', updateGustOptions);
 updateGustOptions();
 
@@ -6002,7 +6057,9 @@ function saveState() {
   _INPUT_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
   [..._TO_DRUMS, ..._LDG_DRUMS].forEach(({ col }) => {
     const el = document.getElementById(col);
-    if (el && el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
+    if (!el) return;
+    if (el._vals) data['drum:' + col] = getWindDirVal(el);
+    else if (el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
   });
   data.fdpSectors   = fdpSectors;
   data.fdpCrew      = fdpCrew;
@@ -6044,11 +6101,53 @@ function restoreState() {
     });
 
     /* TO drums (already initialized) */
-    _restoreDrum(_TO_DRUMS);
+    _restoreDrum(_TO_DRUMS.filter(d => d.col !== 'xd-winddir'));
+    {
+      const rwy  = data['drum:xd-rwyhdg'] || 270;
+      const wind = data['drum:xd-winddir'];
+      rebuildWindDirDrum(rwy, 'xd-winddir', 'disp-xd-winddir', calc);
+      if (wind !== undefined) {
+        const wdEl = document.getElementById('xd-winddir');
+        if (wdEl && wdEl._vals) {
+          let bi = 180, bd = 999;
+          for (let i = 0; i < wdEl._vals.length; i++) {
+            let df = Math.abs(wdEl._vals[i] - wind);
+            if (df > 180) df = 360 - df;
+            if (df < bd) { bd = df; bi = i; }
+          }
+          wdEl._skipNotify = true;
+          wdEl.scrollTop = bi * ITEM_H;
+          document.getElementById('disp-xd-winddir').textContent =
+            String(wdEl._vals[bi]).padStart(3, '0') + '°';
+          setTimeout(() => { wdEl._skipNotify = false; }, 150);
+        }
+      }
+    }
 
     /* LDG drums — force init then restore */
     initLdgDrums();
-    _restoreDrum(_LDG_DRUMS);
+    _restoreDrum(_LDG_DRUMS.filter(d => d.col !== 'ldg-winddir'));
+    {
+      const rwy  = data['drum:ldg-rwyhdg'] || 270;
+      const wind = data['drum:ldg-winddir'];
+      rebuildWindDirDrum(rwy, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
+      if (wind !== undefined) {
+        const wdEl = document.getElementById('ldg-winddir');
+        if (wdEl && wdEl._vals) {
+          let bi = 180, bd = 999;
+          for (let i = 0; i < wdEl._vals.length; i++) {
+            let df = Math.abs(wdEl._vals[i] - wind);
+            if (df > 180) df = 360 - df;
+            if (df < bd) { bd = df; bi = i; }
+          }
+          wdEl._skipNotify = true;
+          wdEl.scrollTop = bi * ITEM_H;
+          document.getElementById('disp-ldg-winddir').textContent =
+            String(wdEl._vals[bi]).padStart(3, '0') + '°';
+          setTimeout(() => { wdEl._skipNotify = false; }, 150);
+        }
+      }
+    }
 
     /* Toggle states */
     if (data.fdpSectors)                 setFdpSec(data.fdpSectors);
