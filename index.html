@@ -917,6 +917,7 @@
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
+  <span id="save-status" style="font-size:0.6rem;color:var(--muted);white-space:nowrap;padding:0 4px;align-self:center"></span>
 </div>
 
 <!-- ═══════════════════════════ TAB: TO ═══════════════════════════ -->
@@ -6052,22 +6053,36 @@ const _LDG_DRUMS = [
   { col:'ldg-steady',  disp:'disp-ldg-steady',   sfx:' KT' },
 ];
 
+function _updateSaveStatus(ok, msg) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--muted)' : '#ff6b6b';
+}
 function saveState() {
-  const data = {};
-  _INPUT_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
-  [..._TO_DRUMS, ..._LDG_DRUMS].forEach(({ col }) => {
-    const el = document.getElementById(col);
-    if (!el) return;
-    if (el._vals) data['drum:' + col] = getWindDirVal(el);
-    else if (el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
-  });
-  data.fdpSectors   = fdpSectors;
-  data.fdpCrew      = fdpCrew;
-  data.ldgLen       = ldgLen;
-  data.ldgAutoland  = ldgAutoland;
-  data.ldgApprFlap  = ldgApprFlap;
-  data.ldgAtEngaged = ldgAtEngaged;
-  localStorage.setItem(_STATE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  try {
+    const data = {};
+    _INPUT_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+    [..._TO_DRUMS, ..._LDG_DRUMS].forEach(({ col }) => {
+      const el = document.getElementById(col);
+      if (!el) return;
+      if (el._vals) data['drum:' + col] = getWindDirVal(el);
+      else if (el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
+    });
+    data.fdpSectors   = fdpSectors;
+    data.fdpCrew      = fdpCrew;
+    data.ldgLen       = ldgLen;
+    data.ldgAutoland  = ldgAutoland;
+    data.ldgApprFlap  = ldgApprFlap;
+    data.ldgAtEngaged = ldgAtEngaged;
+    localStorage.setItem(_STATE_KEY, JSON.stringify({ ts: Date.now(), data }));
+    const now = new Date();
+    const hm  = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    _updateSaveStatus(true, '💾 ' + hm);
+  } catch(e) {
+    _updateSaveStatus(false, '⚠️ 保存失敗');
+    console.warn('saveState error:', e);
+  }
 }
 
 function _restoreDrum(drums) {
@@ -6173,10 +6188,20 @@ function restoreState() {
     calc();
     calcLdg();
     fdpCalc();
-  } catch(e) { /* ignore corrupt data */ }
+
+    /* Show restore timestamp */
+    const saved = new Date(ts);
+    const hm = String(saved.getHours()).padStart(2,'0') + ':' + String(saved.getMinutes()).padStart(2,'0');
+    const md = (saved.getMonth()+1) + '/' + saved.getDate();
+    setTimeout(() => _updateSaveStatus(true, '💾 ' + md + ' ' + hm), 200);
+  } catch(e) {
+    _updateSaveStatus(false, '⚠️ 復元失敗');
+    console.warn('restoreState error:', e);
+  }
 }
 
 function resetAllState() {
+  if (!confirm('入力データをすべてリセットします。よろしいですか？')) return;
   localStorage.removeItem(_STATE_KEY);
   location.reload();
 }
