@@ -3502,10 +3502,10 @@ function atbCalc() {
   const vref       = calcVref(ldgW, atbFlap);
   const apprData   = atbFlap === 'F25' ? APPR_DATA.f25 : APPR_DATA.f30;
   const ws         = apprData.map(d => d.w);
-  const pitchVref  = interp(ws, apprData.map(d => d.pitch[0]), ldgW);
-  const pitchVref5 = interp(ws, apprData.map(d => d.pitch[1]), ldgW);
-  const n1Vref     = interp(ws, apprData.map(d => d.n1[0]),   ldgW);
-  const n1Vref5    = interp(ws, apprData.map(d => d.n1[1]),   ldgW);
+  const pitchVref5  = interp(ws, apprData.map(d => d.pitch[1]), ldgW);
+  const pitchVref10 = interp(ws, apprData.map(d => d.pitch[2]), ldgW);
+  const n1Vref5     = interp(ws, apprData.map(d => d.n1[1]),   ldgW);
+  const n1Vref10    = interp(ws, apprData.map(d => d.n1[2]),   ldgW);
 
   html += `<div class="atb-ref-hdr">Reference Pitch &amp; N1</div>`;
 
@@ -3526,15 +3526,15 @@ function atbCalc() {
     <div style="font-size:0.52rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Pitch &amp; N1</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
-        <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF</div>
-        <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref !== null ? pitchVref.toFixed(1) : '—'}°</div>
-        <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${n1Vref !== null ? n1Vref.toFixed(1) : '—'}%</div>
-        <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
-      </div>
-      <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
         <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+5</div>
         <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref5 !== null ? pitchVref5.toFixed(1) : '—'}°</div>
         <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${n1Vref5 !== null ? n1Vref5.toFixed(1) : '—'}%</div>
+        <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+      </div>
+      <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+        <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+10</div>
+        <div style="font-size:1.15em;font-weight:700;color:var(--text)">${pitchVref10 !== null ? pitchVref10.toFixed(1) : '—'}°</div>
+        <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${n1Vref10 !== null ? n1Vref10.toFixed(1) : '—'}%</div>
         <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
       </div>
     </div>
@@ -3544,10 +3544,10 @@ function atbCalc() {
   if (fob !== null) {
     const immW       = tow;
     const immVref    = calcVref(immW, atbFlap);
-    const immPVref   = interp(ws, apprData.map(d => d.pitch[0]), immW);
     const immPVref5  = interp(ws, apprData.map(d => d.pitch[1]), immW);
-    const immN1Vref  = interp(ws, apprData.map(d => d.n1[0]),   immW);
+    const immPVref10 = interp(ws, apprData.map(d => d.pitch[2]), immW);
     const immN1Vref5 = interp(ws, apprData.map(d => d.n1[1]),   immW);
+    const immN1Vref10= interp(ws, apprData.map(d => d.n1[2]),   immW);
 
     html += `<div class="atb-ref-hdr">Immediate Landing (at TOW)</div>`;
     html += `<div class="atb-row" style="border-color:rgba(255,140,66,0.35);background:rgba(255,140,66,0.06)">
@@ -3564,15 +3564,15 @@ function atbCalc() {
       <div style="font-size:0.52rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Pitch &amp; N1</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
-          <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF</div>
-          <div style="font-size:1.15em;font-weight:700;color:var(--text)">${immPVref !== null ? immPVref.toFixed(1) : '—'}°</div>
-          <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${immN1Vref !== null ? immN1Vref.toFixed(1) : '—'}%</div>
-          <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
-        </div>
-        <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
           <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+5</div>
           <div style="font-size:1.15em;font-weight:700;color:var(--text)">${immPVref5 !== null ? immPVref5.toFixed(1) : '—'}°</div>
           <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${immN1Vref5 !== null ? immN1Vref5.toFixed(1) : '—'}%</div>
+          <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
+        </div>
+        <div style="text-align:center;border:1px solid var(--border);border-radius:7px;padding:7px 6px;background:var(--card)">
+          <div style="font-size:0.5rem;color:var(--muted);letter-spacing:1px">VREF+10</div>
+          <div style="font-size:1.15em;font-weight:700;color:var(--text)">${immPVref10 !== null ? immPVref10.toFixed(1) : '—'}°</div>
+          <div style="font-size:0.95em;font-weight:700;color:var(--gold)">${immN1Vref10 !== null ? immN1Vref10.toFixed(1) : '—'}%</div>
           <div style="font-size:0.48rem;color:var(--muted)">PTH / N1</div>
         </div>
       </div>
