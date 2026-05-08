@@ -3787,10 +3787,10 @@ function rebuildWindDirDrum(rwyHdg, colId, dispId, calcFn, forceDir) {
   const colEl  = document.getElementById(colId);
   const dispEl = document.getElementById(dispId);
   if (!colEl || !dispEl) return;
-  /* rebuild items: 361 values offset −180..+180 from rwyHdg */
+  /* rebuild items: 71 values offset −175..+175 step 5 from rwyHdg */
   colEl.innerHTML = '';
   const vals = [];
-  for (let offset = -180; offset <= 180; offset++) {
+  for (let offset = -175; offset <= 175; offset += 5) {
     const deg = ((rwyHdg + offset - 1 + 7200) % 360) + 1; // normalise to 1‒360
     vals.push(deg);
     const d = document.createElement('div');
@@ -3800,8 +3800,8 @@ function rebuildWindDirDrum(rwyHdg, colId, dispId, calcFn, forceDir) {
   }
   colEl._vals = vals;
   delete colEl._from; // prevent getColRangeVal misread
-  /* position: forceDir → find nearest; default → center (= rwyHdg) */
-  let bestIdx = 180; // default: center
+  /* position: forceDir → find nearest; default → center (= rwyHdg, index 35) */
+  let bestIdx = 35; // default: center (offset 0)
   if (forceDir !== undefined) {
     let bestDiff = 999;
     for (let i = 0; i < vals.length; i++) {
