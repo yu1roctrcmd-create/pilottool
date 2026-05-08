@@ -2994,13 +2994,20 @@ function calcLdg() {
 
   /* XW limit bars */
   const xwLimit = getXwLimitLdg();
+  const FO_XW_LIMIT = 15; // FO crosswind limit (any RWCC)
   const lbEl    = $('ldg-limitBars');
   if (xwLimit !== null) {
     const ok   = crossAbs <= xwLimit;
     const over = (crossAbs - xwLimit).toFixed(1);
+    const foOk   = crossAbs <= FO_XW_LIMIT;
+    const foOver = (crossAbs - FO_XW_LIMIT).toFixed(1);
     lbEl.innerHTML = `<div class="lbar ${ok ? 'ok' : 'exceed'}">
       <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
       <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
+    </div>
+    <div class="lbar ${foOk ? 'ok' : 'exceed'}" style="border-color:rgba(180,138,255,0.4)">
+      <span style="color:#b48aff">FO Limit 15 KT</span>&ensp;<span>XWind ${crossAbs.toFixed(1)} KT ${foOk ? '≤' : '>'} 15 KT ${!foOk ? `(+${foOver})`:''}</span>
+      <span class="lval">${foOk ? '✓ OK' : '✗ EXCEED'}</span>
     </div>`;
   } else {
     lbEl.innerHTML = '';
