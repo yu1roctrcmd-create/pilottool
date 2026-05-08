@@ -2367,25 +2367,27 @@ function calc() {
   twEl.textContent = tailPos.toFixed(1);
 
   const xwLimit = getXwLimit();
-  const FO_XW_LIMIT = 15; // FO crosswind limit (any RWCC)
   const lbEl = $('limitBars');
+  let barsHtml = '';
   if (xwLimit !== null) {
     const ok   = crossAbs <= xwLimit;
     const over = (crossAbs - xwLimit).toFixed(1);
-    const foOk   = crossAbs <= FO_XW_LIMIT;
-    const foOver = (crossAbs - FO_XW_LIMIT).toFixed(1);
-    lbEl.innerHTML = `
-      <div class="lbar ${ok ? 'ok' : 'exceed'}">
-        <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
-        <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
-      </div>
-      <div class="lbar ${foOk ? 'ok' : 'exceed'}" style="border-color:rgba(180,138,255,0.4)">
-        <span style="color:#b48aff">FO Limit 15 KT</span>&ensp;<span>XWind ${crossAbs.toFixed(1)} KT ${foOk ? '≤' : '>'} 15 KT ${!foOk ? `(+${foOver})`:''}</span>
-        <span class="lval">${foOk ? '✓ OK' : '✗ EXCEED'}</span>
-      </div>`;
-  } else {
-    lbEl.innerHTML = '';
+    barsHtml += `<div class="lbar ${ok ? 'ok' : 'exceed'}">
+      <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
+      <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
+    </div>`;
   }
+  const foOk   = crossAbs <= 15;
+  const foOver = (crossAbs - 15).toFixed(1);
+  const foStyle = _foXwActive
+    ? 'border-color:#b48aff;background:rgba(180,138,255,0.13);'
+    : 'border-color:rgba(180,138,255,0.4);';
+  barsHtml += `<div class="lbar ${foOk ? 'ok' : 'exceed'}" style="${foStyle}cursor:pointer;" onclick="toggleFoXw()">
+    <span style="color:#b48aff">FO 15 KT${_foXwActive ? ' ▶ MAX WIND 適用中' : ''}</span>&ensp;
+    <span>XWind ${crossAbs.toFixed(1)} KT ${foOk ? '≤' : '>'} 15 KT ${!foOk ? `(+${foOver})`:''}</span>
+    <span class="lval" style="${_foXwActive ? 'color:#b48aff;' : ''}">${_foXwActive ? '▶ ON' : (foOk ? '✓ OK' : '✗ EXCEED')}</span>
+  </div>`;
+  lbEl.innerHTML = barsHtml;
 
   drawDiagram(norm360(rwyHdg), windDirMag, windData, headCompDiag, crossSigned);
   buildXwTable();
@@ -2421,10 +2423,11 @@ function setTwLimit(v) {
 function buildXwTable() {
   const card = $('xwftCard');
   if (!card) return;
-  const xwLimit = getXwLimit();
+  const captainLimit = getXwLimit();
+  const xwLimit = _foXwActive ? 15 : captainLimit;
   if (xwLimit === null) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  $('xwftLimTag').textContent = `XW: ${xwLimit} KT`;
+  $('xwftLimTag').textContent = _foXwActive ? `XW: 15 KT (FO)` : `XW: ${xwLimit} KT`;
 
   const rwyHdgEl   = document.getElementById('xd-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
@@ -2718,6 +2721,8 @@ let ldgApprFlap   = 'F25';
 let twLimitLdg    = 10;
 let _nncXwOverride = null;   // NNC override: null=normal, 20=20kt, 10=10kt
 let _nncXwSelected = null;   // active NNC checklist name
+let _foXwActive    = false;  // TO tab: FO XW 15kt mode for Max Wind table
+let _ldgFoXwActive = false;  // LDG tab: FO XW 15kt mode for Max Wind table
 let _ldgDrumReady = false;
 let _ldgLastTarget = null;
 let _ldgLastVref   = 160;
@@ -2784,6 +2789,9 @@ function initLdgDrums() {
 }
 
 /* ── LDG helpers ── */
+function toggleFoXw()    { _foXwActive    = !_foXwActive;    calc(); }
+function toggleLdgFoXw() { _ldgFoXwActive = !_ldgFoXwActive; calcLdg(); }
+
 function ldgToggleMagVar() {
   $('ldg-magVarGroup').style.display = $('ldg-windType').value === 'TRUE' ? 'block' : 'none';
 }
@@ -2994,24 +3002,27 @@ function calcLdg() {
 
   /* XW limit bars */
   const xwLimit = getXwLimitLdg();
-  const FO_XW_LIMIT = 15; // FO crosswind limit (any RWCC)
   const lbEl    = $('ldg-limitBars');
+  let barsHtmlLdg = '';
   if (xwLimit !== null) {
     const ok   = crossAbs <= xwLimit;
     const over = (crossAbs - xwLimit).toFixed(1);
-    const foOk   = crossAbs <= FO_XW_LIMIT;
-    const foOver = (crossAbs - FO_XW_LIMIT).toFixed(1);
-    lbEl.innerHTML = `<div class="lbar ${ok ? 'ok' : 'exceed'}">
+    barsHtmlLdg += `<div class="lbar ${ok ? 'ok' : 'exceed'}">
       <span>XWind ${crossAbs.toFixed(1)} KT ${ok ? '≤' : '>'} Limit ${xwLimit} KT ${!ok ? `(+${over})`:''}</span>
       <span class="lval">${ok ? '✓ OK' : '✗ EXCEED'}</span>
-    </div>
-    <div class="lbar ${foOk ? 'ok' : 'exceed'}" style="border-color:rgba(180,138,255,0.4)">
-      <span style="color:#b48aff">FO Limit 15 KT</span>&ensp;<span>XWind ${crossAbs.toFixed(1)} KT ${foOk ? '≤' : '>'} 15 KT ${!foOk ? `(+${foOver})`:''}</span>
-      <span class="lval">${foOk ? '✓ OK' : '✗ EXCEED'}</span>
     </div>`;
-  } else {
-    lbEl.innerHTML = '';
   }
+  const foOk   = crossAbs <= 15;
+  const foOver = (crossAbs - 15).toFixed(1);
+  const foStyleLdg = _ldgFoXwActive
+    ? 'border-color:#b48aff;background:rgba(180,138,255,0.13);'
+    : 'border-color:rgba(180,138,255,0.4);';
+  barsHtmlLdg += `<div class="lbar ${foOk ? 'ok' : 'exceed'}" style="${foStyleLdg}cursor:pointer;" onclick="toggleLdgFoXw()">
+    <span style="color:#b48aff">FO 15 KT${_ldgFoXwActive ? ' ▶ MAX WIND 適用中' : ''}</span>&ensp;
+    <span>XWind ${crossAbs.toFixed(1)} KT ${foOk ? '≤' : '>'} 15 KT ${!foOk ? `(+${foOver})`:''}</span>
+    <span class="lval" style="${_ldgFoXwActive ? 'color:#b48aff;' : ''}">${_ldgFoXwActive ? '▶ ON' : (foOk ? '✓ OK' : '✗ EXCEED')}</span>
+  </div>`;
+  lbEl.innerHTML = barsHtmlLdg;
 
   /* Autoland section */
   const alSection = $('ldg-alSection');
@@ -3045,10 +3056,11 @@ function calcLdg() {
 function buildXwTableLdg() {
   const card = $('ldg-xwftCard');
   if (!card) return;
-  const xwLimit = getXwLimitLdg();
+  const captainLimit = getXwLimitLdg();
+  const xwLimit = _ldgFoXwActive ? 15 : captainLimit;
   if (xwLimit === null) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  $('ldg-xwftLimTag').textContent = `XW: ${xwLimit} KT`;
+  $('ldg-xwftLimTag').textContent = _ldgFoXwActive ? `XW: 15 KT (FO)` : `XW: ${xwLimit} KT`;
 
   const rwyHdgEl   = document.getElementById('ldg-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
