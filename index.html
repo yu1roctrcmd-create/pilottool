@@ -2132,6 +2132,7 @@ function onRwySelect() {
   const n = parseInt($('rwyNum').value);
   if (!isNaN(n) && n >= 1 && n <= 36) {
     setDrumVal('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
+    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, n * 10);
   }
   calc();
 }
@@ -2778,6 +2779,8 @@ function initLdgDrums() {
   buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg);
   buildColRange(document.getElementById('ldg-steady'),  0,  99, 2,  20);
   wireXwindDrum('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', () => {
+    const hdg = getColRangeVal(document.getElementById('ldg-rwyhdg'));
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, hdg);
     calcLdg();
   });
   wireXwindDrum('ldg-steady',  'disp-ldg-steady',  ' KT', updateLdgGustOptions);
@@ -2796,6 +2799,7 @@ function onLdgRwySelect() {
   const n = parseInt($('ldg-rwyNum').value);
   if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
     setDrumVal('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, n * 10);
   }
   calcLdg();
 }
@@ -5988,6 +5992,8 @@ buildColRange(document.getElementById('xd-rwyhdg'),  1, 360, 3, 270);
 buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc);
 buildColRange(document.getElementById('xd-steady'),  0,  99, 2,  20);
 wireXwindDrum('xd-rwyhdg', 'disp-xd-rwyhdg', '°', () => {
+  const hdg = getColRangeVal(document.getElementById('xd-rwyhdg'));
+  buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, hdg);
   calc();
 });
 wireXwindDrum('xd-steady',  'disp-xd-steady',  ' KT', updateGustOptions);
