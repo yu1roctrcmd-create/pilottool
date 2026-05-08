@@ -2132,7 +2132,6 @@ function onRwySelect() {
   const n = parseInt($('rwyNum').value);
   if (!isNaN(n) && n >= 1 && n <= 36) {
     setDrumVal('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
-    rebuildWindDirDrum(n * 10, 'xd-winddir', 'disp-xd-winddir', calc);
   }
   calc();
 }
@@ -2776,11 +2775,9 @@ function initLdgDrums() {
   if (_ldgDrumReady) return;
   _ldgDrumReady = true;
   buildColRange(document.getElementById('ldg-rwyhdg'),  1, 360, 3, 270);
-  rebuildWindDirDrum(270, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
+  buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg);
   buildColRange(document.getElementById('ldg-steady'),  0,  99, 2,  20);
   wireXwindDrum('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', () => {
-    const hdg = getColRangeVal(document.getElementById('ldg-rwyhdg'));
-    rebuildWindDirDrum(hdg, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
     calcLdg();
   });
   wireXwindDrum('ldg-steady',  'disp-ldg-steady',  ' KT', updateLdgGustOptions);
@@ -2799,7 +2796,6 @@ function onLdgRwySelect() {
   const n = parseInt($('ldg-rwyNum').value);
   if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
     setDrumVal('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
-    rebuildWindDirDrum(n * 10, 'ldg-winddir', 'disp-ldg-winddir', calcLdg);
   }
   calcLdg();
 }
@@ -3782,40 +3778,25 @@ function getWindDirVal(colEl) {
   }
   return colEl ? getColRangeVal(colEl) : NaN;
 }
-/* forceDir: if provided, position on that direction; otherwise center on rwyHdg */
-function rebuildWindDirDrum(rwyHdg, colId, dispId, calcFn, forceDir) {
+/* Fixed wind direction drum: 010, 020, ..., 360 (step 10, 36 items) */
+function buildWindDirDrum(colId, dispId, calcFn, forceDir) {
   const colEl  = document.getElementById(colId);
   const dispEl = document.getElementById(dispId);
   if (!colEl || !dispEl) return;
-  /* rebuild items: 71 values offset −175..+175 step 5 from rwyHdg */
-  colEl.innerHTML = '';
-  const vals = [];
-  for (let offset = -175; offset <= 175; offset += 5) {
-    const deg = ((rwyHdg + offset - 1 + 7200) % 360) + 1; // normalise to 1‒360
-    vals.push(deg);
-    const d = document.createElement('div');
-    d.className = 'drum-item';
-    d.textContent = String(deg).padStart(3, '0');
-    colEl.appendChild(d);
-  }
-  colEl._vals = vals;
-  delete colEl._from; // prevent getColRangeVal misread
-  /* position: forceDir → find nearest; default → center (= rwyHdg, index 35) */
-  let bestIdx = 35; // default: center (offset 0)
-  if (forceDir !== undefined) {
-    let bestDiff = 999;
-    for (let i = 0; i < vals.length; i++) {
-      let diff = Math.abs(vals[i] - forceDir);
-      if (diff > 180) diff = 360 - diff;
-      if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  /* Build once */
+  if (!colEl._windDirBuilt) {
+    colEl.innerHTML = '';
+    const vals = [];
+    for (let deg = 10; deg <= 360; deg += 10) {
+      vals.push(deg);
+      const d = document.createElement('div');
+      d.className = 'drum-item';
+      d.textContent = String(deg).padStart(3, '0');
+      colEl.appendChild(d);
     }
-  }
-  colEl._skipNotify = true;
-  colEl.scrollTop = bestIdx * ITEM_H;
-  dispEl.textContent = String(vals[bestIdx]).padStart(3, '0') + '°';
-  /* wire scroll only once */
-  if (!colEl._windDirWired) {
-    colEl._windDirWired = true;
+    colEl._vals = vals;
+    colEl._windDirBuilt = true;
+    delete colEl._from;
     onColScroll(colEl, () => {
       const idx = Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1);
       const v = colEl._vals[idx];
@@ -3823,6 +3804,18 @@ function rebuildWindDirDrum(rwyHdg, colId, dispId, calcFn, forceDir) {
       calcFn();
     });
   }
+  /* Position: forceDir → nearest 10°; default → 360 (last item) */
+  const vals = colEl._vals;
+  let bestIdx = vals.length - 1; // default: 360
+  if (forceDir !== undefined) {
+    const rounded = Math.round(forceDir / 10) * 10;
+    const target  = rounded <= 0 ? 360 : rounded > 360 ? 360 : rounded;
+    const fi = vals.indexOf(target);
+    if (fi >= 0) bestIdx = fi;
+  }
+  colEl._skipNotify = true;
+  colEl.scrollTop = bestIdx * ITEM_H;
+  dispEl.textContent = String(vals[bestIdx]).padStart(3, '0') + '°';
   requestAnimationFrame(() => { colEl._skipNotify = false; });
 }
 function wireXwindDrum(colId, dispId, suffix, onChange) {
@@ -5992,11 +5985,9 @@ toggleMagVar();
 
 /* XWIND drums */
 buildColRange(document.getElementById('xd-rwyhdg'),  1, 360, 3, 270);
-rebuildWindDirDrum(270, 'xd-winddir', 'disp-xd-winddir', calc);
+buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc);
 buildColRange(document.getElementById('xd-steady'),  0,  99, 2,  20);
 wireXwindDrum('xd-rwyhdg', 'disp-xd-rwyhdg', '°', () => {
-  const hdg = getColRangeVal(document.getElementById('xd-rwyhdg'));
-  rebuildWindDirDrum(hdg, 'xd-winddir', 'disp-xd-winddir', calc);
   calc();
 });
 wireXwindDrum('xd-steady',  'disp-xd-steady',  ' KT', updateGustOptions);
@@ -6140,12 +6131,12 @@ function restoreState() {
 
     /* TO drums (already initialized) */
     _restoreDrum(_TO_DRUMS.filter(d => d.col !== 'xd-winddir'));
-    rebuildWindDirDrum(data['drum:xd-rwyhdg'] || 270, 'xd-winddir', 'disp-xd-winddir', calc, data['drum:xd-winddir']);
+    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, data['drum:xd-winddir']);
 
     /* LDG drums — force init then restore */
     initLdgDrums();
     _restoreDrum(_LDG_DRUMS.filter(d => d.col !== 'ldg-winddir'));
-    rebuildWindDirDrum(data['drum:ldg-rwyhdg'] || 270, 'ldg-winddir', 'disp-ldg-winddir', calcLdg, data['drum:ldg-winddir']);
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, data['drum:ldg-winddir']);
 
     /* Toggle states */
     if (data.fdpSectors)                 setFdpSec(data.fdpSectors);
