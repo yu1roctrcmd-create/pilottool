@@ -3776,49 +3776,67 @@ function getColRangeVal(colEl) {
   return colEl._from + Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl.children.length - 1);
 }
 function getWindDirVal(colEl) {
+  if (colEl && colEl._windDirBuilt && colEl._windDirN) {
+    const N      = colEl._windDirN;                       // 36
+    const rawIdx = Math.round(colEl.scrollTop / ITEM_H);
+    const dirIdx = ((rawIdx % N) + N) % N;               // 0-35
+    return (dirIdx + 1) * 10;                            // 10,20,...,360
+  }
   if (colEl && colEl._vals) {
     return colEl._vals[Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1)];
   }
   return colEl ? getColRangeVal(colEl) : NaN;
 }
-/* Fixed wind direction drum: 010, 020, ..., 360 (step 10, 36 items) */
+/* Circular wind direction drum: 010-360 step 10, wraps 360→010 */
 function buildWindDirDrum(colId, dispId, calcFn, forceDir) {
   const colEl  = document.getElementById(colId);
   const dispEl = document.getElementById(dispId);
   if (!colEl || !dispEl) return;
+  const N      = 36;   // 010,020,...,360
+  const COPIES = 5;    // repeat 5× so user can scroll freely
   /* Build once */
   if (!colEl._windDirBuilt) {
     colEl.innerHTML = '';
-    const vals = [];
-    for (let deg = 10; deg <= 360; deg += 10) {
-      vals.push(deg);
-      const d = document.createElement('div');
-      d.className = 'drum-item';
-      d.textContent = String(deg).padStart(3, '0');
-      colEl.appendChild(d);
+    for (let c = 0; c < COPIES; c++) {
+      for (let d = 10; d <= 360; d += 10) {
+        const el = document.createElement('div');
+        el.className = 'drum-item';
+        el.textContent = String(d).padStart(3, '0');
+        colEl.appendChild(el);
+      }
     }
-    colEl._vals = vals;
     colEl._windDirBuilt = true;
+    colEl._windDirN     = N;
+    colEl._windDirCopies = COPIES;
     delete colEl._from;
+    delete colEl._vals;
+    const midBase = Math.floor(COPIES / 2) * N; // centre copy start index
     onColScroll(colEl, () => {
-      const idx = Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl._vals.length - 1);
-      const v = colEl._vals[idx];
-      dispEl.textContent = String(v).padStart(3, '0') + '°';
+      const rawIdx  = Math.round(colEl.scrollTop / ITEM_H);
+      const dirIdx  = ((rawIdx % N) + N) % N;
+      const target  = midBase + dirIdx;
+      /* Silent re-centre so 360→010 wrap feels infinite */
+      if (rawIdx !== target) {
+        colEl._skipNotify = true;
+        colEl.scrollTop   = target * ITEM_H;
+        requestAnimationFrame(() => { colEl._skipNotify = false; });
+      }
+      dispEl.textContent = String((dirIdx + 1) * 10).padStart(3, '0') + '°';
       calcFn();
     });
   }
-  /* Position: forceDir → nearest 10°; default → 360 (last item) */
-  const vals = colEl._vals;
-  let bestIdx = vals.length - 1; // default: 360
+  /* Position */
+  const midBase = Math.floor(COPIES / 2) * N;
+  let dirIdx = N - 1; // default: 360
   if (forceDir !== undefined) {
     const rounded = Math.round(forceDir / 10) * 10;
     const target  = rounded <= 0 ? 360 : rounded > 360 ? 360 : rounded;
-    const fi = vals.indexOf(target);
-    if (fi >= 0) bestIdx = fi;
+    dirIdx = Math.round(target / 10) - 1; // 010→0, 360→35
+    if (dirIdx < 0 || dirIdx >= N) dirIdx = N - 1;
   }
   colEl._skipNotify = true;
-  colEl.scrollTop = bestIdx * ITEM_H;
-  dispEl.textContent = String(vals[bestIdx]).padStart(3, '0') + '°';
+  colEl.scrollTop   = (midBase + dirIdx) * ITEM_H;
+  dispEl.textContent = String((dirIdx + 1) * 10).padStart(3, '0') + '°';
   requestAnimationFrame(() => { colEl._skipNotify = false; });
 }
 function wireXwindDrum(colId, dispId, suffix, onChange) {
@@ -6120,7 +6138,7 @@ function saveState() {
     [..._TO_DRUMS, ..._LDG_DRUMS].forEach(({ col }) => {
       const el = document.getElementById(col);
       if (!el) return;
-      if (el._vals) data['drum:' + col] = getWindDirVal(el);
+      if (el._windDirBuilt || el._vals) data['drum:' + col] = getWindDirVal(el);
       else if (el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
     });
     data.fdpSectors   = fdpSectors;
