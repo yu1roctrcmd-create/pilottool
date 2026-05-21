@@ -5208,42 +5208,127 @@ function desXoverCalc() {
 }
 
 /* ───────────────────────────────────────────
-   Mach + FL → IAS / TAS Calculator
+   CLB Tab: CRZ IAS / Mach / TAS Calculator
 ─────────────────────────────────────────── */
-function clbMachIasCalc() {
-  const el   = $('clb-mi-result');
+function _clbCrzIsaC(fl) {
+  const h = fl * 100;
+  return h <= 36089 ? 15 - 0.0019812 * h : -56.5;
+}
+function clbCrzFlChanged() {
+  const fl = parseFloat($('clb-mi-fl').value);
+  if (!isNaN(fl) && fl > 0) {
+    const sat = parseFloat($('clb-mi-sat').value);
+    if (!isNaN(sat)) {
+      $('clb-mi-disa').value = Math.round(sat - _clbCrzIsaC(fl));
+    } else {
+      const disa = parseFloat($('clb-mi-disa').value) || 0;
+      $('clb-mi-sat').value = (_clbCrzIsaC(fl) + disa).toFixed(1);
+    }
+  }
+  clbCrzCalc();
+}
+function clbCrzDisaChanged() {
+  const fl = parseFloat($('clb-mi-fl').value);
+  const disa = parseFloat($('clb-mi-disa').value) || 0;
+  if (!isNaN(fl) && fl > 0)
+    $('clb-mi-sat').value = (_clbCrzIsaC(fl) + disa).toFixed(1);
+  clbCrzCalc();
+}
+function clbCrzSatChanged() {
+  const fl  = parseFloat($('clb-mi-fl').value);
+  const sat = parseFloat($('clb-mi-sat').value);
+  if (!isNaN(fl) && fl > 0 && !isNaN(sat))
+    $('clb-mi-disa').value = Math.round(sat - _clbCrzIsaC(fl));
+  clbCrzCalc();
+}
+function clbCrzCalcFrom(src) {
+  if (src === 'mach') $('clb-mi-ias').value  = '';
+  else                $('clb-mi-mach').value = '';
+  clbCrzCalc();
+}
+function clbCrzCalc() {
+  const el    = $('clb-mi-result');
+  const elTbl = $('clb-mi-table');
   if (!el) return;
-  const mach = parseFloat($('clb-mi-mach').value);
   const fl   = parseFloat($('clb-mi-fl').value);
-  const disa = parseFloat($('clb-disa').value) || 0;
-
-  if (isNaN(mach) || isNaN(fl) || mach <= 0 || fl <= 0) {
-    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>';
+  const disa = parseFloat($('clb-mi-disa').value) || 0;
+  const mach = parseFloat($('clb-mi-mach').value);
+  const ias  = parseFloat($('clb-mi-ias').value);
+  if (isNaN(fl) || fl <= 0) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">CRZ FL を入力してください</p>';
+    if (elTbl) elTbl.innerHTML = '';
     return;
   }
-
   const h = fl * 100;
-  const { T, P, a, P0, a0 } = _crzAtmos(h, disa);
-  const tas = Math.round(mach * a);
-  const qc  = P * (Math.pow(1 + 0.2 * mach * mach, 3.5) - 1);
-  const ias  = Math.round(a0 * Math.sqrt(5 * (Math.pow(qc / P0 + 1, 2/7) - 1)));
-  const oat  = Math.round((T - 273.15) * 10) / 10;
-  const disaLbl = disa === 0 ? 'ISA' : `ISA${disa > 0 ? '+' : ''}${disa}`;
-
+  const disaLbl = disa === 0 ? 'ISA' : `ISA${disa >= 0 ? '+' : ''}${disa}`;
+  let sp, srcLbl;
+  if (!isNaN(mach) && mach > 0) {
+    sp = _machToSpeeds(mach, h, disa);
+    srcLbl = `M${mach.toFixed(3)}`;
+  } else if (!isNaN(ias) && ias > 0) {
+    sp = _casToSpeeds(ias, h, disa);
+    srcLbl = `${Math.round(ias)} KIAS`;
+  } else {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Mach または IAS を入力してください</p>';
+    if (elTbl) _clbCrzRenderTable(fl, disa, null, null, elTbl);
+    return;
+  }
+  const oat = (sp.T - 273.15).toFixed(1);
   el.innerHTML = `
     <div class="breakdown" style="display:block">
       <div class="brow">
-        <span>IAS &nbsp;<span style="color:var(--muted);font-size:0.85em">at FL${fl} / M${mach.toFixed(2)}</span></span>
-        <span class="v" style="color:var(--accent);font-size:1.15em;font-weight:700">${ias} kt</span>
+        <span>IAS &nbsp;<span style="color:var(--muted);font-size:0.85em">FL${fl} · ${srcLbl} · ${disaLbl}</span></span>
+        <span class="v" style="color:var(--accent);font-size:1.15em;font-weight:700">${Math.round(sp.CAS)} kt</span>
       </div>
       <div class="brow"><span>TAS</span>
-        <span class="v" style="color:var(--green);font-weight:700">${tas} kt</span></div>
-      <div class="brow"><span>OAT (${disaLbl})</span>
+        <span class="v" style="color:var(--green);font-weight:700">${Math.round(sp.TAS)} kt</span></div>
+      <div class="brow"><span>Mach</span>
+        <span class="v">M${sp.M.toFixed(3)}</span></div>
+      <div class="brow"><span>SAT (${disaLbl})</span>
         <span class="v">${oat} °C</span></div>
       <div class="brow"><span>音速 a</span>
-        <span class="v">${Math.round(a)} kt</span></div>
+        <span class="v">${Math.round(sp.a)} kt</span></div>
     </div>`;
+  if (elTbl) _clbCrzRenderTable(fl, disa,
+    (!isNaN(mach) && mach > 0) ? mach : null,
+    (!isNaN(ias)  && ias  > 0) ? ias  : null, elTbl);
 }
+function _clbCrzRenderTable(curFL, disa, mach, cas, elTbl) {
+  const fls = [240,260,280,300,320,340,360,380,400,420];
+  const disaLbl = disa === 0 ? 'ISA' : `ISA${disa >= 0 ? '+' : ''}${disa}`;
+  let rows = '';
+  for (const fl of fls) {
+    let sp;
+    if (mach !== null)     sp = _machToSpeeds(mach, fl * 100, disa);
+    else if (cas !== null) sp = _casToSpeeds(cas,   fl * 100, disa);
+    else continue;
+    const sat = (sp.T - 273.15).toFixed(1);
+    const hl  = Math.abs(fl - curFL) < 15 ? 'style="color:var(--accent);font-weight:700"' : '';
+    rows += `<tr ${hl}>
+      <td>FL${fl}</td>
+      <td style="text-align:right;color:var(--muted)">${sat}</td>
+      <td style="text-align:right">${Math.round(sp.CAS)}</td>
+      <td style="text-align:right">${Math.round(sp.TAS)}</td>
+      <td style="text-align:right">M${sp.M.toFixed(3)}</td></tr>`;
+  }
+  if (!rows) { elTbl.innerHTML = ''; return; }
+  const fixLbl = mach !== null
+    ? `M${mach.toFixed(3)} 固定` : `IAS ${Math.round(cas)} KT 固定`;
+  elTbl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.79em;margin-top:10px">
+      <thead><tr style="color:var(--muted);font-size:0.7em;border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:3px 0;font-weight:500">FL</th>
+        <th style="text-align:right;padding:3px 0;font-weight:500">SAT</th>
+        <th style="text-align:right;padding:3px 0;font-weight:500">IAS</th>
+        <th style="text-align:right;padding:3px 0;font-weight:500">TAS</th>
+        <th style="text-align:right;padding:3px 0;font-weight:500">Mach</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:0.6em;color:var(--muted);margin-top:4px">${fixLbl}・${disaLbl}</p>`;
+}
+/* backward-compat alias */
+function clbMachIasCalc() { clbCrzCalc(); }
 
 /* ───────────────────────────────────────────
    Path Angle / Required ROC Calculator
@@ -6396,7 +6481,7 @@ restoreState();
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
       <input type="number" id="clb-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc(); clbMachIasCalc()">
+             inputmode="numeric" placeholder="0" oninput="clbCalc(); clbXoverCalc()">
     </div>
   </div>
   <div id="clb-result" style="margin-top:10px">
@@ -6429,22 +6514,40 @@ restoreState();
 
   <div style="border-top:1px solid var(--border);margin:14px 0 12px"></div>
 
-  <div style="font-size:0.75em;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">▸ Mach / ALT → IAS / TAS</div>
+  <div style="font-size:0.75em;font-weight:600;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">▸ CRZ IAS / Mach / TAS 換算</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+    <div class="fg">
+      <label>CRZ FL</label>
+      <input type="number" id="clb-mi-fl" step="10" min="50" max="450"
+             inputmode="numeric" placeholder="350" oninput="clbCrzFlChanged()">
+    </div>
+    <div class="fg">
+      <label>ISA DEV (°C)</label>
+      <input type="number" id="clb-mi-disa" step="1" value="0"
+             inputmode="numeric" placeholder="0" oninput="clbCrzDisaChanged()">
+    </div>
+    <div class="fg">
+      <label>SAT (°C)</label>
+      <input type="number" id="clb-mi-sat" step="0.5"
+             inputmode="decimal" placeholder="自動" oninput="clbCrzSatChanged()">
+    </div>
+  </div>
   <div class="row2">
     <div class="fg">
       <label>Mach</label>
-      <input type="number" id="clb-mi-mach" step="0.01" min="0.50" max="0.99"
-             inputmode="decimal" placeholder="0.83" oninput="clbMachIasCalc()">
+      <input type="number" id="clb-mi-mach" step="0.001" min="0.50" max="0.99"
+             inputmode="decimal" placeholder="0.83" oninput="clbCrzCalcFrom('mach')">
     </div>
     <div class="fg">
-      <label>FL (高度層)</label>
-      <input type="number" id="clb-mi-fl" step="10" min="50" max="450"
-             inputmode="numeric" placeholder="350" oninput="clbMachIasCalc()">
+      <label>IAS (kt)</label>
+      <input type="number" id="clb-mi-ias" step="1" min="150" max="500"
+             inputmode="numeric" placeholder="310" oninput="clbCrzCalcFrom('ias')">
     </div>
   </div>
   <div id="clb-mi-result" style="margin-top:8px">
-    <p style="font-size:0.78em;color:var(--muted)">Mach と FL を入力してください</p>
+    <p style="font-size:0.78em;color:var(--muted)">CRZ FL と Mach または IAS を入力してください</p>
   </div>
+  <div id="clb-mi-table"></div>
 </div>
 
 <ul class="footnote">
