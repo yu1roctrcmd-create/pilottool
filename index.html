@@ -5214,6 +5214,20 @@ function _clbCrzIsaC(fl) {
   const h = fl * 100;
   return h <= 36089 ? 15 - 0.0019812 * h : -56.5;
 }
+/* CLB → CRZ tab DISA/SAT 同期（一方向プッシュ。CRZ側は引き続き手動入力可） */
+function _syncDisaToCrz(disa) {
+  const crzDisaEl = $('crz-disa');
+  const crzSatEl  = $('crz-sat');
+  const crzFlEl   = $('crz-fl');
+  if (!crzDisaEl) return;
+  crzDisaEl.value = disa;
+  if (crzSatEl && crzFlEl) {
+    const crzFl = parseFloat(crzFlEl.value);
+    if (!isNaN(crzFl))
+      crzSatEl.value = (_clbCrzIsaC(crzFl) + disa).toFixed(1);
+  }
+  if (typeof crzCalc === 'function') crzCalc();
+}
 function clbCrzFlChanged() {
   const fl = parseFloat($('clb-mi-fl').value);
   if (!isNaN(fl) && fl > 0) {
@@ -5225,13 +5239,15 @@ function clbCrzFlChanged() {
       $('clb-mi-sat').value = (_clbCrzIsaC(fl) + disa).toFixed(1);
     }
   }
+  _syncDisaToCrz(parseFloat($('clb-mi-disa').value) || 0);
   clbCrzCalc();
 }
 function clbCrzDisaChanged() {
-  const fl = parseFloat($('clb-mi-fl').value);
+  const fl   = parseFloat($('clb-mi-fl').value);
   const disa = parseFloat($('clb-mi-disa').value) || 0;
   if (!isNaN(fl) && fl > 0)
     $('clb-mi-sat').value = (_clbCrzIsaC(fl) + disa).toFixed(1);
+  _syncDisaToCrz(disa);
   clbCrzCalc();
 }
 function clbCrzSatChanged() {
@@ -5239,6 +5255,7 @@ function clbCrzSatChanged() {
   const sat = parseFloat($('clb-mi-sat').value);
   if (!isNaN(fl) && fl > 0 && !isNaN(sat))
     $('clb-mi-disa').value = Math.round(sat - _clbCrzIsaC(fl));
+  _syncDisaToCrz(parseFloat($('clb-mi-disa').value) || 0);
   clbCrzCalc();
 }
 function clbCrzCalcFrom(src) {
