@@ -998,6 +998,28 @@
       <option value="">なし</option>
     </select>
   </div>
+  <!-- ATIS Import (TO) -->
+  <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:10px">
+    <div style="font-size:0.72em;color:var(--label);font-weight:600;letter-spacing:.05em;margin-bottom:8px">▸ ATIS WIND IMPORT</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="atis-ap-to" style="flex:1;font-size:0.88em">
+        <option value="">空港を選択…</option>
+        <option value="RJAA">RJAA 成田</option>
+        <option value="RCTP">RCTP 台北桃園</option>
+        <option value="VHHH">VHHH 香港</option>
+        <option value="ZSPD">ZSPD 上海浦東</option>
+        <option value="WSSS">WSSS シンガポール</option>
+        <option value="PANC">PANC アンカレッジ</option>
+        <option value="KORD">KORD シカゴ</option>
+        <option value="KJFK">KJFK ニューヨーク</option>
+        <option value="KLAX">KLAX ロサンゼルス</option>
+        <option value="KDFW">KDFW ダラス</option>
+      </select>
+      <button id="atis-btn-to" onclick="fetchAtisWind('to')"
+        style="padding:6px 12px;font-size:0.85em;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap">取得</button>
+    </div>
+    <div id="atis-stat-to" style="font-size:0.78em;color:var(--label);margin-top:6px;min-height:1.2em"></div>
+  </div>
 </div>
 
 <!-- Runway Condition & Limits (TO only) -->
@@ -1432,6 +1454,28 @@
     <select id="ldg-gust" onchange="calcLdg()">
       <option value="">なし</option>
     </select>
+  </div>
+  <!-- ATIS Import (LDG) -->
+  <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:10px">
+    <div style="font-size:0.72em;color:var(--label);font-weight:600;letter-spacing:.05em;margin-bottom:8px">▸ ATIS WIND IMPORT</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="atis-ap-ldg" style="flex:1;font-size:0.88em">
+        <option value="">空港を選択…</option>
+        <option value="RJAA">RJAA 成田</option>
+        <option value="RCTP">RCTP 台北桃園</option>
+        <option value="VHHH">VHHH 香港</option>
+        <option value="ZSPD">ZSPD 上海浦東</option>
+        <option value="WSSS">WSSS シンガポール</option>
+        <option value="PANC">PANC アンカレッジ</option>
+        <option value="KORD">KORD シカゴ</option>
+        <option value="KJFK">KJFK ニューヨーク</option>
+        <option value="KLAX">KLAX ロサンゼルス</option>
+        <option value="KDFW">KDFW ダラス</option>
+      </select>
+      <button id="atis-btn-ldg" onclick="fetchAtisWind('ldg')"
+        style="padding:6px 12px;font-size:0.85em;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap">取得</button>
+    </div>
+    <div id="atis-stat-ldg" style="font-size:0.78em;color:var(--label);margin-top:6px;min-height:1.2em"></div>
   </div>
 </div>
 
@@ -5205,6 +5249,112 @@ function desXoverCalc() {
       <div class="brow"><span>OAT at FL${xoFL} (${disaLbl})</span>
         <span class="v">${oat} °C</span></div>
     </div>`;
+}
+
+/* ───────────────────────────────────────────
+   ATIS Wind Fetch (atis.guru via corsproxy.io)
+─────────────────────────────────────────── */
+const ATIS_AIRPORTS = ['RJAA','RCTP','VHHH','ZSPD','WSSS','PANC','KORD','KJFK','KLAX','KDFW'];
+
+function _parseAtisWind(html) {
+  // Extract text from <div class="atis"> elements
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  // Collect all .atis text blocks
+  const blocks = Array.from(div.querySelectorAll('.atis')).map(el => el.textContent);
+  // Prefer METAR block (contains METAR or has shortest wind-like content)
+  let wind = null;
+  const windRe = /\b(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT\b/;
+  // Try all blocks, prefer METAR label
+  for (const txt of blocks) {
+    const m = windRe.exec(txt);
+    if (m) { wind = m; break; }
+  }
+  if (!wind) return null;
+  const dirRaw = wind[1];
+  const dir    = dirRaw === 'VRB' ? 0 : parseInt(dirRaw, 10);
+  const speed  = parseInt(wind[2], 10);
+  const gust   = wind[4] ? parseInt(wind[4], 10) : null;
+  return { dir, speed, gust, vrb: dirRaw === 'VRB' };
+}
+
+async function fetchAtisWind(tab) {
+  // tab: 'to' or 'ldg'
+  const selId  = tab === 'to' ? 'atis-ap-to'  : 'atis-ap-ldg';
+  const btnId  = tab === 'to' ? 'atis-btn-to' : 'atis-btn-ldg';
+  const statId = tab === 'to' ? 'atis-stat-to': 'atis-stat-ldg';
+  const ap     = ($( selId) || {}).value || '';
+  const statEl = $(statId);
+  const btnEl  = $(btnId);
+  if (!ap) { if (statEl) statEl.textContent = '空港を選択してください'; return; }
+  if (statEl) statEl.textContent = '取得中…';
+  if (btnEl)  btnEl.disabled = true;
+  try {
+    const target = `https://atis.guru/atis/${ap}`;
+    const proxy  = `https://corsproxy.io/?url=${encodeURIComponent(target)}`;
+    const res    = await fetch(proxy, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const html = await res.text();
+    const w = _parseAtisWind(html);
+    if (!w) { if (statEl) statEl.textContent = '⚠ 風データが見つかりません'; return; }
+    _applyAtisWind(tab, w);
+    const gustTxt = w.gust !== null ? ` G${w.gust}` : '';
+    const dirTxt  = w.vrb ? 'VRB' : String(w.dir).padStart(3,'0');
+    if (statEl) statEl.textContent = `✔ ${ap}: ${dirTxt}/${w.speed}${gustTxt} KT`;
+  } catch(e) {
+    if (statEl) statEl.textContent = `⚠ エラー: ${e.message}`;
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+
+function _applyAtisWind(tab, w) {
+  if (tab === 'to') {
+    // Direction
+    const dir = w.vrb ? 0 : w.dir;
+    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, dir);
+    // Steady speed
+    setDrumVal('xd-steady', 'disp-xd-steady', ' KT', w.speed);
+    // Gust
+    updateGustOptions();
+    const gustSel = $('gust');
+    if (gustSel && w.gust !== null) {
+      // find closest option
+      let best = '';
+      let bestDiff = Infinity;
+      for (const opt of gustSel.options) {
+        if (opt.value === '') continue;
+        const v = parseFloat(opt.value);
+        const d = Math.abs(v - w.gust);
+        if (d < bestDiff) { bestDiff = d; best = opt.value; }
+      }
+      gustSel.value = best;
+    } else if (gustSel) {
+      gustSel.value = '';
+    }
+    calc();
+  } else {
+    // LDG tab
+    const dir = w.vrb ? 0 : w.dir;
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, dir);
+    setDrumVal('ldg-steady', 'disp-ldg-steady', ' KT', w.speed);
+    updateLdgGustOptions();
+    const gustSel = $('ldg-gust');
+    if (gustSel && w.gust !== null) {
+      let best = '';
+      let bestDiff = Infinity;
+      for (const opt of gustSel.options) {
+        if (opt.value === '') continue;
+        const v = parseFloat(opt.value);
+        const d = Math.abs(v - w.gust);
+        if (d < bestDiff) { bestDiff = d; best = opt.value; }
+      }
+      gustSel.value = best;
+    } else if (gustSel) {
+      gustSel.value = '';
+    }
+    calcLdg();
+  }
 }
 
 /* ───────────────────────────────────────────
