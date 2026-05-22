@@ -5277,9 +5277,10 @@ async function fetchAtisWind(tab) {
   if (statEl) statEl.textContent = '取得中…';
   if (btnEl)  btnEl.disabled = true;
   try {
-    // aviationweather.gov METAR API — CORS対応・プロキシ不要
-    const url = `https://aviationweather.gov/api/data/metar?ids=${ap}&format=raw&hours=2`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    // aviationweather.gov METAR API — allorigins.win CORS プロキシ経由
+    const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${ap}&format=raw&hours=2`;
+    const proxy  = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxy, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const metar = text.trim().split('\n')[0]; // 最新の1行
