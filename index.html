@@ -5299,6 +5299,9 @@ async function fetchAtisWind(tab) {
 
 function _applyAtisWind(tab, w) {
   if (tab === 'to') {
+    // METARはTrue → Direction TypeをTRUEに自動切替
+    const wt = $('windType');
+    if (wt) { wt.value = 'TRUE'; toggleMagVar(); }
     // Direction
     const dir = w.vrb ? 0 : w.dir;
     buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, dir);
@@ -5323,7 +5326,9 @@ function _applyAtisWind(tab, w) {
     }
     calc();
   } else {
-    // LDG tab
+    // LDG tab — METARはTrue → Direction TypeをTRUEに自動切替
+    const wt = $('ldg-windType');
+    if (wt) { wt.value = 'TRUE'; ldgToggleMagVar(); }
     const dir = w.vrb ? 0 : w.dir;
     buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, dir);
     setDrumVal('ldg-steady', 'disp-ldg-steady', ' KT', w.speed);
