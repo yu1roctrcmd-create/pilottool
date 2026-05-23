@@ -5261,28 +5261,17 @@ function _fetchTimeout(url, ms) {
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
-function _parseMetarWind(text) {
-  const windRe = /\b(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT\b/;
-  const m = windRe.exec(text);
-  if (!m) return null;
-  const dirRaw = m[1];
-  return {
-    dir:   dirRaw === 'VRB' ? 0 : parseInt(dirRaw, 10),
-    speed: parseInt(m[2], 10),
-    gust:  m[4] ? parseInt(m[4], 10) : null,
-    vrb:   dirRaw === 'VRB'
-  };
-}
+async function _fetchMetarJson(icao, statEl) {
+  // aviationweather.gov JSON API — wdir/wspd/wgst フィールドを直接取得
+  const awcUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=2`;
 
-async function _fetchMetarText(icao, statEl) {
-  // ① aviationweather.gov 直接（CORS対応API）
-  const awcUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=raw&hours=2`;
+  // ① 直接フェッチ
   if (statEl) statEl.textContent = '取得中…';
   try {
     const r = await _fetchTimeout(awcUrl, 8000);
     if (r.ok) {
-      const t = (await r.text()).trim();
-      if (t) return t.split('\n')[0];
+      const arr = await r.json();
+      if (Array.isArray(arr) && arr.length > 0) return arr[0];
     }
   } catch(_) {}
 
@@ -5291,9 +5280,21 @@ async function _fetchMetarText(icao, statEl) {
   const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(awcUrl)}`;
   const r2 = await _fetchTimeout(proxy, 12000);
   if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
-  const t2 = (await r2.text()).trim();
-  if (!t2) throw new Error('データなし');
-  return t2.split('\n')[0];
+  const arr2 = await r2.json();
+  if (!Array.isArray(arr2) || arr2.length === 0) throw new Error('データなし');
+  return arr2[0];
+}
+
+function _parseMetarJson(d) {
+  // wdir: degrees (null = VRB), wspd: kt, wgst: kt (null = no gust)
+  if (d.wspd === undefined || d.wspd === null) return null;
+  const vrb = d.wdir === null || d.wdir === undefined;
+  return {
+    dir:   vrb ? 0 : (d.wdir || 0),
+    speed: d.wspd || 0,
+    gust:  (d.wgst != null && d.wgst > 0) ? d.wgst : null,
+    vrb:   vrb
+  };
 }
 
 async function fetchAtisWind(tab) {
@@ -5306,8 +5307,8 @@ async function fetchAtisWind(tab) {
   if (!ap) { if (statEl) statEl.textContent = '空港を選択してください'; return; }
   if (btnEl) btnEl.disabled = true;
   try {
-    const metar = await _fetchMetarText(ap, statEl);
-    const w = _parseMetarWind(metar);
+    const data = await _fetchMetarJson(ap, statEl);
+    const w = _parseMetarJson(data);
     if (!w) { if (statEl) statEl.textContent = '⚠ 風データが見つかりません'; return; }
     _applyAtisWind(tab, w);
     const gustTxt = w.gust !== null ? `G${w.gust}` : '';
