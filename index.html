@@ -5252,19 +5252,27 @@ function desXoverCalc() {
 }
 
 /* ───────────────────────────────────────────
-   ATIS Wind Fetch (aviationweather.gov METAR API)
+   ATIS Wind Fetch (atis.guru — multi-proxy fallback)
 ─────────────────────────────────────────── */
+// CORSプロキシを順番に試す（1つが弾かれたら次へ）
+const _ATIS_PROXIES = [
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+];
+
 function _parseAtisWind(html) {
   const windRe = /\b(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT\b/;
-  // atis.guru: wind in <div class="atis"> elements
   const div = document.createElement('div');
   div.innerHTML = html;
+  // atis.guru: .atis div に風データが入る
   const blocks = Array.from(div.querySelectorAll('.atis')).map(el => el.textContent);
   for (const txt of blocks) {
     const m = windRe.exec(txt);
     if (m) return _windMatch(m);
   }
-  // fallback: search whole text
+  // fallback: ページ全体テキストから検索
   const m = windRe.exec(div.textContent);
   return m ? _windMatch(m) : null;
 }
@@ -5278,8 +5286,25 @@ function _windMatch(m) {
   };
 }
 
+async function _fetchViaProxies(targetUrl, statEl) {
+  const errors = [];
+  for (let i = 0; i < _ATIS_PROXIES.length; i++) {
+    const proxyUrl = _ATIS_PROXIES[i](targetUrl);
+    if (statEl) statEl.textContent = `取得中… (${i + 1}/${_ATIS_PROXIES.length})`;
+    try {
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) { errors.push(`proxy${i+1}: HTTP ${res.status}`); continue; }
+      const text = await res.text();
+      if (!text || text.length < 100) { errors.push(`proxy${i+1}: empty`); continue; }
+      return text; // 成功
+    } catch(e) {
+      errors.push(`proxy${i+1}: ${e.message}`);
+    }
+  }
+  throw new Error(`全プロキシ失敗 [${errors.join(' / ')}]`);
+}
+
 async function fetchAtisWind(tab) {
-  // tab: 'to' or 'ldg'
   const selId  = tab === 'to' ? 'atis-ap-to'  : 'atis-ap-ldg';
   const btnId  = tab === 'to' ? 'atis-btn-to' : 'atis-btn-ldg';
   const statId = tab === 'to' ? 'atis-stat-to': 'atis-stat-ldg';
@@ -5287,15 +5312,10 @@ async function fetchAtisWind(tab) {
   const statEl = $(statId);
   const btnEl  = $(btnId);
   if (!ap) { if (statEl) statEl.textContent = '空港を選択してください'; return; }
-  if (statEl) statEl.textContent = '取得中…';
-  if (btnEl)  btnEl.disabled = true;
+  if (btnEl) btnEl.disabled = true;
   try {
-    // atis.guru — allorigins.win CORS プロキシ経由
     const atisUrl = `https://atis.guru/atis/${ap}`;
-    const proxy   = `https://api.allorigins.win/raw?url=${encodeURIComponent(atisUrl)}`;
-    const res = await fetch(proxy, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const html = await res.text();
+    const html = await _fetchViaProxies(atisUrl, statEl);
     const w = _parseAtisWind(html);
     if (!w) { if (statEl) statEl.textContent = '⚠ 風データが見つかりません'; return; }
     _applyAtisWind(tab, w);
@@ -5303,7 +5323,7 @@ async function fetchAtisWind(tab) {
     const dirTxt  = w.vrb ? 'VRB' : String(w.dir).padStart(3,'0');
     if (statEl) statEl.innerHTML = `<span style="color:var(--green)">✔ ${ap}: ${dirTxt}/${w.speed}${gustTxt}KT</span>`;
   } catch(e) {
-    if (statEl) statEl.textContent = `⚠ エラー: ${e.message}`;
+    if (statEl) statEl.textContent = `⚠ ${e.message}`;
   } finally {
     if (btnEl) btnEl.disabled = false;
   }
