@@ -1230,6 +1230,7 @@
       <button id="btnTw10" class="tgl on" onclick="setTwLimit(10)">10 KT</button>
       <button id="btnTw15" class="tgl"    onclick="setTwLimit(15)">15 KT</button>
     </div>
+    <span class="hint">最大追い風成分: <strong>15 KT</strong> (AFM Operational Limitations)</span>
   </div>
   <div class="xwft-hdr"><span>◄ L</span><span>R ►</span></div>
   <div class="xwft-grid" id="xwftGrid"></div>
@@ -1647,10 +1648,12 @@
   <div class="xwft-sub">風向ごとに XW / TW 制限以内となる最大風速</div>
   <div class="fg" style="margin:6px 0 10px">
     <label>Tailwind Limit</label>
-    <div class="tgl-group">
+    <div class="tgl-group" id="ldg-twBtns">
       <button id="ldg-btnTw10" class="tgl on" onclick="setTwLimitLdg(10)">10 KT</button>
       <button id="ldg-btnTw15" class="tgl"    onclick="setTwLimitLdg(15)">15 KT</button>
     </div>
+    <span class="hint">最大追い風成分: <strong>15 KT</strong> (AFM Operational Limitations)</span>
+    <div id="ldg-alPerDirNote" style="display:none;margin-top:4px;font-size:0.72em;color:#b48aff;font-weight:600">▸ Autoland Limits 適用中 (XW / TW)</div>
   </div>
   <div id="ldg-nnc-active" style="display:none;margin:4px 0 10px;padding:6px 10px;background:rgba(255,165,0,0.1);border-left:3px solid var(--warn);border-radius:4px;font-size:0.78em;line-height:1.5"></div>
   <div class="xwft-hdr"><span>◄ L</span><span>R ►</span></div>
@@ -3074,15 +3077,22 @@ function calcLdg() {
     alSection.style.display = 'block';
     const condKey = $('ldg-rwyCond').value;
     const alXwLim = AUTOLAND_XW[condKey];
+    // HW/TW components using windData (includes gust factor, conservative)
+    const hwAbs = Math.max(0,  windData * Math.cos(relRad));
+    const twAbs = Math.max(0, -windData * Math.cos(relRad));
+    const alC   = 'rgba(180,138,255,0.4)';
+    const alBar = (lbl, val, lim) => {
+      const ok = val <= lim; const ov = (val - lim).toFixed(1);
+      return `<div class="lbar ${ok?'ok':'exceed'}" style="border-color:${alC}">` +
+        `<span style="color:#b48aff;font-weight:700">AL</span>&ensp;` +
+        `<span>${lbl} ${val.toFixed(1)} KT ${ok?'≤':'>'} ${lim} KT${!ok?` (+${ov})`:''}` +
+        `<span style="color:var(--muted);font-size:0.82em"> (AFM)</span></span>` +
+        `<span class="lval">${ok?'✓ OK':'✗ EXCEED'}</span></div>`;
+    };
     if (alXwLim !== null && alXwLim !== undefined) {
-      const alOk   = crossAbs <= alXwLim;
-      const alOver = (crossAbs - alXwLim).toFixed(1);
-      alBars.innerHTML = `<div class="lbar ${alOk ? 'ok' : 'exceed'}" style="border-color:rgba(180,138,255,0.4)">
-        <span>AL XWind ${crossAbs.toFixed(1)} KT ${alOk ? '≤' : '>'} AL Limit ${alXwLim} KT ${!alOk ? `(+${alOver})`:''}</span>
-        <span class="lval">${alOk ? '✓ OK' : '✗ EXCEED'}</span>
-      </div>`;
+      alBars.innerHTML = alBar('HW', hwAbs, 25) + alBar('TW', twAbs, 15) + alBar('XW', crossAbs, alXwLim);
     } else {
-      alBars.innerHTML = `<div class="lbar exceed" style="border-color:rgba(180,138,255,0.4)"><span>Autoland NOT available for this condition</span><span class="lval">✗ N/A</span></div>`;
+      alBars.innerHTML = `<div class="lbar exceed" style="border-color:${alC}"><span>Autoland NOT available for this condition</span><span class="lval">✗ N/A</span></div>`;
     }
   } else {
     alSection.style.display = 'none';
@@ -3100,10 +3110,32 @@ function buildXwTableLdg() {
   const card = $('ldg-xwftCard');
   if (!card) return;
   const captainLimit = getXwLimitLdg();
-  const xwLimit = _ldgFoXwActive ? 15 : captainLimit;
+  // Autoland ON時はAutoland limitsを優先
+  const condKeyAl = $('ldg-rwyCond').value;
+  const alXwAvail = ldgAutoland ? AUTOLAND_XW[condKeyAl] : null;
+  const xwLimit = ldgAutoland && alXwAvail !== null && alXwAvail !== undefined
+    ? alXwAvail
+    : (_ldgFoXwActive ? 15 : captainLimit);
+  const twLimit = ldgAutoland ? 15 : twLimitLdg;
+
   if (xwLimit === null) { card.style.display = 'none'; return; }
+  if (ldgAutoland && (alXwAvail === null || alXwAvail === undefined)) {
+    // Autoland ON だが Runway Condition で使用不可の場合
+    card.style.display = 'block';
+    $('ldg-xwftLimTag').textContent = 'AL: N/A';
+    $('ldg-alPerDirNote').style.display = 'block';
+    $('ldg-xwftGrid').innerHTML = '<div style="font-size:0.78em;color:var(--error);padding:8px 0">Autoland not available for this runway condition</div>';
+    $('ldg-twBtns').style.opacity = '0.35';
+    return;
+  }
   card.style.display = 'block';
-  $('ldg-xwftLimTag').textContent = _ldgFoXwActive ? `XW: 15 KT (FO)` : `XW: ${xwLimit} KT`;
+  $('ldg-alPerDirNote').style.display = ldgAutoland ? 'block' : 'none';
+  $('ldg-twBtns').style.opacity = ldgAutoland ? '0.35' : '1';
+  if (ldgAutoland) {
+    $('ldg-xwftLimTag').innerHTML = `<span style="color:#b48aff">AL: XW ${xwLimit} / TW 15 KT</span>`;
+  } else {
+    $('ldg-xwftLimTag').textContent = _ldgFoXwActive ? `XW: 15 KT (FO)` : `XW: ${xwLimit} KT`;
+  }
 
   const rwyHdgEl   = document.getElementById('ldg-rwyhdg');
   const rwyHdg     = rwyHdgEl ? getColRangeVal(rwyHdgEl) : NaN;
@@ -3129,11 +3161,11 @@ function buildXwTableLdg() {
       const sinAbs    = Math.abs(Math.sin(relRad));
       const cosNeg    = -Math.cos(relRad);
       const xwSpd     = sinAbs < 0.001 ? Infinity : xwLimit / sinAbs;
-      const twSpd     = cosNeg < 0.001 ? Infinity : twLimitLdg / cosNeg;
+      const twSpd     = cosNeg < 0.001 ? Infinity : twLimit / cosNeg;
       const binding   = Math.min(xwSpd, twSpd);
       const isLimited = binding < 100;
       const spdTxt    = isLimited ? binding.toFixed(1) : '>99';
-      const limLbl    = isLimited ? (twSpd < xwSpd ? `TW${twLimitLdg}` : 'XW') : '';
+      const limLbl    = isLimited ? (twSpd < xwSpd ? `TW${twLimit}` : 'XW') : '';
       const cmpSpd    = isLimited ? binding : 100;
       const isCur     = dir === curDir10;
       let cls = 'xwft-ok';
