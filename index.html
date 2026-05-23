@@ -5254,18 +5254,28 @@ function desXoverCalc() {
 /* ───────────────────────────────────────────
    ATIS / METAR Wind Fetch
 ─────────────────────────────────────────── */
+// 空港別 Magnetic Variation (East+, West−) — 概算値
+const _AP_MAG_VAR = {
+  RJAA:  -8,   // 東京/成田
+  RCTP:  -4,   // 台北桃園
+  VHHH:  -3,   // 香港
+  ZSPD:  -5,   // 上海浦東
+  WSSS:   0,   // シンガポール
+  PANC: +15,   // アンカレッジ
+  KORD:  -1,   // シカゴ
+  KJFK: -13,   // ニューヨーク
+  KLAX: +12,   // ロサンゼルス
+  KDFW:  +3,   // ダラス
+};
+
 function _fetchTimeout(url, ms) {
-  // AbortSignal.timeout() は旧Safariで未対応のため手動実装
   const ctrl = new AbortController();
   const tid  = setTimeout(() => ctrl.abort(), ms);
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
 async function _fetchMetarJson(icao, statEl) {
-  // aviationweather.gov JSON API — wdir/wspd/wgst フィールドを直接取得
   const awcUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=2`;
-
-  // ① 直接フェッチ
   if (statEl) statEl.textContent = '取得中…';
   try {
     const r = await _fetchTimeout(awcUrl, 8000);
@@ -5274,8 +5284,6 @@ async function _fetchMetarJson(icao, statEl) {
       if (Array.isArray(arr) && arr.length > 0) return arr[0];
     }
   } catch(_) {}
-
-  // ② allorigins.win プロキシ経由
   if (statEl) statEl.textContent = '取得中… (proxy)';
   const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(awcUrl)}`;
   const r2 = await _fetchTimeout(proxy, 12000);
@@ -5286,7 +5294,6 @@ async function _fetchMetarJson(icao, statEl) {
 }
 
 function _parseMetarJson(d) {
-  // wdir: degrees (null = VRB), wspd: kt, wgst: kt (null = no gust)
   if (d.wspd === undefined || d.wspd === null) return null;
   const vrb = d.wdir === null || d.wdir === undefined;
   return {
@@ -5295,6 +5302,12 @@ function _parseMetarJson(d) {
     gust:  (d.wgst != null && d.wgst > 0) ? d.wgst : null,
     vrb:   vrb
   };
+}
+
+// True → Magnetic 変換
+function _trueToMag(trueDir, magVar) {
+  const mag = ((Math.round(trueDir - magVar) % 360) + 360) % 360;
+  return mag === 0 ? 360 : mag;
 }
 
 async function fetchAtisWind(tab) {
@@ -5308,13 +5321,20 @@ async function fetchAtisWind(tab) {
   if (btnEl) btnEl.disabled = true;
   try {
     const data = await _fetchMetarJson(ap, statEl);
-    const w = _parseMetarJson(data);
+    const w    = _parseMetarJson(data);
     if (!w) { if (statEl) statEl.textContent = '⚠ 風データが見つかりません'; return; }
-    _applyAtisWind(tab, w);
-    const gustTxt = w.gust !== null ? `G${w.gust}` : '';
-    const dirTxt  = w.vrb ? 'VRB' : String(w.dir).padStart(3,'0');
+    const magVar = _AP_MAG_VAR[ap] ?? 0;
+    _applyAtisWind(tab, w, ap, magVar);
+    // 結果表示
+    const gustTxt  = w.gust !== null ? `G${w.gust}` : '';
+    const trueTxt  = w.vrb ? 'VRB' : String(w.dir).padStart(3,'0');
+    const magDir   = w.vrb ? '—' : String(_trueToMag(w.dir, magVar)).padStart(3,'0');
+    const varSign  = magVar >= 0 ? `+${magVar}` : `${magVar}`;
+    const rawOb    = data.rawOb || data.rawText || '';
     if (statEl) statEl.innerHTML =
-      `<span style="color:var(--green)">✔ ${ap} METAR: ${dirTxt}/${w.speed}${gustTxt}KT</span>`;
+      `<span style="color:var(--green);font-weight:600">✔ ${ap}: True ${trueTxt}° → Mag ${magDir}° / ${w.speed}${gustTxt}KT</span>` +
+      `<span style="color:var(--label)"> (MagVar ${varSign}°)</span>` +
+      (rawOb ? `<div style="margin-top:5px;font-family:monospace;font-size:0.75em;color:var(--muted);word-break:break-all;white-space:pre-wrap">${rawOb}</div>` : '');
   } catch(e) {
     if (statEl) statEl.textContent = `⚠ エラー: ${e.message}`;
   } finally {
@@ -5322,56 +5342,46 @@ async function fetchAtisWind(tab) {
   }
 }
 
-function _applyAtisWind(tab, w) {
-  if (tab === 'to') {
-    // METARはTrue → Direction TypeをTRUEに自動切替
-    const wt = $('windType');
-    if (wt) { wt.value = 'TRUE'; toggleMagVar(); }
-    // Direction
-    const dir = w.vrb ? 0 : w.dir;
-    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, dir);
-    // Steady speed
-    setDrumVal('xd-steady', 'disp-xd-steady', ' KT', w.speed);
-    // Gust
-    updateGustOptions();
-    const gustSel = $('gust');
-    if (gustSel && w.gust !== null) {
-      // find closest option
-      let best = '';
-      let bestDiff = Infinity;
+function _applyAtisWind(tab, w, ap, magVar) {
+  // True → Magnetic 変換
+  const magDir = w.vrb ? 0 : _trueToMag(w.dir, magVar);
+
+  function _setGust(gustSelId) {
+    const gustSel = $(gustSelId);
+    if (!gustSel) return;
+    if (w.gust !== null) {
+      let best = '', bestDiff = Infinity;
       for (const opt of gustSel.options) {
         if (opt.value === '') continue;
-        const v = parseFloat(opt.value);
-        const d = Math.abs(v - w.gust);
+        const d = Math.abs(parseFloat(opt.value) - w.gust);
         if (d < bestDiff) { bestDiff = d; best = opt.value; }
       }
       gustSel.value = best;
-    } else if (gustSel) {
+    } else {
       gustSel.value = '';
     }
+  }
+
+  if (tab === 'to') {
+    // MagVar フィールドを空港値で更新し、Magnetic モードに切替
+    const mvEl = $('magVar');
+    if (mvEl) mvEl.value = magVar;
+    const wt = $('windType');
+    if (wt) { wt.value = 'MAG'; toggleMagVar(); }
+    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, magDir);
+    setDrumVal('xd-steady', 'disp-xd-steady', ' KT', w.speed);
+    updateGustOptions();
+    _setGust('gust');
     calc();
   } else {
-    // LDG tab — METARはTrue → Direction TypeをTRUEに自動切替
+    const mvEl = $('ldg-magVar');
+    if (mvEl) mvEl.value = magVar;
     const wt = $('ldg-windType');
-    if (wt) { wt.value = 'TRUE'; ldgToggleMagVar(); }
-    const dir = w.vrb ? 0 : w.dir;
-    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, dir);
+    if (wt) { wt.value = 'MAG'; ldgToggleMagVar(); }
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, magDir);
     setDrumVal('ldg-steady', 'disp-ldg-steady', ' KT', w.speed);
     updateLdgGustOptions();
-    const gustSel = $('ldg-gust');
-    if (gustSel && w.gust !== null) {
-      let best = '';
-      let bestDiff = Infinity;
-      for (const opt of gustSel.options) {
-        if (opt.value === '') continue;
-        const v = parseFloat(opt.value);
-        const d = Math.abs(v - w.gust);
-        if (d < bestDiff) { bestDiff = d; best = opt.value; }
-      }
-      gustSel.value = best;
-    } else if (gustSel) {
-      gustSel.value = '';
-    }
+    _setGust('ldg-gust');
     calcLdg();
   }
 }
