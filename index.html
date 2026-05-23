@@ -5254,15 +5254,28 @@ function desXoverCalc() {
 /* ───────────────────────────────────────────
    ATIS Wind Fetch (aviationweather.gov METAR API)
 ─────────────────────────────────────────── */
-function _parseMetarWind(metarText) {
+function _parseAtisWind(html) {
   const windRe = /\b(\d{3}|VRB)(\d{2,3})(G(\d{2,3}))?KT\b/;
-  const m = windRe.exec(metarText);
-  if (!m) return null;
+  // atis.guru: wind in <div class="atis"> elements
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const blocks = Array.from(div.querySelectorAll('.atis')).map(el => el.textContent);
+  for (const txt of blocks) {
+    const m = windRe.exec(txt);
+    if (m) return _windMatch(m);
+  }
+  // fallback: search whole text
+  const m = windRe.exec(div.textContent);
+  return m ? _windMatch(m) : null;
+}
+function _windMatch(m) {
   const dirRaw = m[1];
-  const dir    = dirRaw === 'VRB' ? 0 : parseInt(dirRaw, 10);
-  const speed  = parseInt(m[2], 10);
-  const gust   = m[4] ? parseInt(m[4], 10) : null;
-  return { dir, speed, gust, vrb: dirRaw === 'VRB' };
+  return {
+    dir:   dirRaw === 'VRB' ? 0 : parseInt(dirRaw, 10),
+    speed: parseInt(m[2], 10),
+    gust:  m[4] ? parseInt(m[4], 10) : null,
+    vrb:   dirRaw === 'VRB'
+  };
 }
 
 async function fetchAtisWind(tab) {
@@ -5277,15 +5290,13 @@ async function fetchAtisWind(tab) {
   if (statEl) statEl.textContent = '取得中…';
   if (btnEl)  btnEl.disabled = true;
   try {
-    // aviationweather.gov METAR API — allorigins.win CORS プロキシ経由
-    const apiUrl = `https://aviationweather.gov/api/data/metar?ids=${ap}&format=raw&hours=2`;
-    const proxy  = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+    // atis.guru — allorigins.win CORS プロキシ経由
+    const atisUrl = `https://atis.guru/atis/${ap}`;
+    const proxy   = `https://api.allorigins.win/raw?url=${encodeURIComponent(atisUrl)}`;
     const res = await fetch(proxy, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const metar = text.trim().split('\n')[0]; // 最新の1行
-    if (!metar) { if (statEl) statEl.textContent = '⚠ METARデータなし'; return; }
-    const w = _parseMetarWind(metar);
+    const html = await res.text();
+    const w = _parseAtisWind(html);
     if (!w) { if (statEl) statEl.textContent = '⚠ 風データが見つかりません'; return; }
     _applyAtisWind(tab, w);
     const gustTxt = w.gust !== null ? `G${w.gust}` : '';
