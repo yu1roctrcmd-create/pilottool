@@ -1083,7 +1083,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); calcInop1Eng();">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); calcInop1Eng(); calcInop2Eng();">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -2108,7 +2108,7 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); }
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); calcInop2Eng(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); }
   if (name === 'prep')   requestAnimationFrame(_initPrepTable);
 }
@@ -6664,6 +6664,7 @@ syncClbWeight();
 syncCrzWeight();
 syncDesWeight();
 calcInop1Eng();
+calcInop2Eng();
 clbCalc();
 clbXoverCalc();
 clbMachIasCalc();
@@ -7205,12 +7206,15 @@ restoreState();
   </div>
 </div>
 
-<!-- 2 ENGINE INOP placeholder -->
+<!-- 2 ENGINE INOP -->
 <div class="card" style="margin-top:12px;border:1px solid rgba(255,70,96,0.35)">
   <div class="card-title" style="color:#ff4560">2 ENGINE INOP
-    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST</span>
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST · PI Section</span>
   </div>
-  <p style="font-size:0.78em;color:var(--muted);margin:0">データ追加予定</p>
+  <p style="font-size:0.75em;color:var(--muted);margin:0 0 6px">TO Weight と連動して自動計算</p>
+  <div id="inop-2eng-result">
+    <p style="font-size:0.78em;color:var(--muted)">TO タブで Weight を入力してください</p>
+  </div>
 </div>
 
 </div><!-- /tab-content -->
@@ -8507,6 +8511,113 @@ function _lrcaInterp(w) {
     }
   }
   return _LRCA1[_LRCA1.length-1];
+}
+
+/* ══════════════════════════════════════════
+   2 ENGINE INOP — MAX CONTINUOUS THRUST
+══════════════════════════════════════════ */
+// Driftdown: [startWt, levelOffWt, driftdownSpd, loa_isa10, loa_isa15, loa_isa20]
+const _DD2 = [
+  [1000, 967, 312, 11400,  9900,  8200],
+  [ 950, 917, 305, 13300, 11800, 10100],
+  [ 900, 870, 297, 15300, 13800, 12100],
+  [ 850, 822, 289, 17400, 16000, 14300],
+  [ 800, 774, 282, 19500, 18200, 16600],
+  [ 750, 726, 273, 21600, 20200, 18800],
+  [ 700, 678, 265, 23600, 22400, 20900],
+  [ 650, 631, 256, 25700, 24600, 23100],
+  [ 600, 583, 246, 27600, 26900, 25500],
+  [ 550, 535, 236, 29400, 29200, 28000],
+  [ 500, 486, 225, 31300, 31200, 30200],
+  [ 450, 438, 214, 33300, 33300, 32200],
+];
+
+// LRC Altitude Capability: [weight, isa10, isa15, isa20]
+const _LRCA2 = [
+  [1000,  6500,  4100,  1400],
+  [ 950,  8800,  6700,  4300],
+  [ 900, 10900,  9000,  6900],
+  [ 850, 13000, 11200,  9300],
+  [ 800, 15400, 13600, 11600],
+  [ 750, 17900, 16100, 14000],
+  [ 700, 20200, 18500, 16700],
+  [ 650, 22600, 20900, 19200],
+  [ 600, 25000, 23500, 21800],
+  [ 550, 27400, 26100, 24500],
+  [ 500, 29600, 29000, 27300],
+  [ 450, 31600, 31300, 30100],
+];
+
+function calcInop2Eng() {
+  const el = $('inop-2eng-result');
+  if (!el) return;
+  const w = parseFloat($('weight') ? $('weight').value : '');
+  if (isNaN(w) || w < 450 || w > 1050) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">TO Weight を入力してください（TO タブの Weight と連動）</p>';
+    return;
+  }
+
+  // Driftdown
+  const dd = _ddInterp(_DD2, 0, w);
+  const levelOffW = dd[1];
+  const ddSpd     = dd[2];
+  const loa10 = dd[3], loa15 = dd[4], loa20 = dd[5];
+
+  // LRC Altitude Capability at level-off weight
+  const lrca     = _ddInterp(_LRCA2, 0, levelOffW);
+  const lrcAlt10 = lrca[1], lrcAlt15 = lrca[2], lrcAlt20 = lrca[3];
+
+  el.innerHTML = `
+    <div style="font-size:0.65em;color:#ff4560;font-weight:700;letter-spacing:0.05em;margin-bottom:8px">▸ DRIFTDOWN — MAX CONTINUOUS THRUST (2 ENG)</div>
+    <div class="breakdown" style="display:block;margin-bottom:10px">
+      <div class="brow"><span>Start Driftdown Weight</span>
+        <span class="v">${Math.round(w)} ×1000 LB</span></div>
+      <div class="brow"><span>Level Off Weight</span>
+        <span class="v">${levelOffW} ×1000 LB</span></div>
+      <div class="brow"><span>Optimum Driftdown Speed</span>
+        <span class="v" style="color:var(--accent);font-weight:700">${ddSpd} KIAS</span></div>
+    </div>
+    <div style="font-size:0.65em;color:#ff4560;font-weight:700;letter-spacing:0.05em;margin-bottom:6px">▸ LEVEL OFF ALTITUDE (PRESSURE ALTITUDE)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+10 &amp; BELOW</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--green)">FL${Math.round(loa10/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa10.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+15</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--text)">FL${Math.round(loa15/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa15.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+20</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--muted)">FL${Math.round(loa20/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa20.toLocaleString()} ft</div>
+      </div>
+    </div>
+    <div style="font-size:0.65em;color:#ff4560;font-weight:700;letter-spacing:0.05em;margin-bottom:6px">▸ LRC ALTITUDE CAPABILITY (LEVEL OFF WT: ${levelOffW}k LB)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+10 &amp; BELOW</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--green)">FL${Math.round(lrcAlt10/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt10.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+15</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--text)">FL${Math.round(lrcAlt15/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt15.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+20</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--muted)">FL${Math.round(lrcAlt20/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt20.toLocaleString()} ft</div>
+      </div>
+    </div>
+    <ul class="footnote" style="margin-top:6px">
+      <li>Altitude reduced by 2,000 ft for additional margin</li>
+      <li>Engine anti-ice ON: LRC capability −200 ft</li>
+      <li>Engine &amp; wing anti-ice ON: LRC capability −800 ft</li>
+    </ul>`;
 }
 
 function calcInop1Eng() {
