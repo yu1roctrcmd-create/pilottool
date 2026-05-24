@@ -6354,6 +6354,77 @@ const _CARGO = {
   },
 };
 
+// ─── Lower Cargo Compartment ──────────────────────────────────────────────────
+// 60.4"×61.5" Forward/Aft position limits
+// [maxKg, fwdMiss1, fwdMiss2, aftMiss1, aftMiss2]
+const _LC_FA_60x61 = {
+  '11':    [1587, 1587,  0,    1587,    0],
+  '11-12': [3175, 1587,  0,    1587,    0],
+  '13':    [1587, 1587,  1587, 1587, 1587],
+  '21-28': [12700,6047,  0,    6047,    0],
+  '22-28': [11113,5849,  0,    5849,    0],
+  '23-28': [9525, 5603,  0,    5603,    0],
+  '24-28': [7937, 5292,  0,    5292,    0],
+  '25-28': [6350, 5292,  0,    5292,    0],
+  '26-28': [4762, 4329,  0,    4329,    0],
+  '31-32': [3175, 3175,  0,    3175,    0],
+  '31-33': [4762, 3968,  0,    3968,    0],
+  '31-34': [6350, 3968,  0,    3968,    0],
+  '31-41': [7937, 3968,  0,    3968,    0],
+  '31-42': [9525, 4762,  0,    4762,    0],
+  '31-43': [11113,5556,  0,    7408, 3704],
+  '44':    [1587, 1587,  1587, 1587, 1587],
+  '45':    [1587, 1587,  1587, 1587,    0],
+};
+// Doorsill/CL limits for 60.4"×61.5" — index = number missing; null = no restriction
+const _LC_SIDE_60x61 = [null, 1058,    0,    0]; // Side
+const _LC_VERT_60x61 = [null, 1322, 1058,    0]; // Vertical
+
+// 60.4"×125" Forward/Aft position limits
+// [maxKg, fwdMiss1, fwdMiss2, aftMiss1, aftMiss2]
+const _LC_FA_60x125 = {
+  '11':    [3175, 3175,  3175, 3175,  3175],
+  '11-12': [6350, 4762,  3175, 6350,  5292],
+  '13':    [3175, 3175,  3175, 3175,  3175],
+  '21-28': [25401,12700,12574,12700, 12574],
+  '22-28': [22226,12347,12347,12347, 12347],
+  '23-28': [19050,11906,11546,11906, 11546],
+  '24-28': [15875,11339,10583,11339, 10583],
+  '25-28': [12700,10583, 9407,10583,  9407],
+  '26-28': [9525, 9525,  7937, 9525,  7937],
+  '31-32': [6350, 6350,  6350, 6350,  6350],
+  '31-33': [9525, 9525,  7937, 9525,  7937],
+  '31-34': [12700,11906, 7937,11906,  7937],
+  '31-41': [15875,11906, 7937,11906,  7937],
+  '31-42': [19050,14288, 9525,14288,  9525],
+  '31-43': [22226,16669,11113,18521, 14817],
+  '44':    [3175, 3175,  3175, 3175,  3175],
+  '45':    [3175, 3175,  3175, 3175,  3175],
+};
+const _LC_SIDE_60x125 = [null, 2116,    0,    0];
+const _LC_VERT_60x125 = [null, 2645, 2116,    0];
+
+// 96"×125" Lower Cargo — position-independent
+// Arrays indexed by number of missing restraints (0, 1, 2, ...)
+const _LC_96x125 = {
+  maxKg: 5034,
+  vert:  [5034, 5034, 5034, 3933, 3671, 3409, 3146, 2884, 2622, 2360,    0],
+  fa:    [5034, 3146, 2097,    0],
+  left:  [5034, 5034, 3146, 2097,    0],
+  right: [5034, 5034, 3146, 2097,    0],
+};
+// 88"×125" Lower Cargo — position-independent
+const _LC_88x125 = {
+  maxKg: 4626,
+  vert:  [4626, 3614, 3373, 3132, 2891, 2650, 2409, 2168,    0,    0,    0],
+  fa:    [4626, 2891, 1927,    0],
+  left:  [4626, 2891, 1927,    0,    0],
+  right: [4626, 2891, 1927,    0,    0],
+};
+
+const _LC_60_POSITIONS = ['11','11-12','13','21-28','22-28','23-28','24-28','25-28','26-28',
+                           '31-32','31-33','31-34','31-41','31-42','31-43','44','45'];
+
 function _cargoSetOpts(id, max) {
   const el = $(id); if (!el) return;
   let h = '<option value="0">0（正常）</option>';
@@ -6363,22 +6434,222 @@ function _cargoSetOpts(id, max) {
   if (parseInt(cur) <= max) el.value = String(parseInt(cur) || 0);
 }
 
+function cargoDeckChange() {
+  const deck = ($('cargo-deck') || {}).value || 'main';
+  const typeEl = $('cargo-uld-type');
+  if (!typeEl) return;
+  if (deck === 'main') {
+    typeEl.innerHTML = `
+      <option value="88x125">88" × 125"&emsp;(P*, R* positions)</option>
+      <option value="96x125" selected>96" × 125"&emsp;(Standard)</option>
+      <option value="96x196L">96" × 196" Longitudinal</option>
+      <option value="96x196Lat">96" × 196" Lateral</option>
+      <option value="96x238">96" × 238.5"</option>`;
+  } else {
+    typeEl.innerHTML = `
+      <option value="lc_60x61">60.4" × 61.5"</option>
+      <option value="lc_60x125">60.4" × 125"</option>
+      <option value="lc_96x125">96" × 125"</option>
+      <option value="lc_88x125">88" × 125"</option>`;
+  }
+  cargoUldTypeChange();
+}
+
 function cargoUldTypeChange() {
-  const typeKey = ($('cargo-uld-type') || {}).value || '88x125';
-  const t = _CARGO_TYPES[typeKey];
-  const sel = $('cargo-pos');
-  if (sel) { sel.innerHTML = t.positions.map(p => `<option value="${p}">${p}</option>`).join(''); }
-  _cargoSetOpts('cargo-vert',   t.maxVert);
-  _cargoSetOpts('cargo-fwdaft', t.maxFA);
-  _cargoSetOpts('cargo-left',   t.maxSide);
-  _cargoSetOpts('cargo-right',  t.maxSide);
+  const typeKey = ($('cargo-uld-type') || {}).value || '96x125';
+  const isLC60   = typeKey === 'lc_60x61' || typeKey === 'lc_60x125';
+  const isLC96   = typeKey === 'lc_96x125' || typeKey === 'lc_88x125';
+  const isLC     = isLC60 || isLC96;
+  const isMain   = !isLC;
+
+  // Position row: show for Main Deck and LC 60.4", hide for LC 96/88
+  const posRow = $('cargo-pos-row');
+  if (posRow) posRow.style.display = (isMain || isLC60) ? '' : 'none';
+
+  // Restraint control sets
+  const ctrlStd = $('cargo-controls-std');   // Vert / FA / Left / Right
+  const ctrlLC60 = $('cargo-controls-lc60'); // Fwd / Aft / Side / Vert-Door
+  if (ctrlStd)  ctrlStd.style.display  = (isMain || isLC96) ? '' : 'none';
+  if (ctrlLC60) ctrlLC60.style.display = isLC60 ? 'grid' : 'none';
+
+  if (isMain) {
+    const t = _CARGO_TYPES[typeKey];
+    if (!t) return;
+    const sel = $('cargo-pos');
+    if (sel) sel.innerHTML = t.positions.map(p => `<option value="${p}">${p}</option>`).join('');
+    _cargoSetOpts('cargo-vert',   t.maxVert);
+    _cargoSetOpts('cargo-fwdaft', t.maxFA);
+    _cargoSetOpts('cargo-left',   t.maxSide);
+    _cargoSetOpts('cargo-right',  t.maxSide);
+  } else if (isLC60) {
+    const sel = $('cargo-pos');
+    if (sel) sel.innerHTML = _LC_60_POSITIONS.map(p => `<option value="${p}">${p}</option>`).join('');
+    _cargoSetOpts('cargo-lc-fwd',  2);
+    _cargoSetOpts('cargo-lc-aft',  2);
+    _cargoSetOpts('cargo-lc-side', 3);
+    _cargoSetOpts('cargo-lc-vert', 3);
+  } else if (isLC96) {
+    _cargoSetOpts('cargo-vert',   10);
+    _cargoSetOpts('cargo-fwdaft', 3);
+    _cargoSetOpts('cargo-left',   4);
+    _cargoSetOpts('cargo-right',  4);
+  }
   cargoCkCalc();
 }
 
 function cargoCkCalc() {
   const el = $('cargo-ck-result');
   if (!el) return;
-  const typeKey = ($('cargo-uld-type') || {}).value || '88x125';
+  const typeKey = ($('cargo-uld-type') || {}).value || '96x125';
+
+  // ── Lower Cargo 60.4" types ──────────────────────────────────────────────
+  if (typeKey === 'lc_60x61' || typeKey === 'lc_60x125') {
+    const faTable   = typeKey === 'lc_60x61' ? _LC_FA_60x61   : _LC_FA_60x125;
+    const sideTable = typeKey === 'lc_60x61' ? _LC_SIDE_60x61 : _LC_SIDE_60x125;
+    const vertTable = typeKey === 'lc_60x61' ? _LC_VERT_60x61 : _LC_VERT_60x125;
+    const label     = typeKey === 'lc_60x61' ? '60.4" × 61.5"' : '60.4" × 125"';
+
+    const pos   = ($('cargo-pos')    || {}).value;
+    const nFwd  = parseInt(($('cargo-lc-fwd')  || {}).value) || 0;
+    const nAft  = parseInt(($('cargo-lc-aft')  || {}).value) || 0;
+    const nSide = parseInt(($('cargo-lc-side') || {}).value) || 0;
+    const nVert = parseInt(($('cargo-lc-vert') || {}).value) || 0;
+
+    const d = faTable[pos];
+    if (!d) { el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">位置を選択してください</p>'; return; }
+
+    const maxKg  = d[0];
+    const lFwd   = nFwd  > 0 ? d[nFwd]        : maxKg;   // d[1]=miss1, d[2]=miss2
+    const lAft   = nAft  > 0 ? d[nAft + 2]    : maxKg;   // d[3]=aftMiss1, d[4]=aftMiss2
+    const lSide  = nSide > 0 ? (sideTable[nSide] ?? 0) : maxKg;
+    const lVert2 = nVert > 0 ? (vertTable[nVert] ?? 0) : maxKg;
+
+    // lSide/lVert2 null means "no restriction from doorsill" — use maxKg
+    const govKg = Math.min(
+      lFwd  ?? maxKg,
+      lAft  ?? maxKg,
+      lSide ?? maxKg,
+      lVert2 ?? maxKg
+    );
+    const noLoad = govKg === 0;
+    const hasAny = nFwd > 0 || nAft > 0 || nSide > 0 || nVert > 0;
+
+    const actualKg = parseFloat(($('cargo-actual-kg') || {}).value);
+    const hasActual = !isNaN(actualKg) && actualKg > 0;
+    const ok = hasActual && !noLoad ? actualKg <= govKg : null;
+
+    const rows = [
+      nFwd  > 0 ? ['Fwd Restraint',          nFwd,  lFwd ?? maxKg]   : null,
+      nAft  > 0 ? ['Aft Restraint',           nAft,  lAft ?? maxKg]   : null,
+      nSide > 0 ? ['Doorsill/CL Side',        nSide, lSide ?? maxKg]  : null,
+      nVert > 0 ? ['Doorsill/CL Vertical',    nVert, lVert2 ?? maxKg] : null,
+    ].filter(Boolean);
+
+    const rowHtml = rows.map(([lbl, cnt, v]) => {
+      const isGov = v === govKg && hasAny;
+      const noLd  = v === 0;
+      return `<div class="brow" style="${isGov?'background:rgba(255,140,66,0.12);border-radius:4px':''}">
+        <span>${lbl} ×${cnt} 欠損</span>
+        <span class="v" style="color:${noLd?'#ff4560':isGov?'#ff8c42':'var(--text)'};font-weight:${isGov?700:400}">
+          ${noLd ? '⛔ N/A' : `${v.toLocaleString()} kg`}
+        </span></div>`;
+    }).join('');
+
+    const govArea = !hasAny
+      ? `<div style="font-size:0.62em;color:var(--accent);font-weight:700;letter-spacing:.05em;margin-bottom:3px">MAXIMUM LOAD (all restraints normal)</div>
+         <div style="font-size:1.6em;font-weight:700;color:var(--accent)">${maxKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>`
+      : noLoad
+      ? `<div style="font-size:0.62em;color:#ff4560;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — Pos ${pos}</div>
+         <div style="font-size:1.2em;font-weight:700;color:#ff4560">⛔ LOAD NOT PERMITTED</div>`
+      : `<div style="font-size:0.62em;color:#ff8c42;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — Pos ${pos}</div>
+         <div style="font-size:1.6em;font-weight:700;color:#ff8c42">${govKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>`;
+
+    const goNoGo = (hasActual && !noLoad)
+      ? `<div style="background:${ok?'rgba(0,230,152,0.1)':'rgba(255,70,96,0.12)'};border:1px solid ${ok?'var(--accent)':'#ff4560'};border-radius:8px;padding:10px;text-align:center;margin-top:8px">
+          <div style="font-size:0.65em;color:var(--muted);margin-bottom:3px">Actual ${actualKg.toLocaleString()} kg &nbsp;vs&nbsp; Limit ${govKg.toLocaleString()} kg</div>
+          <div style="font-size:1.3em;font-weight:700;color:${ok?'var(--accent)':'#ff4560'}">${ok?'✓ WITHIN LIMIT':'✗ EXCEEDS LIMIT'}</div>
+          ${!ok?`<div style="font-size:0.72em;color:#ff4560;margin-top:2px">超過: +${(actualKg-govKg).toLocaleString()} kg</div>`:''}
+        </div>` : '';
+
+    el.innerHTML = `
+      ${rowHtml ? `<div class="breakdown" style="display:block;margin-bottom:10px">${rowHtml}</div>` : ''}
+      <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;margin-bottom:4px;text-align:center">${govArea}</div>
+      ${goNoGo}
+      <ul class="footnote" style="margin-top:10px">
+        <li>AFM Section 9 · ${label} · Lower Cargo Compartment</li>
+        <li>複数の拘束種が欠損する場合：最も制限の厳しい値を適用</li>
+      </ul>`;
+    return;
+  }
+
+  // ── Lower Cargo 96"×125" / 88"×125" ─────────────────────────────────────
+  if (typeKey === 'lc_96x125' || typeKey === 'lc_88x125') {
+    const LC    = typeKey === 'lc_96x125' ? _LC_96x125 : _LC_88x125;
+    const label = typeKey === 'lc_96x125' ? '96" × 125"' : '88" × 125"';
+
+    const nV  = parseInt(($('cargo-vert')   || {}).value) || 0;
+    const nFA = parseInt(($('cargo-fwdaft') || {}).value) || 0;
+    const nL  = parseInt(($('cargo-left')   || {}).value) || 0;
+    const nR  = parseInt(($('cargo-right')  || {}).value) || 0;
+
+    const lV  = LC.vert[nV]  ?? 0;
+    const lFA = LC.fa[nFA]   ?? 0;
+    const lL  = LC.left[nL]  ?? 0;
+    const lR  = LC.right[nR] ?? 0;
+
+    const hasAny = nV > 0 || nFA > 0 || nL > 0 || nR > 0;
+    const govKg  = Math.min(lV, lFA, lL, lR);
+    const noLoad = govKg === 0;
+
+    const actualKg = parseFloat(($('cargo-actual-kg') || {}).value);
+    const hasActual = !isNaN(actualKg) && actualKg > 0;
+    const ok = hasActual && !noLoad ? actualKg <= govKg : null;
+
+    const rows = [
+      nV  > 0 ? ['Vertical Restraint', nV,  lV]  : null,
+      nFA > 0 ? ['FWD/AFT Restraint',  nFA, lFA] : null,
+      nL  > 0 ? ['Left Side',          nL,  lL]  : null,
+      nR  > 0 ? ['Right Side',         nR,  lR]  : null,
+    ].filter(Boolean);
+
+    const rowHtml = rows.map(([lbl, cnt, v]) => {
+      const isGov = v === govKg && hasAny;
+      const noLd  = v === 0;
+      return `<div class="brow" style="${isGov?'background:rgba(255,140,66,0.12);border-radius:4px':''}">
+        <span>${lbl} ×${cnt} 欠損</span>
+        <span class="v" style="color:${noLd?'#ff4560':isGov?'#ff8c42':'var(--text)'};font-weight:${isGov?700:400}">
+          ${noLd ? '⛔ N/A' : `${v.toLocaleString()} kg`}
+        </span></div>`;
+    }).join('');
+
+    const govArea = !hasAny
+      ? `<div style="font-size:0.62em;color:var(--accent);font-weight:700;letter-spacing:.05em;margin-bottom:3px">MAXIMUM LOAD (all restraints normal)</div>
+         <div style="font-size:1.6em;font-weight:700;color:var(--accent)">${LC.maxKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>`
+      : noLoad
+      ? `<div style="font-size:0.62em;color:#ff4560;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD</div>
+         <div style="font-size:1.2em;font-weight:700;color:#ff4560">⛔ LOAD NOT PERMITTED</div>`
+      : `<div style="font-size:0.62em;color:#ff8c42;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD</div>
+         <div style="font-size:1.6em;font-weight:700;color:#ff8c42">${govKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>`;
+
+    const goNoGo = (hasActual && !noLoad)
+      ? `<div style="background:${ok?'rgba(0,230,152,0.1)':'rgba(255,70,96,0.12)'};border:1px solid ${ok?'var(--accent)':'#ff4560'};border-radius:8px;padding:10px;text-align:center;margin-top:8px">
+          <div style="font-size:0.65em;color:var(--muted);margin-bottom:3px">Actual ${actualKg.toLocaleString()} kg &nbsp;vs&nbsp; Limit ${govKg.toLocaleString()} kg</div>
+          <div style="font-size:1.3em;font-weight:700;color:${ok?'var(--accent)':'#ff4560'}">${ok?'✓ WITHIN LIMIT':'✗ EXCEEDS LIMIT'}</div>
+          ${!ok?`<div style="font-size:0.72em;color:#ff4560;margin-top:2px">超過: +${(actualKg-govKg).toLocaleString()} kg</div>`:''}
+        </div>` : '';
+
+    el.innerHTML = `
+      ${rowHtml ? `<div class="breakdown" style="display:block;margin-bottom:10px">${rowHtml}</div>` : ''}
+      <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;margin-bottom:4px;text-align:center">${govArea}</div>
+      ${goNoGo}
+      <ul class="footnote" style="margin-top:10px">
+        <li>AFM Section 9 · ${label} · Lower Cargo Compartment</li>
+        <li>複数の拘束種が欠損する場合：最も制限の厳しい値を適用</li>
+      </ul>`;
+    return;
+  }
+
+  // ── Main Deck (existing logic unchanged) ─────────────────────────────────
   const pos   = ($('cargo-pos')    || {}).value;
   const nVert = parseInt(($('cargo-vert')   || {}).value) || 0;
   const nFA   = parseInt(($('cargo-fwdaft') || {}).value) || 0;
@@ -7639,7 +7910,15 @@ restoreState();
     ③ 下欄に入力 → 許容荷重と Actual Load を照合
   </div>
 
-  <div class="row2" style="margin-bottom:8px">
+  <div class="fg" style="margin-bottom:8px">
+    <label>Cargo Deck</label>
+    <select id="cargo-deck" onchange="cargoDeckChange()">
+      <option value="main" selected>Main Deck</option>
+      <option value="lower">Lower Cargo Deck</option>
+    </select>
+  </div>
+
+  <div id="cargo-pos-row" class="row2" style="margin-bottom:8px">
     <div class="fg">
       <label>ULD Type</label>
       <select id="cargo-uld-type" onchange="cargoUldTypeChange()">
@@ -7671,7 +7950,7 @@ restoreState();
            inputmode="numeric" placeholder="Load sheet の重量" oninput="cargoCkCalc()">
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+  <div id="cargo-controls-std" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
     <div class="fg">
       <label>Vertical Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
       <select id="cargo-vert" onchange="cargoCkCalc()">
@@ -7709,6 +7988,45 @@ restoreState();
         <option value="2">2</option>
         <option value="3">3 (全欠損)</option>
       </select>
+    </div>
+  </div>
+
+  <div id="cargo-controls-lc60" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="fg">
+        <label>Fwd Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+        <select id="cargo-lc-fwd" onchange="cargoCkCalc()">
+          <option value="0">0（正常）</option>
+          <option value="1">1</option>
+          <option value="2">2 (全欠損)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Aft Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+        <select id="cargo-lc-aft" onchange="cargoCkCalc()">
+          <option value="0">0（正常）</option>
+          <option value="1">1</option>
+          <option value="2">2 (全欠損)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Doorsill/CL Side &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+        <select id="cargo-lc-side" onchange="cargoCkCalc()">
+          <option value="0">0（正常）</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3 (全欠損)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Doorsill/CL Vertical &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+        <select id="cargo-lc-vert" onchange="cargoCkCalc()">
+          <option value="0">0（正常）</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3 (全欠損)</option>
+        </select>
+      </div>
     </div>
   </div>
 
