@@ -1083,7 +1083,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight();">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); calcInop1Eng();">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -2108,8 +2108,8 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); }
-  if (name === 'des')    requestAnimationFrame(_initDesTmt);
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); }
+  if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); }
   if (name === 'prep')   requestAnimationFrame(_initPrepTable);
 }
 
@@ -5047,7 +5047,7 @@ function _clbCrossoverAlt(ias_kt, mach, dISA) {
   return (lo + hi) / 2;
 }
 
-function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
+function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA, econIasBelow, econIasAbove, econXoverH, econMachVal) {
   const isDay  = document.body.classList.contains('day');
   const W = 320, H = 220;
   const padL = 42, padR = 14, padT = 14, padB = 28;
@@ -5142,6 +5142,30 @@ function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
     stdMachLine = `<polyline points="${stdMachPts.join(' ')}" fill="none" stroke="${stdColor}" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.6"/>`;
   }
 
+  // ECON (CI=40) profile
+  const econColor = '#ffb347';
+  let econPath = '', econMachLine = '', econMarker = '';
+  if (econIasAbove != null && econXoverH != null) {
+    const econH  = Math.min(econXoverH, 36000);
+    const yEcon  = ay(econH);
+    const xEconB = ix(econIasBelow != null ? econIasBelow : 250);
+    const xEconA = ix(econIasAbove);
+    const econXoverFL = Math.round(econH / 100);
+    econPath = `<polyline points="${xEconB.toFixed(1)},${y0.toFixed(1)} ${xEconB.toFixed(1)},${yRestr.toFixed(1)} ${xEconA.toFixed(1)},${yRestr.toFixed(1)} ${xEconA.toFixed(1)},${yEcon.toFixed(1)}" fill="none" stroke="${econColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>`;
+    const econMachPts = [];
+    for (let alt = econH; alt <= 38000; alt += 500) {
+      const sp = _machToSpeeds(econMachVal, Math.min(alt, 36089), dISA || 0);
+      econMachPts.push(`${ix(sp.CAS).toFixed(1)},${ay(alt).toFixed(1)}`);
+    }
+    if (econMachPts.length > 1) {
+      econMachLine = `<polyline points="${econMachPts.join(' ')}" fill="none" stroke="${econColor}" stroke-width="1.4" stroke-dasharray="4,3" opacity="0.65"/>`;
+    }
+    econMarker = `
+      <line x1="${padL}" y1="${yEcon.toFixed(1)}" x2="${xEconA.toFixed(1)}" y2="${yEcon.toFixed(1)}" stroke="${econColor}" stroke-width="0.7" stroke-dasharray="2,2" opacity="0.5"/>
+      <circle cx="${xEconA.toFixed(1)}" cy="${yEcon.toFixed(1)}" r="3" fill="${econColor}" opacity="0.8"/>
+      <text x="${(xEconA+5).toFixed(1)}" y="${(yEcon+4).toFixed(1)}" font-size="6.5" fill="${econColor}" opacity="0.9">FL${econXoverFL}(econ)</text>`;
+  }
+
   // Crossover markers
   const mrcMarker = `
     <line x1="${padL}" y1="${yMrc.toFixed(1)}" x2="${xMrc.toFixed(1)}" y2="${yMrc.toFixed(1)}" stroke="${mrcColor}" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.6"/>
@@ -5165,6 +5189,8 @@ function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
     <polyline points="${x250},${y0} ${x250},${yRestr} ${x310},${yRestr} ${x310},${yStd}" fill="none" stroke="${stdColor}" stroke-width="1.5" opacity="0.45" stroke-dasharray="5,3"/>
     ${stdMachLine}
     ${stdMarker}
+    <!-- ECON (CI=40) profile -->
+    ${econPath}${econMachLine}${econMarker}
     <!-- MRC path (foreground) -->
     <polyline points="${x250},${y0} ${x250},${yRestr} ${xMrc},${yRestr} ${xMrc},${yMrc}" fill="none" stroke="${mrcColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     ${machLine}
@@ -5176,11 +5202,13 @@ function _clbProfileSvg(mrcIas, mrcMach, mrcXoverH, stdXoverH, dISA) {
     <!-- Labels -->
     <text x="${padL+gW/2}" y="${H-2}" text-anchor="middle" font-size="7.5" fill="var(--muted)">IAS (KT)</text>
     <text x="8" y="${padT+gH/2}" text-anchor="middle" font-size="7.5" fill="var(--muted)" transform="rotate(-90 8 ${padT+gH/2})">Altitude</text>
-    <!-- Legend -->
+    <!-- Legend row 1 -->
     <line x1="${padL+4}" y1="${padT+6}" x2="${padL+18}" y2="${padT+6}" stroke="${mrcColor}" stroke-width="2.5"/>
     <text x="${padL+21}" y="${padT+10}" font-size="7" fill="${mrcColor}">Max Rate Climb</text>
     <line x1="${padL+110}" y1="${padT+6}" x2="${padL+124}" y2="${padT+6}" stroke="${stdColor}" stroke-width="1.5" stroke-dasharray="4,2"/>
     <text x="${padL+127}" y="${padT+10}" font-size="7" fill="${stdColor}">310/M0.83 (std)</text>
+    <!-- Legend row 2: ECON -->
+    ${econPath ? `<line x1="${padL+4}" y1="${padT+17}" x2="${padL+18}" y2="${padT+17}" stroke="${econColor}" stroke-width="1.8"/><text x="${padL+21}" y="${padT+21}" font-size="7" fill="${econColor}">ECON (CI=40)</text>` : ''}
   </svg>`;
 }
 
@@ -5204,6 +5232,31 @@ function clbEconCalc() {
   // ≥968,000 lb → VNAV 360 kt limit
   const over968 = w >= 968;
   if (over968) above = 360;
+
+  // ECON crossover altitude
+  const _ecDisa = parseFloat($('clb-disa') ? $('clb-disa').value : '0') || 0;
+  const _ecD350 = _econCrzLookup(w, 350);
+  let econXoverHtml = '';
+  if (_ecD350) {
+    const _ecMach = _ecD350.mach;
+    const _ecXoAlt = _clbCrossoverAlt(above, _ecMach, _ecDisa);
+    const _ecFL = Math.round(_ecXoAlt / 100);
+    const _ecAtm = _crzAtmos(_ecXoAlt, _ecDisa);
+    const _ecDisaLbl = _ecDisa === 0 ? 'ISA' : `ISA${_ecDisa >= 0 ? '+' : ''}${_ecDisa}`;
+    econXoverHtml = `
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px">
+        <div style="font-size:0.62em;color:#ffb347;font-weight:700;letter-spacing:0.05em;margin-bottom:5px">▸ ECON クロスオーバー高度</div>
+        <div class="breakdown" style="display:block">
+          <div class="brow"><span>${above} KIAS → M${_ecMach.toFixed(3)} クロスオーバー</span>
+            <span class="v" style="color:var(--accent);font-weight:700">FL${_ecFL}</span></div>
+          <div class="brow"><span>気温 (${_ecDisaLbl})</span>
+            <span class="v">${(_ecAtm.T - 273.15).toFixed(1)} °C</span></div>
+          <div class="brow"><span>Cruise Mach (ref FL350)</span>
+            <span class="v" style="color:#ffb347">M${_ecMach.toFixed(3)}</span></div>
+        </div>
+      </div>`;
+  }
+
   el.innerHTML =
     `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 4px">
@@ -5220,7 +5273,7 @@ function clbEconCalc() {
       <li>No wind correction</li>
       <li>ISA+10°C 超過時: −2 kt / 3°C ごとに補正</li>
       <li>Climb Mach = ECON(CI=40) Cruise Mach（初期巡航条件）</li>
-    </ul>`;
+    </ul>${econXoverHtml}`;
 }
 
 /* ───────────────────────────────────────────
@@ -5259,6 +5312,60 @@ function resetCrzWeight() {
   $('crz-wt-sync-lbl').style.display = '';
   $('crz-wt-reset').style.display    = 'none';
   syncCrzWeight();
+}
+
+/* ───────────────────────────────────────────
+   ECON (CI=40) Descent Speed (PI Section 11)
+─────────────────────────────────────────── */
+const _ECON_DES_W   = [450, 500, 550, 600, 650, 700, 750, 800];
+const _ECON_DES_SPD = [250, 251, 257, 263, 269, 276, 282, 288];
+
+let _desWtManual = false;
+
+function syncDesWeight() {
+  if (_desWtManual) return;
+  const tow = $('weight') ? $('weight').value : '';
+  if (tow !== '') {
+    const el = $('des-weight');
+    if (el) { el.value = tow; desEconCalc(); }
+  }
+}
+function resetDesWeight() {
+  _desWtManual = false;
+  $('des-wt-sync-lbl').style.display = '';
+  $('des-wt-reset').style.display = 'none';
+  syncDesWeight();
+}
+
+function desEconCalc() {
+  const el = $('des-econ-result');
+  if (!el) return;
+  const w = parseFloat($('des-weight').value);
+  if (isNaN(w) || w < 450 || w > 800) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Weight (450–800×1000 LB) を入力してください</p>';
+    return;
+  }
+  const spd = Math.round(interp(_ECON_DES_W, _ECON_DES_SPD, w));
+  // ECON cruise mach at level off altitude approximation — use FL350 lookup as reference
+  const d350 = _econCrzLookup(w, 350);
+  const machNote = d350 ? `M${d350.mach.toFixed(3)} (ECON CRZ ref FL350)` : '巡航時Machに準ずる';
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 4px">
+        <div style="font-size:0.6em;color:var(--muted);letter-spacing:0.04em;margin-bottom:3px">ECON DES SPEED</div>
+        <div style="font-size:1.7em;font-weight:700;color:var(--accent);line-height:1">${spd}<span style="font-size:0.42em;font-weight:400;vertical-align:middle"> KIAS</span></div>
+        <div style="font-size:0.6em;color:var(--muted);margin-top:3px">TOP OF DESCENT</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 4px">
+        <div style="font-size:0.6em;color:var(--muted);letter-spacing:0.04em;margin-bottom:3px">DESCENT MACH</div>
+        <div style="font-size:1.1em;font-weight:700;color:var(--green);line-height:1.3;padding-top:4px">${machNote}</div>
+        <div style="font-size:0.58em;color:var(--muted);margin-top:3px">= Normal CRZ Mach at TOD</div>
+      </div>
+    </div>
+    <ul class="footnote" style="margin:0">
+      <li>PI Section 11 · All Eng · No wind correction</li>
+      <li>Descent mach = normal cruise mach calculated for the top of descent conditions</li>
+    </ul>`;
 }
 
 /* ───────────────────────────────────────────
@@ -6112,6 +6219,16 @@ function clbCalc() {
   const mrcTas   = mrcIas / Math.sqrt(Math.pow(mrcAtmos.T_isa / 288.15, 4.2559));
   const iasCk    = mrcIas > 310 ? `<span style="font-size:0.75em;color:var(--warn)"> ※310より速い</span>` : '';
 
+  // ECON data for graph
+  let _eIasB = null, _eIasA = null, _eXoverH = null, _eMach = null;
+  if (w >= 450 && w <= 1000) {
+    let _eA = Math.round(interp(_ECON_CLB_W, _ECON_CLB_ABOVE, w));
+    const _eB = Math.round(interp(_ECON_CLB_W, _ECON_CLB_BELOW, w));
+    if (w >= 968) _eA = 360;
+    const _ed350 = _econCrzLookup(w, 350);
+    if (_ed350) { _eIasB = _eB; _eIasA = _eA; _eMach = _ed350.mach; _eXoverH = _clbCrossoverAlt(_eA, _eMach, dISA); }
+  }
+
   el.innerHTML = `
     <div class="result-card" style="margin-bottom:0;padding:14px 16px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:12px">
@@ -6137,7 +6254,7 @@ function clbCalc() {
         <div class="brow"><span>M0.83 インターセプト高度</span><span class="v" style="color:var(--gold)">FL${mrcFL} (${Math.round(mrcXover).toLocaleString()} ft)</span></div>
         <div class="brow"><span>クロスオーバー気温 (ISA${dISA>=0?'+':''}${dISA})</span><span class="v">${(mrcAtmos.T-273.15).toFixed(1)}°C</span></div>
       </div>
-      ${_clbProfileSvg(mrcIas, 0.83, mrcXover, stdXover, dISA)}
+      ${_clbProfileSvg(mrcIas, 0.83, mrcXover, stdXover, dISA, _eIasB, _eIasA, _eXoverH, _eMach)}
     </div>`;
 }
 
@@ -6545,6 +6662,8 @@ gaCalc();
 /* CLB */
 syncClbWeight();
 syncCrzWeight();
+syncDesWeight();
+calcInop1Eng();
 clbCalc();
 clbXoverCalc();
 clbMachIasCalc();
@@ -6732,6 +6851,12 @@ restoreState();
   </div>
 </div>
 
+<!-- Standard Climb Schedule (moved: after ECON Climb) -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
+  <div id="clb-std-result" style="margin-top:4px"></div>
+</div>
+
 <!-- 1. Path Angle / Required ROC Card -->
 <div class="card">
   <div class="card-title">Path Angle / 必要上昇率 &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">距離・高度差から算出</span></div>
@@ -6863,12 +6988,6 @@ restoreState();
   <div id="clb-result" style="margin-top:10px">
     <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
   </div>
-</div>
-
-<!-- 5. Standard Climb Schedule Card -->
-<div class="card" style="margin-top:12px">
-  <div class="card-title">Standard Climb Schedule &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">310 / M0.83</span></div>
-  <div id="clb-std-result" style="margin-top:4px"></div>
 </div>
 
 <!-- Crossover Altitude Calculator -->
@@ -7075,6 +7194,25 @@ restoreState();
   <div id="crz-dev-fuel-table"></div>
 </div>
 
+<!-- 1 ENGINE INOP Section -->
+<div class="card" style="margin-top:16px;border:1px solid rgba(255,140,66,0.35)">
+  <div class="card-title" style="color:#ff8c42">1 ENGINE INOP
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST · PI Section</span>
+  </div>
+  <p style="font-size:0.75em;color:var(--muted);margin:0 0 6px">TO Weight と連動して自動計算</p>
+  <div id="inop-1eng-result">
+    <p style="font-size:0.78em;color:var(--muted)">TO タブで Weight を入力してください</p>
+  </div>
+</div>
+
+<!-- 2 ENGINE INOP placeholder -->
+<div class="card" style="margin-top:12px;border:1px solid rgba(255,70,96,0.35)">
+  <div class="card-title" style="color:#ff4560">2 ENGINE INOP
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST</span>
+  </div>
+  <p style="font-size:0.78em;color:var(--muted);margin:0">データ追加予定</p>
+</div>
+
 </div><!-- /tab-content -->
 </div><!-- /tab-crz -->
 
@@ -7083,6 +7221,28 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-des">
 <div class="tab-content">
+
+<!-- ECON (CI=40) Descent Speed -->
+<div class="card">
+  <div class="card-title">ECON (CI=40) Descent Speed
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">PI Sec.11 · All Eng</span>
+  </div>
+  <div class="row2" style="margin-bottom:10px">
+    <div class="fg">
+      <label>TOD Weight (×1000 LB)
+        <span id="des-wt-sync-lbl" style="font-size:0.75em;font-weight:400;opacity:0.6;margin-left:4px">← TOW連動</span>
+        <button id="des-wt-reset" onclick="resetDesWeight()"
+          style="display:none;font-size:0.7em;padding:1px 6px;margin-left:4px;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">← TOW戻す</button>
+      </label>
+      <input type="number" id="des-weight" step="1" min="450" max="800"
+             inputmode="numeric" placeholder="e.g. 700"
+             oninput="_desWtManual=true; $('des-wt-sync-lbl').style.display='none'; $('des-wt-reset').style.display=''; desEconCalc();">
+    </div>
+  </div>
+  <div id="des-econ-result">
+    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください（TOW と連動）</p>
+  </div>
+</div>
 
 <!-- Crossover Altitude Calculator (DES) -->
 <div class="card" style="margin-top:12px">
@@ -8207,6 +8367,241 @@ function tab(n) {
     updateApiStatus();
   };
 })();
+
+/* ══════════════════════════════════════════
+   1 ENGINE INOP — MAX CONTINUOUS THRUST
+══════════════════════════════════════════ */
+// Driftdown: [startWt, levelOffWt, driftdownSpd, loa_isa10, loa_isa15, loa_isa20]
+const _DD1 = [
+  [1000, 982, 322, 26400, 25100, 23500],
+  [ 950, 934, 314, 28000, 26800, 25300],
+  [ 900, 889, 308, 29600, 28400, 27000],
+  [ 850, 839, 299, 31100, 30300, 28800],
+  [ 800, 789, 289, 32600, 32000, 30700],
+  [ 750, 740, 280, 34000, 33600, 32500],
+  [ 700, 691, 273, 35400, 35200, 34200],
+  [ 650, 641, 262, 36800, 36700, 35800],
+  [ 600, 590, 252, 38400, 38200, 37400],
+  [ 550, 541, 241, 40100, 39800, 38900],
+];
+
+// LRC Altitude Capability: [weight, isa10, isa15, isa20]
+const _LRCA1 = [
+  [1000, 24600, 22400, 20300],
+  [ 950, 26500, 24400, 22300],
+  [ 900, 28400, 26400, 24400],
+  [ 850, 30300, 28500, 26400],
+  [ 800, 31900, 30700, 28400],
+  [ 750, 33500, 32600, 30600],
+  [ 700, 34900, 34400, 32700],
+  [ 650, 36400, 36000, 34900],
+  [ 600, 37900, 37500, 36400],
+  [ 550, 39600, 39000, 38000],
+  [ 500, 41400, 40700, 39600],
+  [ 450, 43100, 42500, 41300],
+];
+
+// LRC Cruise Control: weights (index) x altitudes (columns)
+const _LRC1_W = [1000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450];
+const _LRC1_A = [10, 14, 20, 25, 27, 29, 31, 33, 35, 37]; // x1000 ft = FL
+// Mach [weight_idx][alt_idx], null = above ceiling
+const _LRC1_MA = [
+  [.654,.701,.777,.832,null,null,null,null,null,null],
+  [.639,.686,.761,.823,.836,null,null,null,null,null],
+  [.623,.670,.743,.810,.830,.839,null,null,null,null],
+  [.607,.653,.726,.793,.818,.834,.840,null,null,null],
+  [.590,.635,.708,.774,.801,.824,.837,null,null,null],
+  [.572,.616,.689,.753,.782,.809,.829,.839,null,null],
+  [.553,.596,.668,.732,.760,.788,.815,.833,.840,null],
+  [.534,.576,.646,.710,.736,.765,.793,.819,.835,.841],
+  [.513,.554,.623,.686,.712,.739,.768,.797,.822,.837],
+  [.492,.531,.598,.660,.686,.713,.740,.770,.799,.824],
+  [.470,.507,.571,.632,.658,.684,.712,.740,.770,.799],
+  [.448,.482,.543,.601,.627,.653,.680,.708,.736,.767],
+];
+// FF/ENG (lb/hr) [weight_idx][alt_idx]
+const _LRC1_FF = [
+  [10461,10433,10508,10602,null,null,null,null,null,null],
+  [9846,9819,9879,10034,9964,null,null,null,null,null],
+  [9236,9225,9263,9451,9426,9268,null,null,null,null],
+  [8627,8640,8669,8849,8872,8730,8622,null,null,null],
+  [8034,8063,8091,8246,8280,8187,8053,null,null,null],
+  [7487,7506,7538,7663,7709,7638,7550,7494,null,null],
+  [6983,6967,7001,7109,7144,7082,7028,6999,6992,null],
+  [6482,6443,6473,6564,6587,6524,6472,6497,6470,6538],
+  [5972,5933,5943,6019,6043,5969,5923,5955,5981,5995],
+  [5468,5429,5412,5485,5497,5431,5376,5416,5456,5499],
+  [4972,4928,4891,4937,4963,4893,4844,4881,4924,4980],
+  [4505,4459,4443,4537,4428,4375,4316,4359,4399,4451],
+];
+// KIAS [weight_idx][alt_idx]
+const _LRC1_KIAS = [
+  [364,364,362,353,null,null,null,null,null,null],
+  [356,356,354,348,340,null,null,null,null,null],
+  [347,347,345,342,337,327,null,null,null,null],
+  [337,338,337,335,332,325,314,null,null,null],
+  [328,328,328,326,325,321,313,null,null,null],
+  [317,318,318,316,316,314,309,300,null,null],
+  [307,308,308,307,306,305,303,297,287,null],
+  [296,297,298,297,296,296,295,292,285,275],
+  [284,285,286,286,286,285,284,283,280,273],
+  [272,273,274,275,274,274,273,273,272,268],
+  [260,260,261,262,262,262,262,261,261,259],
+  [248,247,248,249,249,249,249,249,248,248],
+];
+
+function _lrc1Interp(arr2d, wi, ai, wFrac, aFrac) {
+  // Bilinear interp at fractional indices wi+wFrac, ai+aFrac
+  // Returns null if any corner is null
+  const v00 = arr2d[wi][ai], v01 = arr2d[wi][ai+1];
+  const v10 = arr2d[wi+1] ? arr2d[wi+1][ai] : null;
+  const v11 = arr2d[wi+1] ? arr2d[wi+1][ai+1] : null;
+  if (v00 === null || v01 === null || v10 === null || v11 === null) return null;
+  return v00*(1-wFrac)*(1-aFrac) + v01*(1-wFrac)*aFrac + v10*wFrac*(1-aFrac) + v11*wFrac*aFrac;
+}
+
+function _lrc1Lookup(w_klb, fl) {
+  // w_klb: weight in 1000 lb, fl: e.g. 310 for FL310
+  const alt = fl / 10; // convert FL to _LRC1_A units
+  // Weight bracket: _LRC1_W is descending [1000..450]
+  // Find bracket where _LRC1_W[wi] >= w_klb >= _LRC1_W[wi+1]
+  let wi = 0;
+  while (wi < _LRC1_W.length - 2 && w_klb < _LRC1_W[wi+1]) wi++;
+  const wFrac = (_LRC1_W[wi] - w_klb) / (_LRC1_W[wi] - _LRC1_W[wi+1]);
+
+  let ai = 0;
+  while (ai < _LRC1_A.length - 2 && alt > _LRC1_A[ai+1]) ai++;
+  if (alt < _LRC1_A[0]) return null;
+  if (alt > _LRC1_A[_LRC1_A.length-1]) return null;
+  const aFrac = (alt - _LRC1_A[ai]) / (_LRC1_A[ai+1] - _LRC1_A[ai]);
+
+  const mach = _lrc1Interp(_LRC1_MA, wi, ai, wFrac, aFrac);
+  const ff   = _lrc1Interp(_LRC1_FF, wi, ai, wFrac, aFrac);
+  const kias = _lrc1Interp(_LRC1_KIAS, wi, ai, wFrac, aFrac);
+  if (mach === null) return null;
+  return { mach: Math.round(mach*1000)/1000, ff: Math.round(ff), kias: Math.round(kias) };
+}
+
+function _ddInterp(arr, wKey, w) {
+  // arr is array of rows sorted descending by start weight
+  // Find bracket
+  if (w >= arr[0][0]) return arr[0];
+  if (w <= arr[arr.length-1][0]) return arr[arr.length-1];
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (w <= arr[i][0] && w > arr[i+1][0]) {
+      const frac = (arr[i][0] - w) / (arr[i][0] - arr[i+1][0]);
+      return arr[i].map((v, j) => j === 0 ? w : Math.round(v + frac * (arr[i+1][j] - v)));
+    }
+  }
+  return arr[arr.length-1];
+}
+
+function _lrcaInterp(w) {
+  // _LRCA1 is descending weight order
+  if (w >= _LRCA1[0][0]) return _LRCA1[0];
+  if (w <= _LRCA1[_LRCA1.length-1][0]) return _LRCA1[_LRCA1.length-1];
+  for (let i = 0; i < _LRCA1.length - 1; i++) {
+    if (w <= _LRCA1[i][0] && w > _LRCA1[i+1][0]) {
+      const frac = (_LRCA1[i][0] - w) / (_LRCA1[i][0] - _LRCA1[i+1][0]);
+      return _LRCA1[i].map((v, j) => j === 0 ? w : Math.round(v + frac * (_LRCA1[i+1][j] - v)));
+    }
+  }
+  return _LRCA1[_LRCA1.length-1];
+}
+
+function calcInop1Eng() {
+  const el = $('inop-1eng-result');
+  if (!el) return;
+  const w = parseFloat($('weight') ? $('weight').value : '');
+  if (isNaN(w) || w < 450 || w > 1050) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">TO Weight を入力してください（TO タブの Weight と連動）</p>';
+    return;
+  }
+
+  // Driftdown
+  const dd = _ddInterp(_DD1, 0, w);
+  const levelOffW = dd[1];
+  const ddSpd = dd[2];
+  const loa10 = dd[3], loa15 = dd[4], loa20 = dd[5];
+
+  // LRC Altitude Capability at level-off weight
+  const lrca = _lrcaInterp(levelOffW);
+  const lrcAlt10 = lrca[1], lrcAlt15 = lrca[2], lrcAlt20 = lrca[3];
+
+  // LRC Cruise Control at level-off altitude (ISA+10) and level-off weight
+  const loaFL = Math.round(loa10 / 100) * 10; // round to nearest 10 = FL
+  const lrcCrz = _lrc1Lookup(levelOffW, loaFL);
+
+  el.innerHTML = `
+    <div style="font-size:0.65em;color:var(--warn);font-weight:700;letter-spacing:0.05em;margin-bottom:8px">▸ DRIFTDOWN — MAX CONTINUOUS THRUST</div>
+    <div class="breakdown" style="display:block;margin-bottom:10px">
+      <div class="brow"><span>Start Driftdown Weight</span>
+        <span class="v">${Math.round(w)} ×1000 LB</span></div>
+      <div class="brow"><span>Level Off Weight</span>
+        <span class="v">${levelOffW} ×1000 LB</span></div>
+      <div class="brow"><span>Optimum Driftdown Speed</span>
+        <span class="v" style="color:var(--accent);font-weight:700">${ddSpd} KIAS</span></div>
+    </div>
+    <div style="font-size:0.65em;color:var(--warn);font-weight:700;letter-spacing:0.05em;margin-bottom:6px">▸ LEVEL OFF ALTITUDE (PRESSURE ALTITUDE)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+10 &amp; BELOW</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--green)">FL${Math.round(loa10/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa10.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+15</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--text)">FL${Math.round(loa15/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa15.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+20</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--muted)">FL${Math.round(loa20/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${loa20.toLocaleString()} ft</div>
+      </div>
+    </div>
+    <div style="font-size:0.65em;color:var(--warn);font-weight:700;letter-spacing:0.05em;margin-bottom:6px">▸ LRC ALTITUDE CAPABILITY (LEVEL OFF WT: ${levelOffW}k LB)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+10 &amp; BELOW</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--green)">FL${Math.round(lrcAlt10/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt10.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+15</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--text)">FL${Math.round(lrcAlt15/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt15.toLocaleString()} ft</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">ISA+20</div>
+        <div style="font-size:1.0em;font-weight:700;color:var(--muted)">FL${Math.round(lrcAlt20/100)}</div>
+        <div style="font-size:0.58em;color:var(--muted)">${lrcAlt20.toLocaleString()} ft</div>
+      </div>
+    </div>
+    <div style="font-size:0.65em;color:var(--warn);font-weight:700;letter-spacing:0.05em;margin-bottom:6px">▸ LRC CRUISE @ LEVEL OFF ALT (FL${loaFL}, ISA+10)</div>
+    ${lrcCrz ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">MACH</div>
+        <div style="font-size:1.1em;font-weight:700;color:var(--accent)">M${lrcCrz.mach.toFixed(3)}</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">KIAS</div>
+        <div style="font-size:1.1em;font-weight:700;color:var(--green)">${lrcCrz.kias} KT</div>
+      </div>
+      <div style="text-align:center;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 4px">
+        <div style="font-size:0.58em;color:var(--muted);margin-bottom:3px">FF/ENG</div>
+        <div style="font-size:1.1em;font-weight:700;color:var(--text)">${lrcCrz.ff.toLocaleString()}</div>
+        <div style="font-size:0.58em;color:var(--muted)">lb/hr × 3 eng</div>
+      </div>
+    </div>
+    <div style="font-size:0.7em;color:var(--muted)">Total FF (3 eng): <b>${(lrcCrz.ff * 3).toLocaleString()} lb/hr</b></div>` : `<p style="font-size:0.78em;color:var(--muted)">LRC データ範囲外（FL${loaFL}）</p>`}
+    <ul class="footnote" style="margin-top:8px">
+      <li>Altitude reduced by 1,000 ft for additional margin</li>
+      <li>Engine anti-ice ON: LRC capability −400 ft</li>
+      <li>Engine &amp; wing anti-ice ON: LRC capability −1,100 ft</li>
+    </ul>`;
+}
 
 </script>
 </body>
