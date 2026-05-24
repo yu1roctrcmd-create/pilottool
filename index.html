@@ -2110,7 +2110,7 @@ function switchTab(name, btn) {
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
   if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); calcInop2Eng(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); }
-  if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoCkCalc(); }
+  if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
 }
 
 let _crewDrumReady = false;
@@ -6304,103 +6304,146 @@ function setCrzFix(mode) {
 ═══════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────
-   Cargo Restraint Load Check
-   88"×125" ULD / Main Deck — AFM Section 9
+   Cargo Restraint Check — Main Deck (All ULD Types)
+   AFM Section 9
 ────────────────────────────────────────── */
-// _CG88[pos][type]: 欠損数別許容荷重 [kg, lb]
-const _CG88 = {
-  P: {
-    max:    [7559, 16667],
-    vert:   [[5949,13117],[5599,12346],[5249,11574],[4899,10802],[0,0]],
-    fwdaft: [[4199, 9259],[0,0]],
-    left:   [[5249,11574],[4199, 9259],[0,0]],
-    right:  [[5249,11574],[4199, 9259],[0,0]],
-  },
-  R: {
-    max:    [6123, 13500],
-    vert:   [[4819,10625],[4535,10000],[4252,9375],[3968,8750],[0,0]],
-    fwdaft: [[3401, 7500],[0,0]],
-    left:   [[4252, 9375],[3401,7500],[0,0]],
-    right:  [[4252, 9375],[3401,7500],[0,0]],
-  }
+const _CARGO_TYPES = {
+  '88x125':    { label:'88" × 125"',              positions:['P*','R*'],                                                    maxVert:5, maxFA:2, maxSide:3 },
+  '96x125':    { label:'96" × 125"',              positions:['A1','A2/B1','C/D','E/F/G','H/J/K','L/M/P','R/S','T/U','X'],  maxVert:5, maxFA:3, maxSide:3 },
+  '96x196L':   { label:'96" × 196" Longitudinal', positions:['C/D','E/F/G','H/J/K','L/M/P','R/S/T/U'],                    maxVert:5, maxFA:3, maxSide:3 },
+  '96x196Lat': { label:'96" × 196" Lateral',      positions:['C~G','H/J/K','L~T','U'],                                    maxVert:5, maxFA:3, maxSide:2 },
+  '96x238':    { label:'96" × 238.5"',            positions:['C/D','E~P','R/S','T/U'],                                    maxVert:6, maxFA:3, maxSide:4 },
 };
+
+// d = { max:[kg,lb], vert:[[kg,lb],...], fwdaft:[[kg,lb],...], left:[[kg,lb],...], right:[[kg,lb],...] }
+// Index i of vert/fwdaft/left/right = (i+1) missing restraints. [0,0] = load not permitted.
+const _CARGO = {
+  '88x125': {
+    'P*': { max:[7559,16667], vert:[[5949,13117],[5599,12346],[5249,11574],[4899,10802],[0,0]], fwdaft:[[4199,9259],[0,0]], left:[[5249,11574],[4199,9259],[0,0]], right:[[5249,11574],[4199,9259],[0,0]] },
+    'R*': { max:[6123,13500], vert:[[4819,10625],[4535,10000],[4252,9375],[3968,8750],[0,0]],   fwdaft:[[3401,7500],[0,0]], left:[[4252,9375],[3401,7500],[0,0]], right:[[4252,9375],[3401,7500],[0,0]] },
+  },
+  '96x125': {
+    'A1':    { max:[3674,8100],  vert:[[2870,6328],[2679,5906],[2487,5484],[2296,5063],[0,0]], fwdaft:[[2755,6075],[1837,4050],[0,0]], left:[[3674,8100],[2041,4500],[0,0]], right:[[3674,8100],[2041,4500],[0,0]] },
+    'A2/B1': { max:[3674,8100],  vert:[[2843,6268],[2624,5786],[0,0],[0,0],[0,0]],             fwdaft:[[2755,6075],[1837,4050],[0,0]], left:[[2041,4500],[0,0],[0,0]], right:[[2041,4500],[0,0],[0,0]] },
+    'C/D':   { max:[6123,13500], vert:[[4819,10625],[4535,10000],[4252,9375],[3968,8750],[0,0]],fwdaft:[[3401,7500],[0,0],[0,0]], left:[[4252,9375],[3401,7500],[0,0]], right:[[4252,9375],[3401,7500],[0,0]] },
+    'E/F/G': { max:[8221,18125], vert:[[6470,14265],[6089,13426],[5709,12587],[5328,11748],[0,0]],fwdaft:[[4567,10069],[0,0],[0,0]], left:[[5709,12587],[4567,10069],[0,0]], right:[[5709,12587],[4567,10069],[0,0]] },
+    'H/J/K': { max:[8504,18750], vert:[[6693,14757],[6299,13889],[5906,13021],[5512,12153],[0,0]],fwdaft:[[4724,10417],[0,0],[0,0]], left:[[5906,13021],[4724,10417],[0,0]], right:[[5906,13021],[4724,10417],[0,0]] },
+    'L/M/P': { max:[8221,18125], vert:[[6470,14265],[6089,13426],[5709,12587],[5328,11748],[0,0]],fwdaft:[[4567,10069],[0,0],[0,0]], left:[[5709,12587],[4567,10069],[0,0]], right:[[5709,12587],[4567,10069],[0,0]] },
+    'R/S':   { max:[6123,13500], vert:[[4819,10625],[4535,10000],[4252,9375],[3968,8750],[0,0]],fwdaft:[[3401,7500],[0,0],[0,0]], left:[[4252,9375],[3401,7500],[0,0]], right:[[4252,9375],[3401,7500],[0,0]] },
+    'T/U':   { max:[5816,12822], vert:[[4577,10092],[4308,9498],[4039,8905],[3769,8311],[0,0]], fwdaft:[[3231,7124],[0,0],[0,0]], left:[[4039,8905],[3231,7124],[0,0]], right:[[4039,8905],[3231,7124],[0,0]] },
+    'X':     { max:[3401,7500],  vert:[[2645,5833],[2456,5417],[2267,5000],[2078,4583],[0,0]],  fwdaft:[[0,0],[0,0],[0,0]], left:[[2267,5000],[0,0],[0,0]], right:[[2267,5000],[0,0],[0,0]] },
+  },
+  '96x196L': {
+    'C/D':     { max:[9601,21168],  vert:[[7556,16660],[7112,15680],[6667,14700],[6223,13720],[0,0]], fwdaft:[[7201,15876],[4800,10584],[0,0]], left:[[7112,15680],[6223,13720],[0,0]], right:[[7112,15680],[6223,13720],[0,0]] },
+    'E/F/G':   { max:[12891,28420], vert:[[10145,22368],[9548,21052],[8952,19736],[8355,18420],[0,0]],fwdaft:[[9668,21315],[6445,14210],[0,0]], left:[[9548,21052],[8355,18420],[0,0]], right:[[9548,21052],[8355,18420],[0,0]] },
+    'H/J/K':   { max:[14174,31250], vert:[[10499,23148],[9843,21701],[9187,20255],[8531,18808],[0,0]],fwdaft:[[10631,23438],[7087,15625],[0,0]], left:[[10499,23148],[9187,20255],[0,0]], right:[[10499,23148],[9187,20255],[0,0]] },
+    'L/M/P':   { max:[12891,28420], vert:[[10145,22368],[9548,21052],[8952,19736],[8355,18420],[0,0]],fwdaft:[[9668,21315],[6445,14210],[0,0]], left:[[9548,21052],[8355,18420],[0,0]], right:[[9548,21052],[8355,18420],[0,0]] },
+    'R/S/T/U': { max:[9601,21168],  vert:[[7556,16660],[7112,15680],[6667,14700],[6223,13720],[0,0]], fwdaft:[[7201,15876],[4800,10584],[0,0]], left:[[7112,15680],[6223,13720],[0,0]], right:[[7112,15680],[6223,13720],[0,0]] },
+  },
+  '96x196Lat': {
+    'C~G':   { max:[7402,16320],  vert:[[5860,12920],[5551,12240],[5243,11560],[4935,10880],[0,0]], fwdaft:[[5140,11333],[4112,9067],[0,0]], left:[[4626,10200],[0,0]], right:[[4626,10200],[0,0]] },
+    'H/J/K': { max:[12628,27840], vert:[[9997,22040],[9471,20880],[8944,19720],[8418,18560],[0,0]],  fwdaft:[[8769,19333],[7015,15467],[0,0]], left:[[7892,17400],[0,0]], right:[[7892,17400],[0,0]] },
+    'L~T':   { max:[7402,16320],  vert:[[5860,12920],[5551,12240],[5243,11560],[4935,10880],[0,0]], fwdaft:[[5140,11333],[4112,9067],[0,0]], left:[[4626,10200],[0,0]], right:[[4626,10200],[0,0]] },
+    'U':     { max:[7207,15890],  vert:[[5706,12580],[5405,11918],[5105,11255],[4805,10593],[0,0]], fwdaft:[[5005,11035],[4004,8828],[0,0]], left:[[4504,9931],[0,0]], right:[[4504,9931],[0,0]] },
+  },
+  '96x238': {
+    'C/D': { max:[11683,25758], vert:[[9293,20489],[8851,19514],[8408,18538],[7966,17562],[7523,16587],[0,0]], fwdaft:[[9346,20606],[7010,15455],[0,0]], left:[[8851,19514],[7966,17562],[7080,15611],[0,0]], right:[[8851,19514],[7966,17562],[7080,15611],[0,0]] },
+    'E~P': { max:[14174,31250], vert:[[11275,24858],[10738,23674],[10201,22491],[9664,21307],[9127,20123],[0,0]], fwdaft:[[11339,25000],[8504,18750],[0,0]], left:[[10738,23674],[9664,21307],[8590,18939],[0,0]], right:[[10738,23674],[9664,21307],[8590,18939],[0,0]] },
+    'R/S': { max:[11070,24407], vert:[[8806,19415],[8387,18490],[7967,17566],[7548,16641],[7128,15717],[0,0]], fwdaft:[[8856,19526],[6642,14644],[0,0]], left:[[8387,18490],[7548,16641],[6709,14792],[0,0]], right:[[8387,18490],[7548,16641],[6709,14792],[0,0]] },
+    'T/U': { max:[10265,22632], vert:[[8166,18003],[7777,17146],[7388,16288],[6999,15431],[6610,14574],[0,0]], fwdaft:[[8212,18106],[6159,13579],[0,0]], left:[[7777,17146],[6999,15431],[6221,13717],[0,0]], right:[[7777,17146],[6999,15431],[6221,13717],[0,0]] },
+  },
+};
+
+function _cargoSetOpts(id, max) {
+  const el = $(id); if (!el) return;
+  let h = '<option value="0">0（正常）</option>';
+  for (let i = 1; i <= max; i++) h += `<option value="${i}">${i}${i===max?' (全欠損)':''}</option>`;
+  const cur = el.value;
+  el.innerHTML = h;
+  if (parseInt(cur) <= max) el.value = String(parseInt(cur) || 0);
+}
+
+function cargoUldTypeChange() {
+  const typeKey = ($('cargo-uld-type') || {}).value || '88x125';
+  const t = _CARGO_TYPES[typeKey];
+  const sel = $('cargo-pos');
+  if (sel) { sel.innerHTML = t.positions.map(p => `<option value="${p}">${p}</option>`).join(''); }
+  _cargoSetOpts('cargo-vert',   t.maxVert);
+  _cargoSetOpts('cargo-fwdaft', t.maxFA);
+  _cargoSetOpts('cargo-left',   t.maxSide);
+  _cargoSetOpts('cargo-right',  t.maxSide);
+  cargoCkCalc();
+}
 
 function cargoCkCalc() {
   const el = $('cargo-ck-result');
   if (!el) return;
-  const pos   = ($('cargo-pos')    || {}).value || 'P';
+  const typeKey = ($('cargo-uld-type') || {}).value || '88x125';
+  const pos   = ($('cargo-pos')    || {}).value;
   const nVert = parseInt(($('cargo-vert')   || {}).value) || 0;
   const nFA   = parseInt(($('cargo-fwdaft') || {}).value) || 0;
   const nL    = parseInt(($('cargo-left')   || {}).value) || 0;
   const nR    = parseInt(($('cargo-right')  || {}).value) || 0;
-  const d = _CG88[pos];
 
-  // 各拘束タイプの制限
+  const d = _CARGO[typeKey] && pos && _CARGO[typeKey][pos];
+  if (!d) { el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">ULD Type / 位置を選択してください</p>'; return; }
+
   const lVert  = nVert > 0 ? (d.vert[nVert-1]   || [0,0]) : d.max;
   const lFA    = nFA   > 0 ? (d.fwdaft[nFA-1]   || [0,0]) : d.max;
   const lLeft  = nL    > 0 ? (d.left[nL-1]      || [0,0]) : d.max;
   const lRight = nR    > 0 ? (d.right[nR-1]     || [0,0]) : d.max;
 
   const hasAny = nVert > 0 || nFA > 0 || nL > 0 || nR > 0;
-
-  // Governing: 最も制限の厳しい値
-  const govKg = Math.min(lVert[0], lFA[0], lLeft[0], lRight[0]);
-  const govLb = Math.min(lVert[1], lFA[1], lLeft[1], lRight[1]);
+  const govKg  = Math.min(lVert[0], lFA[0], lLeft[0], lRight[0]);
+  const govLb  = Math.min(lVert[1], lFA[1], lLeft[1], lRight[1]);
   const noLoad = govKg === 0;
 
-  // Actual weight GO/NO-GO
   const actualKg = parseFloat(($('cargo-actual-kg') || {}).value);
   const hasActual = !isNaN(actualKg) && actualKg > 0;
   const ok = hasActual && !noLoad ? actualKg <= govKg : null;
 
-  // 欠損行リスト
   const rows = [
     nVert > 0 ? ['Vertical', nVert, lVert]   : null,
     nFA   > 0 ? ['FWD/AFT',  nFA,   lFA]     : null,
-    nL    > 0 ? ['Left Side',nL,    lLeft]    : null,
-    nR    > 0 ? ['Right Side',nR,   lRight]   : null,
+    nL    > 0 ? ['Left Side',nL,    lLeft]   : null,
+    nR    > 0 ? ['Right Side',nR,   lRight]  : null,
   ].filter(Boolean);
 
   const rowHtml = rows.map(([lbl, cnt, v]) => {
-    const isGov = v[0] === govKg;
+    const isGov = v[0] === govKg && hasAny;
     const noLd  = v[0] === 0;
-    return `<div class="brow" style="${isGov && hasAny ? 'background:rgba(255,140,66,0.12);border-radius:4px' : ''}">
+    return `<div class="brow" style="${isGov?'background:rgba(255,140,66,0.12);border-radius:4px':''}">
       <span>${lbl} ×${cnt} 欠損</span>
       <span class="v" style="color:${noLd?'#ff4560':isGov?'#ff8c42':'var(--text)'};font-weight:${isGov?700:400}">
         ${noLd ? '⛔ N/A' : `${v[0].toLocaleString()} kg (${v[1].toLocaleString()} lb)`}
       </span></div>`;
   }).join('');
 
-  const maxTag = !hasAny
-    ? `<div style="text-align:center;padding:6px 0">
-        <div style="font-size:0.62em;color:var(--accent);font-weight:700;letter-spacing:.05em;margin-bottom:3px">MAXIMUM LOAD (all restraints normal)</div>
-        <div style="font-size:1.6em;font-weight:700;color:var(--accent)">${d.max[0].toLocaleString()} <span style="font-size:.5em">KG</span></div>
-        <div style="font-size:0.82em;color:var(--muted)">${d.max[1].toLocaleString()} LB</div>
-       </div>`
-    : `<div style="text-align:center;padding:6px 0">
-        <div style="font-size:0.62em;color:${noLoad?'#ff4560':'#ff8c42'};font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — Position ${pos}*</div>
-        ${noLoad
-          ? `<div style="font-size:1.2em;font-weight:700;color:#ff4560">⛔ LOAD NOT PERMITTED</div>`
-          : `<div style="font-size:1.6em;font-weight:700;color:#ff8c42">${govKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>
-             <div style="font-size:0.82em;color:var(--muted)">${govLb.toLocaleString()} LB</div>`}
-       </div>`;
+  const t = _CARGO_TYPES[typeKey] || {};
+  const govArea = !hasAny
+    ? `<div style="font-size:0.62em;color:var(--accent);font-weight:700;letter-spacing:.05em;margin-bottom:3px">MAXIMUM LOAD (all restraints normal)</div>
+       <div style="font-size:1.6em;font-weight:700;color:var(--accent)">${d.max[0].toLocaleString()} <span style="font-size:.5em">KG</span></div>
+       <div style="font-size:0.82em;color:var(--muted)">${d.max[1].toLocaleString()} LB</div>`
+    : noLoad
+    ? `<div style="font-size:0.62em;color:#ff4560;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — ${pos}</div>
+       <div style="font-size:1.2em;font-weight:700;color:#ff4560">⛔ LOAD NOT PERMITTED</div>`
+    : `<div style="font-size:0.62em;color:#ff8c42;font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — ${pos}</div>
+       <div style="font-size:1.6em;font-weight:700;color:#ff8c42">${govKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>
+       <div style="font-size:0.82em;color:var(--muted)">${govLb.toLocaleString()} LB</div>`;
 
   const goNoGo = (hasActual && !noLoad)
     ? `<div style="background:${ok?'rgba(0,230,152,0.1)':'rgba(255,70,96,0.12)'};border:1px solid ${ok?'var(--accent)':'#ff4560'};border-radius:8px;padding:10px;text-align:center;margin-top:8px">
-        <div style="font-size:0.65em;color:var(--muted);margin-bottom:3px">
-          Actual ${actualKg.toLocaleString()} kg &nbsp;vs&nbsp; Limit ${govKg.toLocaleString()} kg
-        </div>
-        <div style="font-size:1.3em;font-weight:700;color:${ok?'var(--accent)':'#ff4560'}">${ok ? '✓ WITHIN LIMIT' : '✗ EXCEEDS LIMIT'}</div>
-        ${!ok ? `<div style="font-size:0.72em;color:#ff4560;margin-top:2px">超過: +${(actualKg-govKg).toLocaleString()} kg</div>` : ''}
+        <div style="font-size:0.65em;color:var(--muted);margin-bottom:3px">Actual ${actualKg.toLocaleString()} kg &nbsp;vs&nbsp; Limit ${govKg.toLocaleString()} kg</div>
+        <div style="font-size:1.3em;font-weight:700;color:${ok?'var(--accent)':'#ff4560'}">${ok?'✓ WITHIN LIMIT':'✗ EXCEEDS LIMIT'}</div>
+        ${!ok?`<div style="font-size:0.72em;color:#ff4560;margin-top:2px">超過: +${(actualKg-govKg).toLocaleString()} kg</div>`:''}
       </div>` : '';
 
   el.innerHTML = `
     ${rowHtml ? `<div class="breakdown" style="display:block;margin-bottom:10px">${rowHtml}</div>` : ''}
-    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;margin-bottom:4px">${maxTag}</div>
+    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;margin-bottom:4px;text-align:center">${govArea}</div>
     ${goNoGo}
     <ul class="footnote" style="margin-top:10px">
-      <li>AFM Section 9 · 88"×125" ULD · Main Deck Cargo Compartment</li>
-      <li>P* positions: PL / PR &nbsp;(Arm ~1,688 in) &nbsp;·&nbsp; R* positions: RL / RR &nbsp;(Arm ~1,814 in)</li>
+      <li>AFM Section 9 · ${t.label||''} · Main Deck Cargo Compartment</li>
       <li>複数の拘束種が欠損する場合：最も制限の厳しい値を適用</li>
     </ul>`;
 }
@@ -7585,30 +7628,47 @@ restoreState();
 <!-- ③ Missing Cargo Restraint Load Check -->
 <div class="card">
   <div class="card-title">Cargo Restraint Load Check
-    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">88"×125" ULD · Main Deck</span>
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">Main Deck · All ULD Types</span>
   </div>
 
   <!-- 使い方説明 -->
   <div style="background:rgba(255,140,66,0.08);border-left:3px solid #ff8c42;padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:0.78em;line-height:1.7">
     <b>確認手順</b><br>
-    ① 該当 ULD のゾーン位置を確認（P* = PL/PR、R* = RL/RR）<br>
+    ① ULD Type と Position Group を選択<br>
     ② Ground crew から欠損・故障している拘束の種類と数を確認<br>
     ③ 下欄に入力 → 許容荷重と Actual Load を照合
   </div>
 
-  <div class="row2" style="margin-bottom:10px">
+  <div class="row2" style="margin-bottom:8px">
     <div class="fg">
-      <label>ULD Position</label>
-      <select id="cargo-pos" onchange="cargoCkCalc()">
-        <option value="P">P* (PL / PR) &nbsp;Arm ~1,688 in</option>
-        <option value="R">R* (RL / RR) &nbsp;Arm ~1,814 in</option>
+      <label>ULD Type</label>
+      <select id="cargo-uld-type" onchange="cargoUldTypeChange()">
+        <option value="88x125">88" × 125"&emsp;(P*, R* positions)</option>
+        <option value="96x125" selected>96" × 125"&emsp;(Standard)</option>
+        <option value="96x196L">96" × 196" Longitudinal</option>
+        <option value="96x196Lat">96" × 196" Lateral</option>
+        <option value="96x238">96" × 238.5"</option>
       </select>
     </div>
     <div class="fg">
-      <label>Actual ULD Load (kg)</label>
-      <input type="number" id="cargo-actual-kg" step="10" min="0" max="10000"
-             inputmode="numeric" placeholder="Load sheet の重量" oninput="cargoCkCalc()">
+      <label>Position Group</label>
+      <select id="cargo-pos" onchange="cargoCkCalc()">
+        <option value="A1">A1</option>
+        <option value="A2/B1">A2/B1</option>
+        <option value="C/D">C/D</option>
+        <option value="E/F/G">E/F/G</option>
+        <option value="H/J/K">H/J/K</option>
+        <option value="L/M/P">L/M/P</option>
+        <option value="R/S">R/S</option>
+        <option value="T/U">T/U</option>
+        <option value="X">X</option>
+      </select>
     </div>
+  </div>
+  <div class="fg" style="margin-bottom:10px">
+    <label>Actual ULD Load (kg)</label>
+    <input type="number" id="cargo-actual-kg" step="10" min="0" max="40000"
+           inputmode="numeric" placeholder="Load sheet の重量" oninput="cargoCkCalc()">
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
@@ -7620,7 +7680,7 @@ restoreState();
         <option value="2">2</option>
         <option value="3">3</option>
         <option value="4">4</option>
-        <option value="5">5（全欠損）</option>
+        <option value="5">5 (全欠損)</option>
       </select>
     </div>
     <div class="fg">
@@ -7628,7 +7688,8 @@ restoreState();
       <select id="cargo-fwdaft" onchange="cargoCkCalc()">
         <option value="0">0（正常）</option>
         <option value="1">1</option>
-        <option value="2">2（全欠損）</option>
+        <option value="2">2</option>
+        <option value="3">3 (全欠損)</option>
       </select>
     </div>
     <div class="fg">
@@ -7637,7 +7698,7 @@ restoreState();
         <option value="0">0（正常）</option>
         <option value="1">1</option>
         <option value="2">2</option>
-        <option value="3">3（全欠損）</option>
+        <option value="3">3 (全欠損)</option>
       </select>
     </div>
     <div class="fg">
@@ -7646,7 +7707,7 @@ restoreState();
         <option value="0">0（正常）</option>
         <option value="1">1</option>
         <option value="2">2</option>
-        <option value="3">3（全欠損）</option>
+        <option value="3">3 (全欠損)</option>
       </select>
     </div>
   </div>
