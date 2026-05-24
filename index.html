@@ -2110,7 +2110,7 @@ function switchTab(name, btn) {
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
   if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); calcInop2Eng(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); }
-  if (name === 'prep')   requestAnimationFrame(_initPrepTable);
+  if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoCkCalc(); }
 }
 
 let _crewDrumReady = false;
@@ -6302,6 +6302,109 @@ function setCrzFix(mode) {
 /* ═══════════════════════════════════════════
    PREP TAB — 旋回半径 / 勾配計算
 ═══════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────
+   Cargo Restraint Load Check
+   88"×125" ULD / Main Deck — AFM Section 9
+────────────────────────────────────────── */
+// _CG88[pos][type]: 欠損数別許容荷重 [kg, lb]
+const _CG88 = {
+  P: {
+    max:    [7559, 16667],
+    vert:   [[5949,13117],[5599,12346],[5249,11574],[4899,10802],[0,0]],
+    fwdaft: [[4199, 9259],[0,0]],
+    left:   [[5249,11574],[4199, 9259],[0,0]],
+    right:  [[5249,11574],[4199, 9259],[0,0]],
+  },
+  R: {
+    max:    [6123, 13500],
+    vert:   [[4819,10625],[4535,10000],[4252,9375],[3968,8750],[0,0]],
+    fwdaft: [[3401, 7500],[0,0]],
+    left:   [[4252, 9375],[3401,7500],[0,0]],
+    right:  [[4252, 9375],[3401,7500],[0,0]],
+  }
+};
+
+function cargoCkCalc() {
+  const el = $('cargo-ck-result');
+  if (!el) return;
+  const pos   = ($('cargo-pos')    || {}).value || 'P';
+  const nVert = parseInt(($('cargo-vert')   || {}).value) || 0;
+  const nFA   = parseInt(($('cargo-fwdaft') || {}).value) || 0;
+  const nL    = parseInt(($('cargo-left')   || {}).value) || 0;
+  const nR    = parseInt(($('cargo-right')  || {}).value) || 0;
+  const d = _CG88[pos];
+
+  // 各拘束タイプの制限
+  const lVert  = nVert > 0 ? (d.vert[nVert-1]   || [0,0]) : d.max;
+  const lFA    = nFA   > 0 ? (d.fwdaft[nFA-1]   || [0,0]) : d.max;
+  const lLeft  = nL    > 0 ? (d.left[nL-1]      || [0,0]) : d.max;
+  const lRight = nR    > 0 ? (d.right[nR-1]     || [0,0]) : d.max;
+
+  const hasAny = nVert > 0 || nFA > 0 || nL > 0 || nR > 0;
+
+  // Governing: 最も制限の厳しい値
+  const govKg = Math.min(lVert[0], lFA[0], lLeft[0], lRight[0]);
+  const govLb = Math.min(lVert[1], lFA[1], lLeft[1], lRight[1]);
+  const noLoad = govKg === 0;
+
+  // Actual weight GO/NO-GO
+  const actualKg = parseFloat(($('cargo-actual-kg') || {}).value);
+  const hasActual = !isNaN(actualKg) && actualKg > 0;
+  const ok = hasActual && !noLoad ? actualKg <= govKg : null;
+
+  // 欠損行リスト
+  const rows = [
+    nVert > 0 ? ['Vertical', nVert, lVert]   : null,
+    nFA   > 0 ? ['FWD/AFT',  nFA,   lFA]     : null,
+    nL    > 0 ? ['Left Side',nL,    lLeft]    : null,
+    nR    > 0 ? ['Right Side',nR,   lRight]   : null,
+  ].filter(Boolean);
+
+  const rowHtml = rows.map(([lbl, cnt, v]) => {
+    const isGov = v[0] === govKg;
+    const noLd  = v[0] === 0;
+    return `<div class="brow" style="${isGov && hasAny ? 'background:rgba(255,140,66,0.12);border-radius:4px' : ''}">
+      <span>${lbl} ×${cnt} 欠損</span>
+      <span class="v" style="color:${noLd?'#ff4560':isGov?'#ff8c42':'var(--text)'};font-weight:${isGov?700:400}">
+        ${noLd ? '⛔ N/A' : `${v[0].toLocaleString()} kg (${v[1].toLocaleString()} lb)`}
+      </span></div>`;
+  }).join('');
+
+  const maxTag = !hasAny
+    ? `<div style="text-align:center;padding:6px 0">
+        <div style="font-size:0.62em;color:var(--accent);font-weight:700;letter-spacing:.05em;margin-bottom:3px">MAXIMUM LOAD (all restraints normal)</div>
+        <div style="font-size:1.6em;font-weight:700;color:var(--accent)">${d.max[0].toLocaleString()} <span style="font-size:.5em">KG</span></div>
+        <div style="font-size:0.82em;color:var(--muted)">${d.max[1].toLocaleString()} LB</div>
+       </div>`
+    : `<div style="text-align:center;padding:6px 0">
+        <div style="font-size:0.62em;color:${noLoad?'#ff4560':'#ff8c42'};font-weight:700;letter-spacing:.05em;margin-bottom:3px">▸ ALLOWABLE LOAD — Position ${pos}*</div>
+        ${noLoad
+          ? `<div style="font-size:1.2em;font-weight:700;color:#ff4560">⛔ LOAD NOT PERMITTED</div>`
+          : `<div style="font-size:1.6em;font-weight:700;color:#ff8c42">${govKg.toLocaleString()} <span style="font-size:.5em">KG</span></div>
+             <div style="font-size:0.82em;color:var(--muted)">${govLb.toLocaleString()} LB</div>`}
+       </div>`;
+
+  const goNoGo = (hasActual && !noLoad)
+    ? `<div style="background:${ok?'rgba(0,230,152,0.1)':'rgba(255,70,96,0.12)'};border:1px solid ${ok?'var(--accent)':'#ff4560'};border-radius:8px;padding:10px;text-align:center;margin-top:8px">
+        <div style="font-size:0.65em;color:var(--muted);margin-bottom:3px">
+          Actual ${actualKg.toLocaleString()} kg &nbsp;vs&nbsp; Limit ${govKg.toLocaleString()} kg
+        </div>
+        <div style="font-size:1.3em;font-weight:700;color:${ok?'var(--accent)':'#ff4560'}">${ok ? '✓ WITHIN LIMIT' : '✗ EXCEEDS LIMIT'}</div>
+        ${!ok ? `<div style="font-size:0.72em;color:#ff4560;margin-top:2px">超過: +${(actualKg-govKg).toLocaleString()} kg</div>` : ''}
+      </div>` : '';
+
+  el.innerHTML = `
+    ${rowHtml ? `<div class="breakdown" style="display:block;margin-bottom:10px">${rowHtml}</div>` : ''}
+    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:10px;margin-bottom:4px">${maxTag}</div>
+    ${goNoGo}
+    <ul class="footnote" style="margin-top:10px">
+      <li>AFM Section 9 · 88"×125" ULD · Main Deck Cargo Compartment</li>
+      <li>P* positions: PL / PR &nbsp;(Arm ~1,688 in) &nbsp;·&nbsp; R* positions: RL / RR &nbsp;(Arm ~1,814 in)</li>
+      <li>複数の拘束種が欠損する場合：最も制限の厳しい値を適用</li>
+    </ul>`;
+}
+
 function prepTurnCalc() {
   const v    = parseFloat($('prep-turn-spd').value);
   const bank = parseFloat($('prep-turn-bank').value);
@@ -7478,6 +7581,122 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-prep">
 <div class="tab-content">
+
+<!-- ③ Missing Cargo Restraint Load Check -->
+<div class="card">
+  <div class="card-title">Cargo Restraint Load Check
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">88"×125" ULD · Main Deck</span>
+  </div>
+
+  <!-- 使い方説明 -->
+  <div style="background:rgba(255,140,66,0.08);border-left:3px solid #ff8c42;padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:12px;font-size:0.78em;line-height:1.7">
+    <b>確認手順</b><br>
+    ① 該当 ULD のゾーン位置を確認（P* = PL/PR、R* = RL/RR）<br>
+    ② Ground crew から欠損・故障している拘束の種類と数を確認<br>
+    ③ 下欄に入力 → 許容荷重と Actual Load を照合
+  </div>
+
+  <div class="row2" style="margin-bottom:10px">
+    <div class="fg">
+      <label>ULD Position</label>
+      <select id="cargo-pos" onchange="cargoCkCalc()">
+        <option value="P">P* (PL / PR) &nbsp;Arm ~1,688 in</option>
+        <option value="R">R* (RL / RR) &nbsp;Arm ~1,814 in</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Actual ULD Load (kg)</label>
+      <input type="number" id="cargo-actual-kg" step="10" min="0" max="10000"
+             inputmode="numeric" placeholder="Load sheet の重量" oninput="cargoCkCalc()">
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div class="fg">
+      <label>Vertical Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+      <select id="cargo-vert" onchange="cargoCkCalc()">
+        <option value="0">0（正常）</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5（全欠損）</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>FWD/AFT Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+      <select id="cargo-fwdaft" onchange="cargoCkCalc()">
+        <option value="0">0（正常）</option>
+        <option value="1">1</option>
+        <option value="2">2（全欠損）</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Left Side Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+      <select id="cargo-left" onchange="cargoCkCalc()">
+        <option value="0">0（正常）</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3（全欠損）</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Right Side Restraint &nbsp;<span style="color:#ff8c42">欠損数</span></label>
+      <select id="cargo-right" onchange="cargoCkCalc()">
+        <option value="0">0（正常）</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3（全欠損）</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="cargo-ck-result"></div>
+
+  <!-- Zone ARM reference (collapsible) -->
+  <details style="margin-top:12px">
+    <summary style="font-size:0.72em;color:var(--muted);cursor:pointer;user-select:none">▸ Main Deck Zone ARM 参照表</summary>
+    <div style="overflow-x:auto;margin-top:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72em">
+        <thead>
+          <tr style="color:var(--muted);font-size:0.85em;border-bottom:2px solid var(--border)">
+            <th style="padding:3px 6px;text-align:center">Zone</th>
+            <th style="padding:3px 6px;text-align:right">FWD ARM</th>
+            <th style="padding:3px 6px;text-align:right">AFT ARM</th>
+            <th style="padding:3px 6px;text-align:right">Average</th>
+            <th style="padding:3px 6px;text-align:center">Zone</th>
+            <th style="padding:3px 6px;text-align:right">FWD ARM</th>
+            <th style="padding:3px 6px;text-align:right">AFT ARM</th>
+            <th style="padding:3px 6px;text-align:right">Average</th>
+          </tr>
+        </thead>
+        <tbody style="color:var(--text)">
+          <tr><td style="padding:3px 6px;text-align:center">A1</td><td style="text-align:right;padding:3px 6px">74.0</td><td style="text-align:right;padding:3px 6px">170.0</td><td style="text-align:right;padding:3px 6px">122.0</td>
+              <td style="padding:3px 6px;text-align:center">K</td><td style="text-align:right;padding:3px 6px">1247.0</td><td style="text-align:right;padding:3px 6px">1372.0</td><td style="text-align:right;padding:3px 6px">1309.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">A2</td><td style="text-align:right;padding:3px 6px">171.0</td><td style="text-align:right;padding:3px 6px">267.0</td><td style="text-align:right;padding:3px 6px">219.0</td>
+              <td style="padding:3px 6px;text-align:center">L</td><td style="text-align:right;padding:3px 6px">1373.0</td><td style="text-align:right;padding:3px 6px">1498.0</td><td style="text-align:right;padding:3px 6px">1435.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">B1</td><td style="text-align:right;padding:3px 6px">268.0</td><td style="text-align:right;padding:3px 6px">364.0</td><td style="text-align:right;padding:3px 6px">316.0</td>
+              <td style="padding:3px 6px;text-align:center">M</td><td style="text-align:right;padding:3px 6px">1499.0</td><td style="text-align:right;padding:3px 6px">1624.0</td><td style="text-align:right;padding:3px 6px">1561.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">C</td><td style="text-align:right;padding:3px 6px">365.0</td><td style="text-align:right;padding:3px 6px">490.0</td><td style="text-align:right;padding:3px 6px">427.5</td>
+              <td style="padding:3px 6px;text-align:center;color:#ffb347;font-weight:700">P*</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1625.0</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1750.0</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1687.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">D</td><td style="text-align:right;padding:3px 6px">491.0</td><td style="text-align:right;padding:3px 6px">616.0</td><td style="text-align:right;padding:3px 6px">553.5</td>
+              <td style="padding:3px 6px;text-align:center;color:#ffb347;font-weight:700">R*</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1751.0</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1876.0</td><td style="text-align:right;padding:3px 6px;color:#ffb347">1813.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">E</td><td style="text-align:right;padding:3px 6px">617.0</td><td style="text-align:right;padding:3px 6px">742.0</td><td style="text-align:right;padding:3px 6px">679.5</td>
+              <td style="padding:3px 6px;text-align:center">S</td><td style="text-align:right;padding:3px 6px">1901.0</td><td style="text-align:right;padding:3px 6px">2026.0</td><td style="text-align:right;padding:3px 6px">1963.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">F</td><td style="text-align:right;padding:3px 6px">743.0</td><td style="text-align:right;padding:3px 6px">868.0</td><td style="text-align:right;padding:3px 6px">805.5</td>
+              <td style="padding:3px 6px;text-align:center">T</td><td style="text-align:right;padding:3px 6px">2027.0</td><td style="text-align:right;padding:3px 6px">2152.0</td><td style="text-align:right;padding:3px 6px">2089.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">G</td><td style="text-align:right;padding:3px 6px">869.0</td><td style="text-align:right;padding:3px 6px">994.0</td><td style="text-align:right;padding:3px 6px">931.5</td>
+              <td style="padding:3px 6px;text-align:center">U</td><td style="text-align:right;padding:3px 6px">2153.1</td><td style="text-align:right;padding:3px 6px">2278.0</td><td style="text-align:right;padding:3px 6px">2215.5</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">H</td><td style="text-align:right;padding:3px 6px">995.0</td><td style="text-align:right;padding:3px 6px">1120.0</td><td style="text-align:right;padding:3px 6px">1057.5</td>
+              <td style="padding:3px 6px;text-align:center">X</td><td style="text-align:right;padding:3px 6px">2278.7</td><td style="text-align:right;padding:3px 6px">2425.0</td><td style="text-align:right;padding:3px 6px">2355.7</td></tr>
+          <tr><td style="padding:3px 6px;text-align:center">J</td><td style="text-align:right;padding:3px 6px">1121.0</td><td style="text-align:right;padding:3px 6px">1246.0</td><td style="text-align:right;padding:3px 6px">1183.5</td>
+              <td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.6em;color:var(--muted);margin-top:5px">ARM (in) · * = 88×125 ULD 搭載可 · 34 ULD 搭載（96×125 標準）</p>
+  </details>
+</div>
 
 <!-- ① 旋回半径 -->
 <div class="card">
