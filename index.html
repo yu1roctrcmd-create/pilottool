@@ -5471,21 +5471,22 @@ function _fetchTimeout(url, ms) {
 
 async function _fetchMetarJson(icao, statEl) {
   const awcUrl = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=json&hours=2`;
-  if (statEl) statEl.textContent = '取得中…';
-  try {
-    const r = await _fetchTimeout(awcUrl, 8000);
-    if (r.ok) {
+  const sources = [
+    { url: awcUrl,                                                                    label: '',           ms: 8000  },
+    { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(awcUrl)}`,        label: ' (proxy 1)', ms: 12000 },
+    { url: `https://corsproxy.io/?${encodeURIComponent(awcUrl)}`,                     label: ' (proxy 2)', ms: 12000 },
+    { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(awcUrl)}`,   label: ' (proxy 3)', ms: 12000 },
+  ];
+  for (const { url, label, ms } of sources) {
+    if (statEl) statEl.textContent = `取得中…${label}`;
+    try {
+      const r = await _fetchTimeout(url, ms);
+      if (!r.ok) continue;
       const arr = await r.json();
       if (Array.isArray(arr) && arr.length > 0) return arr[0];
-    }
-  } catch(_) {}
-  if (statEl) statEl.textContent = '取得中… (proxy)';
-  const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(awcUrl)}`;
-  const r2 = await _fetchTimeout(proxy, 12000);
-  if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
-  const arr2 = await r2.json();
-  if (!Array.isArray(arr2) || arr2.length === 0) throw new Error('データなし');
-  return arr2[0];
+    } catch(_) {}
+  }
+  throw new Error('接続できません。ネットワーク接続を確認して再試行してください');
 }
 
 function _parseMetarJson(d) {
@@ -5531,7 +5532,10 @@ async function fetchAtisWind(tab) {
       `<span style="color:var(--label)"> (MagVar ${varSign}°)</span>` +
       (rawOb ? `<div style="margin-top:5px;font-family:monospace;font-size:0.75em;color:var(--muted);word-break:break-all;white-space:pre-wrap">${rawOb}</div>` : '');
   } catch(e) {
-    if (statEl) statEl.textContent = `⚠ エラー: ${e.message}`;
+    const isAbort = e.name === 'AbortError' || /abort|aborted/i.test(e.message);
+    if (statEl) statEl.textContent = isAbort
+      ? '⚠ タイムアウト — Wi-Fi/機内モードを確認して再試行してください'
+      : `⚠ エラー: ${e.message}`;
   } finally {
     if (btnEl) btnEl.disabled = false;
   }
