@@ -943,6 +943,23 @@
 <!-- Runway -->
 <div class="card">
   <div class="card-title">Runway</div>
+  <div class="fg" style="margin-bottom:6px">
+    <label>Airport</label>
+    <select id="toAirport" onchange="onAirportSelect('to')">
+      <option value="">—</option>
+      <option value="RJTT">RJTT 東京/羽田</option>
+      <option value="RJAA">RJAA 東京/成田</option>
+      <option value="RCTP">RCTP 台北桃園</option>
+      <option value="VHHH">VHHH 香港</option>
+      <option value="ZSPD">ZSPD 上海浦東</option>
+      <option value="WSSS">WSSS シンガポール</option>
+      <option value="PANC">PANC アンカレッジ</option>
+      <option value="KORD">KORD シカゴ</option>
+      <option value="KJFK">KJFK ニューヨーク</option>
+      <option value="KLAX">KLAX ロサンゼルス</option>
+      <option value="KDFW">KDFW ダラス</option>
+    </select>
+  </div>
   <div class="fg">
     <label>RW</label>
     <select id="rwyNum" onchange="onRwySelect()">
@@ -1004,6 +1021,7 @@
     <div style="display:flex;gap:8px;align-items:center">
       <select id="atis-ap-to" style="flex:1;font-size:0.88em">
         <option value="">空港を選択…</option>
+        <option value="RJTT">RJTT 羽田</option>
         <option value="RJAA">RJAA 成田</option>
         <option value="RCTP">RCTP 台北桃園</option>
         <option value="VHHH">VHHH 香港</option>
@@ -1401,6 +1419,23 @@
 <!-- Runway (LDG) -->
 <div class="card">
   <div class="card-title">Runway</div>
+  <div class="fg" style="margin-bottom:6px">
+    <label>Airport</label>
+    <select id="ldgAirport" onchange="onAirportSelect('ldg')">
+      <option value="">—</option>
+      <option value="RJTT">RJTT 東京/羽田</option>
+      <option value="RJAA">RJAA 東京/成田</option>
+      <option value="RCTP">RCTP 台北桃園</option>
+      <option value="VHHH">VHHH 香港</option>
+      <option value="ZSPD">ZSPD 上海浦東</option>
+      <option value="WSSS">WSSS シンガポール</option>
+      <option value="PANC">PANC アンカレッジ</option>
+      <option value="KORD">KORD シカゴ</option>
+      <option value="KJFK">KJFK ニューヨーク</option>
+      <option value="KLAX">KLAX ロサンゼルス</option>
+      <option value="KDFW">KDFW ダラス</option>
+    </select>
+  </div>
   <div class="fg">
     <label>RW</label>
     <select id="ldg-rwyNum" onchange="onLdgRwySelect()">
@@ -1462,6 +1497,7 @@
     <div style="display:flex;gap:8px;align-items:center">
       <select id="atis-ap-ldg" style="flex:1;font-size:0.88em">
         <option value="">空港を選択…</option>
+        <option value="RJTT">RJTT 羽田</option>
         <option value="RJAA">RJAA 成田</option>
         <option value="RCTP">RCTP 台北桃園</option>
         <option value="VHHH">VHHH 香港</option>
@@ -2176,10 +2212,11 @@ function setDrumVal(colId, dispId, suffix, value) {
   requestAnimationFrame(() => { colEl._skipNotify = false; });
 }
 function onRwySelect() {
-  const n = parseInt($('rwyNum').value);
-  if (!isNaN(n) && n >= 1 && n <= 36) {
-    setDrumVal('xd-rwyhdg', 'disp-xd-rwyhdg', '°', n * 10);
-    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, n * 10);
+  const val = parseInt($('rwyNum').value);
+  if (!isNaN(val) && val >= 1) {
+    const hdg = val <= 36 ? val * 10 : val; // backwards compat for old saved values
+    setDrumVal('xd-rwyhdg', 'disp-xd-rwyhdg', '°', hdg);
+    buildWindDirDrum('xd-winddir', 'disp-xd-winddir', calc, hdg);
   }
   calc();
 }
@@ -2842,10 +2879,11 @@ function ldgToggleMagVar() {
   $('ldg-magVarGroup').style.display = $('ldg-windType').value === 'TRUE' ? 'block' : 'none';
 }
 function onLdgRwySelect() {
-  const n = parseInt($('ldg-rwyNum').value);
-  if (_ldgDrumReady && !isNaN(n) && n >= 1 && n <= 36) {
-    setDrumVal('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', n * 10);
-    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, n * 10);
+  const val = parseInt($('ldg-rwyNum').value);
+  if (_ldgDrumReady && !isNaN(val) && val >= 1) {
+    const hdg = val <= 36 ? val * 10 : val; // backwards compat
+    setDrumVal('ldg-rwyhdg', 'disp-ldg-rwyhdg', '°', hdg);
+    buildWindDirDrum('ldg-winddir', 'disp-ldg-winddir', calcLdg, hdg);
   }
   calcLdg();
 }
@@ -5451,6 +5489,7 @@ function desXoverCalc() {
 ─────────────────────────────────────────── */
 // 空港別 Magnetic Variation (East+, West−) — 概算値
 const _AP_MAG_VAR = {
+  RJTT:  -8,   // 東京/羽田
   RJAA:  -8,   // 東京/成田
   RCTP:  -4,   // 台北桃園
   VHHH:  -3,   // 香港
@@ -5461,6 +5500,71 @@ const _AP_MAG_VAR = {
   KJFK: -13,   // ニューヨーク
   KLAX: +12,   // ロサンゼルス
   KDFW:  +3,   // ダラス
+};
+
+// Runway DB — {r: designator, h: magnetic heading}
+const _RWY_DB = {
+  RJTT: [ // Tokyo Haneda
+    {r:'04', h:43}, {r:'22', h:223},
+    {r:'05', h:52}, {r:'23', h:232},
+    {r:'16L',h:158},{r:'34R',h:338},
+    {r:'16R',h:158},{r:'34L',h:338},
+  ],
+  RJAA: [ // Tokyo Narita
+    {r:'16L',h:158},{r:'34R',h:338},
+    {r:'16R',h:159},{r:'34L',h:339},
+  ],
+  VHHH: [ // Hong Kong
+    {r:'07L',h:74}, {r:'25R',h:254},
+    {r:'07R',h:74}, {r:'25L',h:254},
+  ],
+  RCTP: [ // Taipei Taoyuan
+    {r:'05L',h:54}, {r:'23R',h:234},
+    {r:'05R',h:54}, {r:'23L',h:234},
+  ],
+  ZSPD: [ // Shanghai Pudong
+    {r:'16L',h:160},{r:'34R',h:340},
+    {r:'16R',h:160},{r:'34L',h:340},
+    {r:'17L',h:170},{r:'35R',h:350},
+    {r:'17R',h:170},{r:'35L',h:350},
+  ],
+  WSSS: [ // Singapore Changi
+    {r:'02L',h:24}, {r:'20R',h:204},
+    {r:'02C',h:24}, {r:'20C',h:204},
+    {r:'02R',h:24}, {r:'20L',h:204},
+  ],
+  PANC: [ // Anchorage
+    {r:'06L',h:61}, {r:'24R',h:241},
+    {r:'06R',h:61}, {r:'24L',h:241},
+    {r:'14',  h:141},{r:'32',  h:321},
+    {r:'15',  h:150},{r:'33',  h:330},
+  ],
+  KORD: [ // Chicago O'Hare
+    {r:'10L',h:97}, {r:'28R',h:277},
+    {r:'10C',h:97}, {r:'28C',h:277},
+    {r:'10R',h:97}, {r:'28L',h:277},
+    {r:'09L',h:91}, {r:'27R',h:271},
+    {r:'09R',h:91}, {r:'27L',h:271},
+  ],
+  KJFK: [ // New York JFK
+    {r:'04L',h:40}, {r:'22R',h:220},
+    {r:'04R',h:40}, {r:'22L',h:220},
+    {r:'13L',h:130},{r:'31R',h:310},
+    {r:'13R',h:130},{r:'31L',h:310},
+  ],
+  KLAX: [ // Los Angeles
+    {r:'06L',h:69}, {r:'24R',h:249},
+    {r:'06R',h:69}, {r:'24L',h:249},
+    {r:'07L',h:69}, {r:'25R',h:249},
+    {r:'07R',h:69}, {r:'25L',h:249},
+  ],
+  KDFW: [ // Dallas/Fort Worth
+    {r:'17L',h:174},{r:'35R',h:354},
+    {r:'17C',h:174},{r:'35C',h:354},
+    {r:'17R',h:174},{r:'35L',h:354},
+    {r:'13L',h:132},{r:'31R',h:312},
+    {r:'13R',h:132},{r:'31L',h:312},
+  ],
 };
 
 function _fetchTimeout(url, ms) {
@@ -5538,6 +5642,41 @@ async function fetchAtisWind(tab) {
       : `⚠ エラー: ${e.message}`;
   } finally {
     if (btnEl) btnEl.disabled = false;
+  }
+}
+
+function _buildRwyOpts(selId, icao) {
+  const sel = $(selId); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">選択...</option>';
+  const list = icao && _RWY_DB[icao];
+  if (list) {
+    list.forEach(({r, h}) => {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = `RWY ${r}  (${String(h).padStart(3,'0')}°)`;
+      sel.appendChild(opt);
+    });
+  } else {
+    for (let i = 1; i <= 36; i++) {
+      const opt = document.createElement('option');
+      opt.value = i * 10;
+      opt.textContent = `RWY ${String(i).padStart(2,'0')}  (${String(i*10).padStart(3,'0')}°)`;
+      sel.appendChild(opt);
+    }
+  }
+  // Try to restore previous selection
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+function onAirportSelect(tab) {
+  const icao = ($(`${tab==='to'?'to':'ldg'}Airport`) || {}).value || '';
+  if (tab === 'to') {
+    _buildRwyOpts('rwyNum', icao);
+    onRwySelect();
+  } else {
+    _buildRwyOpts('ldg-rwyNum', icao);
+    onLdgRwySelect();
   }
 }
 
@@ -7015,16 +7154,8 @@ function _crzRenderTable(curH, dISA, mach, cas) {
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
-/* XWIND — Runway select */
-(function() {
-  const sel = $('rwyNum');
-  for (let i = 1; i <= 36; i++) {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `RWY ${String(i).padStart(2,'0')}  (${String(i*10).padStart(3,'0')}°)`;
-    sel.appendChild(opt);
-  }
-})();
+/* XWIND — Runway select (default 01-36 until airport is chosen) */
+_buildRwyOpts('rwyNum', '');
 toggleMagVar();
 
 /* XWIND drums */
@@ -7044,15 +7175,7 @@ onThrustChange();
 flapSpdCalc();
 
 /* LDG — Runway select */
-(function() {
-  const sel = $('ldg-rwyNum');
-  for (let i = 1; i <= 36; i++) {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = `RWY ${String(i).padStart(2,'0')}  (${String(i*10).padStart(3,'0')}°)`;
-    sel.appendChild(opt);
-  }
-})();
+_buildRwyOpts('ldg-rwyNum', '');
 ldgToggleMagVar();
 setApprFlapLdg('F25');
 setAtLdg(false);
