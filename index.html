@@ -3312,21 +3312,26 @@ function renderTasLdg() {
   updateLdgDesRate();
 }
 
-/* ── LDG Descent Rate (3° path, Speed × 5.31) ── */
+/* ── LDG Descent Rate (3° / 3.2° path) ── */
 function updateLdgDesRate() {
   const el = $('ldg-desRate-box');
   if (!el) return;
   const vapp = _ldgLastTarget;
   if (!vapp || isNaN(vapp)) { el.innerHTML = ''; return; }
-  const rod = Math.round(vapp * 5.31);
+  const rod30 = Math.round(vapp * 5.31);
+  const rod32 = Math.round(vapp * 5.66);
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px;padding:10px 12px;background:rgba(0,230,152,0.06);border:1px solid rgba(0,230,152,0.2);border-radius:8px">
-      <div style="font-size:0.62em;color:var(--muted);white-space:nowrap;line-height:1.4">3° PATH<br>DESCENT RATE</div>
-      <div style="flex:1;text-align:right">
-        <span style="font-size:2em;font-weight:700;color:#00e698">${rod}</span>
-        <span style="font-size:0.75em;color:var(--muted)"> fpm</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div style="display:flex;flex-direction:column;align-items:center;padding:10px 8px;background:rgba(0,230,152,0.06);border:1px solid rgba(0,230,152,0.2);border-radius:8px">
+        <div style="font-size:0.6em;color:var(--muted);letter-spacing:0.05em;margin-bottom:2px">3.0° PATH</div>
+        <div><span style="font-size:1.9em;font-weight:700;color:#00e698">${rod30}</span><span style="font-size:0.7em;color:var(--muted)"> fpm</span></div>
+        <div style="font-size:0.58em;color:var(--muted);margin-top:2px">${vapp} kt × 5.31</div>
       </div>
-      <div style="font-size:0.65em;color:var(--muted);white-space:nowrap">${vapp} kt × 5.31</div>
+      <div style="display:flex;flex-direction:column;align-items:center;padding:10px 8px;background:rgba(255,140,66,0.06);border:1px solid rgba(255,140,66,0.2);border-radius:8px">
+        <div style="font-size:0.6em;color:var(--muted);letter-spacing:0.05em;margin-bottom:2px">3.2° PATH</div>
+        <div><span style="font-size:1.9em;font-weight:700;color:#ff8c42">${rod32}</span><span style="font-size:0.7em;color:var(--muted)"> fpm</span></div>
+        <div style="font-size:0.58em;color:var(--muted);margin-top:2px">${vapp} kt × 5.66</div>
+      </div>
     </div>`;
 }
 
