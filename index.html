@@ -953,6 +953,7 @@
       <option value="VHHH">VHHH 香港</option>
       <option value="RCTP">RCTP 台北桃園</option>
       <option value="WSSS">WSSS シンガポール</option>
+      <option value="VTBS">VTBS バンコク</option>
       <option value="PANC">PANC アンカレッジ</option>
       <option value="KLAX">KLAX ロサンゼルス</option>
       <option value="KORD">KORD シカゴ</option>
@@ -1030,6 +1031,7 @@
         <option value="VHHH">VHHH 香港</option>
         <option value="RCTP">RCTP 台北桃園</option>
         <option value="WSSS">WSSS シンガポール</option>
+        <option value="VTBS">VTBS バンコク</option>
         <option value="PANC">PANC アンカレッジ</option>
         <option value="KLAX">KLAX ロサンゼルス</option>
         <option value="KORD">KORD シカゴ</option>
@@ -1435,6 +1437,7 @@
       <option value="VHHH">VHHH 香港</option>
       <option value="RCTP">RCTP 台北桃園</option>
       <option value="WSSS">WSSS シンガポール</option>
+      <option value="VTBS">VTBS バンコク</option>
       <option value="PANC">PANC アンカレッジ</option>
       <option value="KLAX">KLAX ロサンゼルス</option>
       <option value="KORD">KORD シカゴ</option>
@@ -1512,6 +1515,7 @@
         <option value="VHHH">VHHH 香港</option>
         <option value="RCTP">RCTP 台北桃園</option>
         <option value="WSSS">WSSS シンガポール</option>
+        <option value="VTBS">VTBS バンコク</option>
         <option value="PANC">PANC アンカレッジ</option>
         <option value="KLAX">KLAX ロサンゼルス</option>
         <option value="KORD">KORD シカゴ</option>
@@ -5533,6 +5537,7 @@ const _AP_MAG_VAR = {
   VHHH:  -3,   // 香港
   ZSPD:  -5,   // 上海浦東
   WSSS:   0,   // シンガポール
+  VTBS:   0,   // バンコク/スワンナプーム
   PANC: +15,   // アンカレッジ
   KORD:  -1,   // シカゴ
   KJFK: -13,   // ニューヨーク
@@ -5569,6 +5574,11 @@ const _RWY_DB = {
     {r:'16R',h:168},{r:'34L',h:348},
     {r:'17L',h:168},{r:'35R',h:348},
     {r:'17R',h:168},{r:'35L',h:348},
+  ],
+  VTBS: [ // Bangkok Suvarnabhumi
+    {r:'01',  h:15},  {r:'19',  h:195},
+    {r:'02L', h:15},  {r:'20R', h:195},
+    {r:'02R', h:15},  {r:'20L', h:195},
   ],
   WSSS: [ // Singapore Changi
     {r:'02L',h:23}, {r:'20R',h:203},
