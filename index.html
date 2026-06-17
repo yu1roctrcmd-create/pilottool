@@ -1612,6 +1612,7 @@
     </div>
   </div>
   <div id="ldg-tasBox" class="tas-box" style="display:none"></div>
+  <div id="ldg-desRate-box" style="margin-top:10px"></div>
 </div>
 
 </div><!-- /xw-col left -->
@@ -2157,7 +2158,7 @@ function switchTab(name, btn) {
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
   if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); calcInop2Eng(); }
-  if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); }
+  if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
 }
 
@@ -3254,6 +3255,7 @@ function renderTasLdg() {
         <div class="tas-target-unit">KNOTS</div>
       </div>`;
     apprCalcLdg();
+    updateLdgDesRate();
     return;
   }
 
@@ -3307,6 +3309,25 @@ function renderTasLdg() {
     </div>`;
 
   apprCalcLdg();
+  updateLdgDesRate();
+}
+
+/* ── LDG Descent Rate (3° path, Speed × 5.31) ── */
+function updateLdgDesRate() {
+  const el = $('ldg-desRate-box');
+  if (!el) return;
+  const vapp = _ldgLastTarget;
+  if (!vapp || isNaN(vapp)) { el.innerHTML = ''; return; }
+  const rod = Math.round(vapp * 5.31);
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;padding:10px 12px;background:rgba(0,230,152,0.06);border:1px solid rgba(0,230,152,0.2);border-radius:8px">
+      <div style="font-size:0.62em;color:var(--muted);white-space:nowrap;line-height:1.4">3° PATH<br>DESCENT RATE</div>
+      <div style="flex:1;text-align:right">
+        <span style="font-size:2em;font-weight:700;color:#00e698">${rod}</span>
+        <span style="font-size:0.75em;color:var(--muted)"> fpm</span>
+      </div>
+      <div style="font-size:0.65em;color:var(--muted);white-space:nowrap">${vapp} kt × 5.31</div>
+    </div>`;
 }
 
 /* ── LDG Approach Pitch & N1 ── */
@@ -6106,6 +6127,63 @@ function desPathCalc() {
     <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 降下</p>`;
 }
 
+/* DES 3° Approach Path — True Altitude Correction */
+function desApprPathCalc() {
+  const elev   = parseFloat($('des-appr-elev').value) || 0;
+  const isaDev = parseFloat($('des-appr-isa').value);
+  const el     = $('des-appr-result');
+  if (isNaN(isaDev)) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>';
+    return;
+  }
+
+  const TAN3  = Math.tan(3 * Math.PI / 180); // 0.052408
+  const DISTS = [2,3,4,5,6,7,8,9,10,12,15,20,25,30];
+
+  const rows = DISTS.map(d => {
+    const hat      = Math.round(d * 6076.115 * TAN3);       // height above threshold (ft)
+    const pressAlt = hat + elev;                             // pressure altitude MSL
+    const tIsa     = Math.max(216.65, 288.15 - 0.001981 * pressAlt); // ISA temp at alt (K)
+    const trueAlt  = Math.round(pressAlt * (tIsa + isaDev) / tIsa);
+    const corr     = trueAlt - pressAlt;
+    return { d, hat, pressAlt, trueAlt, corr };
+  });
+
+  const corrColor = c => c === 0 ? 'var(--text)' : c < 0 ? '#ff4560' : '#00e698';
+  const corrSign  = c => c > 0 ? `+${c}` : `${c}`;
+
+  el.innerHTML = `
+    <div style="font-size:0.7em;color:var(--muted);margin-bottom:6px">
+      ISA Dev <strong style="color:${isaDev<0?'#ff8c42':isaDev>0?'#00e698':'var(--text)'}">${isaDev>0?'+':''}${isaDev}°C</strong>
+      &nbsp;|&nbsp; RWY Elev <strong>${elev} ft</strong>
+      &nbsp;|&nbsp; ${isaDev<0?'Cold: 実高度 < 気圧高度 (低め注意)':isaDev>0?'Warm: 実高度 > 気圧高度':'ISA標準'}
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table style="border-collapse:collapse;font-size:0.78em;min-width:max-content;width:100%">
+        <thead>
+          <tr style="background:rgba(255,255,255,0.06);color:var(--muted);font-size:0.85em">
+            <th style="padding:5px 8px;text-align:center;border-bottom:1px solid var(--border)">DME<br>(NM)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">HAT<br>(ft)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">気圧高度<br>MSL (ft)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">True Alt<br>(ft)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">Correction<br>(ft)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r,i) => `
+          <tr style="border-bottom:1px solid rgba(128,128,128,0.1);${i%2?'background:rgba(255,255,255,0.02)':''}">
+            <td style="padding:4px 8px;text-align:center;font-weight:700">${r.d}</td>
+            <td style="padding:4px 8px;text-align:right">${r.hat.toLocaleString()}</td>
+            <td style="padding:4px 8px;text-align:right">${r.pressAlt.toLocaleString()}</td>
+            <td style="padding:4px 8px;text-align:right;font-weight:600">${r.trueAlt.toLocaleString()}</td>
+            <td style="padding:4px 8px;text-align:right;font-weight:700;color:${corrColor(r.corr)}">${corrSign(r.corr)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.63em;color:var(--muted);margin-top:6px">True Alt = 気圧高度 × (T<sub>ISA</sub> + ISA Dev) / T<sub>ISA</sub> &nbsp;|&nbsp; Correction = True Alt − 気圧高度</p>`;
+}
+
 /* ───────────────────────────────────────────
    Mach/IAS/TAS Reference Table (ISA)
 ─────────────────────────────────────────── */
@@ -7859,6 +7937,26 @@ restoreState();
   </div>
   <div id="des-path-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>
+  </div>
+</div>
+
+<!-- 3° Approach Path True Altitude Correction -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">3° Approach Path — True Altitude &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">ISA偏差による高度補正</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>RWY Elevation (ft)</label>
+      <input type="number" id="des-appr-elev" step="10" min="0" max="14000" value="0"
+             inputmode="numeric" placeholder="e.g. 141" oninput="desApprPathCalc()">
+    </div>
+    <div class="fg">
+      <label>ISA Dev (°C)</label>
+      <input type="number" id="des-appr-isa" step="1" min="-60" max="40" value="0"
+             inputmode="decimal" placeholder="e.g. -20" oninput="desApprPathCalc()">
+    </div>
+  </div>
+  <div id="des-appr-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>
   </div>
 </div>
 
