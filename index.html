@@ -1615,6 +1615,11 @@
       </div>
     </div>
   </div>
+  <div class="fg" style="margin-top:8px">
+    <label>Manual Addition (KT)</label>
+    <input type="number" id="ldg-vref-madd" value="0" step="1" min="-10" max="20"
+           inputmode="decimal" oninput="renderTasLdg()">
+  </div>
   <div id="ldg-tasBox" class="tas-box" style="display:none"></div>
   <div id="ldg-desRate-box" style="margin-top:10px"></div>
 </div>
@@ -3244,15 +3249,19 @@ function renderTasLdg() {
   ldgWcaCalc();
   if (isNaN(vref)) { box.style.display = 'none'; return; }
 
+  const madd = parseInt($('ldg-vref-madd').value) || 0;
+
   if (ldgAtEngaged) {
     /* AT ON: VREF + 5 (fixed) */
-    const target = vref + 5;
+    const base   = vref + 5;
+    const target = base + madd;
     _ldgLastTarget = target;
     _ldgLastVref   = vref;
     box.style.display = 'block';
     box.innerHTML = `
       <div class="tas-row"><span class="tas-lbl">VREF</span><span style="font-weight:700">${vref} KT</span></div>
       <div class="tas-row"><span class="tas-lbl">Autothrottle Addition</span><span style="font-weight:700;color:var(--accent)">+5 KT</span></div>
+      ${madd !== 0 ? `<div class="tas-row"><span class="tas-lbl">Manual Addition</span><span style="font-weight:700;color:#f59e0b">${madd>0?'+':''}${madd} KT</span></div>` : ''}
       <div class="tas-target">
         <div class="tas-target-lbl">AT ON TARGET</div>
         <div class="tas-target-val">${target}</div>
@@ -3292,7 +3301,8 @@ function renderTasLdg() {
   const rawAdd   = 0.5 * hwPos + gustIncr;
   const addition = Math.max(5, Math.min(20, rawAdd));
   const addRnd   = Math.round(addition);
-  const target   = vref + addRnd;
+  const base     = vref + addRnd;
+  const target   = base + madd;
   _ldgLastTarget = target;
   _ldgLastVref   = vref;
 
@@ -3306,6 +3316,7 @@ function renderTasLdg() {
       <span class="tas-lbl">Addition (½W+G, min 5, max 20)</span>
       <span style="font-weight:700;color:var(--accent)">+${addRnd} KT</span>
     </div>
+    ${madd !== 0 ? `<div class="tas-row"><span class="tas-lbl">Manual Addition</span><span style="font-weight:700;color:#f59e0b">${madd>0?'+':''}${madd} KT</span></div>` : ''}
     <div class="tas-target">
       <div class="tas-target-lbl">AT OFF TARGET</div>
       <div class="tas-target-val">${target}</div>
@@ -7350,7 +7361,7 @@ const _STATE_KEY = 'nca_state_v1';
 
 const _INPUT_IDS = [
   'rwyNum','windType','magVar','rwyCond','flaps','gust','weight','palt',
-  'ldg-rwyNum','ldg-windType','ldg-magVar','ldg-rwyCond','ldg-weight','ldg-vref','ldg-gust',
+  'ldg-rwyNum','ldg-windType','ldg-magVar','ldg-rwyCond','ldg-weight','ldg-vref','ldg-gust','ldg-vref-madd',
   'fdp-route','fdp-date','fdp-report','fdp-airport',
   'fdp-flt-h','fdp-flt-m','fdp-tax-h','fdp-tax-m','fdp-txo-h','fdp-txo-m','fdp-blk-h','fdp-blk-m',
 ];
