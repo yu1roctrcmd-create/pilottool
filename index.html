@@ -6178,12 +6178,46 @@ function desApprPathCalc() {
   const corrColor = c => c === 0 ? 'var(--text)' : c < 0 ? '#ff4560' : '#00e698';
   const corrSign  = c => c > 0 ? `+${c}` : `${c}`;
 
+  // Custom DME highlight
+  const customDme = parseFloat($('des-appr-dme').value);
+  let customBlock = '';
+  if (!isNaN(customDme) && customDme > 0) {
+    const hat      = Math.round(customDme * 6076.115 * TAN3);
+    const pressAlt = hat + elev;
+    const tIsa     = Math.max(216.65, 288.15 - 0.001981 * pressAlt);
+    const trueAlt  = Math.round(pressAlt * (tIsa + isaDev) / tIsa);
+    const corr     = trueAlt - pressAlt;
+    customBlock = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:rgba(100,160,255,0.08);border:1px solid rgba(100,160,255,0.3);border-radius:8px;margin-bottom:10px">
+        <div style="font-size:0.62em;color:#6aa0ff;font-weight:700;letter-spacing:0.08em;white-space:nowrap">DME ${customDme.toFixed(1)} NM</div>
+        <div style="flex:1;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-around">
+          <div style="text-align:center">
+            <div style="font-size:0.58em;color:var(--muted)">HAT</div>
+            <div style="font-size:1.15em;font-weight:700">${hat.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.58em;color:var(--muted)">気圧高度 MSL</div>
+            <div style="font-size:1.15em;font-weight:700">${pressAlt.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.58em;color:var(--muted)">True Alt</div>
+            <div style="font-size:1.4em;font-weight:700;color:#6aa0ff">${trueAlt.toLocaleString()}<span style="font-size:0.55em"> ft</span></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.58em;color:var(--muted)">Correction</div>
+            <div style="font-size:1.4em;font-weight:700;color:${corrColor(corr)}">${corrSign(corr)}<span style="font-size:0.55em"> ft</span></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   el.innerHTML = `
     <div style="font-size:0.7em;color:var(--muted);margin-bottom:6px">
       ISA Dev <strong style="color:${isaDev<0?'#ff8c42':isaDev>0?'#00e698':'var(--text)'}">${isaDev>0?'+':''}${isaDev}°C</strong>
       &nbsp;|&nbsp; RWY Elev <strong>${elev} ft</strong>
       &nbsp;|&nbsp; ${isaDev<0?'Cold: 実高度 < 気圧高度 (低め注意)':isaDev>0?'Warm: 実高度 > 気圧高度':'ISA標準'}
     </div>
+    ${customBlock}
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
       <table style="border-collapse:collapse;font-size:0.78em;min-width:max-content;width:100%">
         <thead>
@@ -7980,6 +8014,11 @@ restoreState();
       <input type="number" id="des-appr-isa" step="1" min="-60" max="40" value="0"
              inputmode="decimal" placeholder="e.g. -20" oninput="desApprPathCalc()">
     </div>
+  </div>
+  <div class="fg" style="margin-top:8px">
+    <label>DME (NM) — 任意距離</label>
+    <input type="number" id="des-appr-dme" step="0.1" min="0.1" max="200"
+           inputmode="decimal" placeholder="e.g. 8.2" oninput="desApprPathCalc()">
   </div>
   <div id="des-appr-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>
