@@ -1109,7 +1109,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); calcInop1Eng(); calcInop2Eng();">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng();">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -2166,7 +2166,7 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); calcInop1Eng(); calcInop2Eng(); }
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
 }
@@ -5389,6 +5389,22 @@ function resetClbWeight() {
   syncClbWeight();
 }
 
+let _inopWtManual = false;
+function syncInopWeight() {
+  if (_inopWtManual) return;
+  const tow = $('weight') ? $('weight').value : '';
+  if (tow !== '') {
+    const el = $('inop-weight');
+    if (el) { el.value = tow; calcInop1Eng(); calcInop2Eng(); }
+  }
+}
+function resetInopWeight() {
+  _inopWtManual = false;
+  $('inop-wt-sync-lbl').style.display = '';
+  $('inop-wt-reset').style.display    = 'none';
+  syncInopWeight();
+}
+
 let _crzWtManual = false;
 function syncCrzWeight() {
   if (_crzWtManual) return;
@@ -7377,6 +7393,7 @@ gaCalc();
 syncClbWeight();
 syncCrzWeight();
 syncDesWeight();
+syncInopWeight();
 calcInop1Eng();
 calcInop2Eng();
 clbCalc();
@@ -7909,25 +7926,42 @@ restoreState();
   <div id="crz-dev-fuel-table"></div>
 </div>
 
+<!-- INOP Weight Input -->
+<div class="card" style="margin-top:16px">
+  <div class="card-title">INOP — Start Driftdown Weight
+    <span id="inop-wt-sync-lbl" style="font-size:0.8rem;font-weight:400;color:var(--accent);margin-left:8px">← TOW連動</span>
+  </div>
+  <div style="display:flex;align-items:flex-end;gap:10px">
+    <div class="fg" style="flex:1">
+      <label>Weight (×1000 LB)</label>
+      <input type="number" id="inop-weight" step="1" min="450" max="1050"
+             inputmode="decimal"
+             oninput="_inopWtManual=true;$('inop-wt-sync-lbl').style.display='none';$('inop-wt-reset').style.display='inline-block';calcInop1Eng();calcInop2Eng();">
+    </div>
+    <button id="inop-wt-reset" onclick="resetInopWeight()"
+            style="display:none;padding:7px 14px;font-size:0.8em;border-radius:6px;border:1px solid var(--muted);background:transparent;color:var(--text);cursor:pointer;white-space:nowrap;margin-bottom:1px">
+      ↺ TOW連動
+    </button>
+  </div>
+</div>
+
 <!-- 1 ENGINE INOP Section -->
-<div class="card" style="margin-top:16px;border:1px solid rgba(255,140,66,0.35)">
+<div class="card" style="margin-top:10px;border:1px solid rgba(255,140,66,0.35)">
   <div class="card-title" style="color:#ff8c42">1 ENGINE INOP
     <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST · PI Section</span>
   </div>
-  <p style="font-size:0.75em;color:var(--muted);margin:0 0 6px">TO Weight と連動して自動計算</p>
   <div id="inop-1eng-result">
-    <p style="font-size:0.78em;color:var(--muted)">TO タブで Weight を入力してください</p>
+    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
   </div>
 </div>
 
 <!-- 2 ENGINE INOP -->
-<div class="card" style="margin-top:12px;border:1px solid rgba(255,70,96,0.35)">
+<div class="card" style="margin-top:10px;border:1px solid rgba(255,70,96,0.35)">
   <div class="card-title" style="color:#ff4560">2 ENGINE INOP
     <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">MAX CONTINUOUS THRUST · PI Section</span>
   </div>
-  <p style="font-size:0.75em;color:var(--muted);margin:0 0 6px">TO Weight と連動して自動計算</p>
   <div id="inop-2eng-result">
-    <p style="font-size:0.78em;color:var(--muted)">TO タブで Weight を入力してください</p>
+    <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
   </div>
 </div>
 
@@ -9471,9 +9505,9 @@ const _LRCA2 = [
 function calcInop2Eng() {
   const el = $('inop-2eng-result');
   if (!el) return;
-  const w = parseFloat($('weight') ? $('weight').value : '');
+  const w = parseFloat($('inop-weight') ? $('inop-weight').value : '');
   if (isNaN(w) || w < 450 || w > 1050) {
-    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">TO Weight を入力してください（TO タブの Weight と連動）</p>';
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>';
     return;
   }
 
@@ -9543,9 +9577,9 @@ function calcInop2Eng() {
 function calcInop1Eng() {
   const el = $('inop-1eng-result');
   if (!el) return;
-  const w = parseFloat($('weight') ? $('weight').value : '');
+  const w = parseFloat($('inop-weight') ? $('inop-weight').value : '');
   if (isNaN(w) || w < 450 || w > 1050) {
-    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">TO Weight を入力してください（TO タブの Weight と連動）</p>';
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>';
     return;
   }
 
