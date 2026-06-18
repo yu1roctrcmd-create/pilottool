@@ -6173,36 +6173,43 @@ function desPathCalc() {
 function desApprPathCalc() {
   const elev   = parseFloat($('des-appr-elev').value) || 0;
   const isaDev = parseFloat($('des-appr-isa').value);
+  const qnh    = parseFloat($('des-appr-qnh').value);
   const el     = $('des-appr-result');
   if (isNaN(isaDev)) {
     el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>';
     return;
   }
 
-  const TAN3  = Math.tan(3 * Math.PI / 180); // 0.052408
-  const DISTS = [2,3,4,5,6,7,8,9,10,12,15,20,25,30];
+  const TAN3    = Math.tan(3 * Math.PI / 180);
+  const DISTS   = [2,3,4,5,6,7,8,9,10,12,15,20,25,30];
+  const qnhRef  = isNaN(qnh) ? 1013.25 : qnh;
+  const qnhCorr = Math.round((qnhRef - 1013.25) * 27.3); // >0: QNH alt > baro alt (high pressure)
 
   const rows = DISTS.map(d => {
-    const hat      = Math.round(d * 6076.115 * TAN3);       // height above threshold (ft)
-    const pressAlt = hat + elev;                             // pressure altitude MSL
-    const tIsa     = Math.max(216.65, 288.15 - 0.001981 * pressAlt); // ISA temp at alt (K)
-    const trueAlt  = Math.round(pressAlt * (tIsa + isaDev) / tIsa);
-    const corr     = trueAlt - pressAlt;
-    return { d, hat, pressAlt, trueAlt, corr };
+    const hat      = Math.round(d * 6076.115 * TAN3);
+    const qnhAlt   = hat + elev;                          // altimeter alt with QNH set
+    const baroAlt  = qnhAlt - qnhCorr;                   // altimeter alt with 1013 set
+    const tIsa     = Math.max(216.65, 288.15 - 0.001981 * qnhAlt);
+    const trueAlt  = Math.round(qnhAlt * (tIsa + isaDev) / tIsa);
+    const corr     = trueAlt - qnhAlt;
+    return { d, hat, qnhAlt, baroAlt, trueAlt, corr };
   });
 
-  const corrColor = c => c === 0 ? 'var(--text)' : c < 0 ? '#ff4560' : '#00e698';
-  const corrSign  = c => c > 0 ? `+${c}` : `${c}`;
+  const corrColor  = c => c === 0 ? 'var(--text)' : c < 0 ? '#ff4560' : '#00e698';
+  const corrSign   = c => c > 0 ? `+${c}` : `${c}`;
+  const qnhColor   = qnhRef > 1013.25 ? '#00e698' : qnhRef < 1013.25 ? '#ff8c42' : 'var(--muted)';
+  const showBaro   = Math.abs(qnhCorr) >= 1;
 
   // Custom DME highlight
   const customDme = parseFloat($('des-appr-dme').value);
   let customBlock = '';
   if (!isNaN(customDme) && customDme > 0) {
-    const hat      = Math.round(customDme * 6076.115 * TAN3);
-    const pressAlt = hat + elev;
-    const tIsa     = Math.max(216.65, 288.15 - 0.001981 * pressAlt);
-    const trueAlt  = Math.round(pressAlt * (tIsa + isaDev) / tIsa);
-    const corr     = trueAlt - pressAlt;
+    const hat     = Math.round(customDme * 6076.115 * TAN3);
+    const qnhAlt  = hat + elev;
+    const baroAlt = qnhAlt - qnhCorr;
+    const tIsa    = Math.max(216.65, 288.15 - 0.001981 * qnhAlt);
+    const trueAlt = Math.round(qnhAlt * (tIsa + isaDev) / tIsa);
+    const corr    = trueAlt - qnhAlt;
     customBlock = `
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:rgba(100,160,255,0.08);border:1px solid rgba(100,160,255,0.3);border-radius:8px;margin-bottom:10px">
         <div style="font-size:0.62em;color:#6aa0ff;font-weight:700;letter-spacing:0.08em;white-space:nowrap">DME ${customDme.toFixed(1)} NM</div>
@@ -6212,26 +6219,36 @@ function desApprPathCalc() {
             <div style="font-size:1.15em;font-weight:700">${hat.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:0.58em;color:var(--muted)">気圧高度 MSL</div>
-            <div style="font-size:1.15em;font-weight:700">${pressAlt.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
+            <div style="font-size:0.58em;color:var(--muted)">QNH Alt MSL</div>
+            <div style="font-size:1.15em;font-weight:700">${qnhAlt.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
           </div>
+          ${showBaro ? `
+          <div style="text-align:center">
+            <div style="font-size:0.58em;color:var(--muted)">Baro Alt (1013)</div>
+            <div style="font-size:1.15em;font-weight:700;color:${qnhColor}">${baroAlt.toLocaleString()}<span style="font-size:0.6em"> ft</span></div>
+          </div>` : ''}
           <div style="text-align:center">
             <div style="font-size:0.58em;color:var(--muted)">True Alt</div>
             <div style="font-size:1.4em;font-weight:700;color:#6aa0ff">${trueAlt.toLocaleString()}<span style="font-size:0.55em"> ft</span></div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:0.58em;color:var(--muted)">Correction</div>
+            <div style="font-size:0.58em;color:var(--muted)">ISA Corr</div>
             <div style="font-size:1.4em;font-weight:700;color:${corrColor(corr)}">${corrSign(corr)}<span style="font-size:0.55em"> ft</span></div>
           </div>
         </div>
       </div>`;
   }
 
+  const qnhCorrStr = qnhCorr === 0 ? '標準' : `${corrSign(qnhCorr)} ft`;
+  const qnhNote    = qnhRef > 1013.25 ? 'High: Baro(1013)低め表示' : qnhRef < 1013.25 ? 'Low: Baro(1013)高め表示' : '';
+
   el.innerHTML = `
     <div style="font-size:0.7em;color:var(--muted);margin-bottom:6px">
       ISA Dev <strong style="color:${isaDev<0?'#ff8c42':isaDev>0?'#00e698':'var(--text)'}">${isaDev>0?'+':''}${isaDev}°C</strong>
       &nbsp;|&nbsp; RWY Elev <strong>${elev} ft</strong>
-      &nbsp;|&nbsp; ${isaDev<0?'Cold: 実高度 < 気圧高度 (低め注意)':isaDev>0?'Warm: 実高度 > 気圧高度':'ISA標準'}
+      &nbsp;|&nbsp; QNH <strong style="color:${qnhColor}">${qnhRef.toFixed(0)} hPa</strong>
+      &nbsp;→ QNH補正 <strong style="color:${qnhColor}">${qnhCorrStr}</strong>
+      ${qnhNote ? `&nbsp;(${qnhNote})` : ''}
     </div>
     ${customBlock}
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -6240,9 +6257,10 @@ function desApprPathCalc() {
           <tr style="background:rgba(255,255,255,0.06);color:var(--muted);font-size:0.85em">
             <th style="padding:5px 8px;text-align:center;border-bottom:1px solid var(--border)">DME<br>(NM)</th>
             <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">HAT<br>(ft)</th>
-            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">気圧高度<br>MSL (ft)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">QNH Alt<br>MSL (ft)</th>
+            ${showBaro ? `<th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border);color:${qnhColor}">Baro<br>1013 (ft)</th>` : ''}
             <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">True Alt<br>(ft)</th>
-            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">Correction<br>(ft)</th>
+            <th style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border)">ISA Corr<br>(ft)</th>
           </tr>
         </thead>
         <tbody>
@@ -6250,14 +6268,17 @@ function desApprPathCalc() {
           <tr style="border-bottom:1px solid rgba(128,128,128,0.1);${i%2?'background:rgba(255,255,255,0.02)':''}">
             <td style="padding:4px 8px;text-align:center;font-weight:700">${r.d}</td>
             <td style="padding:4px 8px;text-align:right">${r.hat.toLocaleString()}</td>
-            <td style="padding:4px 8px;text-align:right">${r.pressAlt.toLocaleString()}</td>
+            <td style="padding:4px 8px;text-align:right">${r.qnhAlt.toLocaleString()}</td>
+            ${showBaro ? `<td style="padding:4px 8px;text-align:right;color:${qnhColor};font-weight:600">${r.baroAlt.toLocaleString()}</td>` : ''}
             <td style="padding:4px 8px;text-align:right;font-weight:600">${r.trueAlt.toLocaleString()}</td>
             <td style="padding:4px 8px;text-align:right;font-weight:700;color:${corrColor(r.corr)}">${corrSign(r.corr)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
     </div>
-    <p style="font-size:0.63em;color:var(--muted);margin-top:6px">True Alt = 気圧高度 × (T<sub>ISA</sub> + ISA Dev) / T<sub>ISA</sub> &nbsp;|&nbsp; Correction = True Alt − 気圧高度</p>`;
+    <p style="font-size:0.63em;color:var(--muted);margin-top:6px">
+      QNH Alt = HAT + RWY Elev &nbsp;|&nbsp; Baro(1013) = QNH Alt − (QNH−1013.25)×27.3 &nbsp;|&nbsp; True Alt = QNH Alt × (T<sub>ISA</sub>+ISA Dev) / T<sub>ISA</sub>
+    </p>`;
 }
 
 /* ───────────────────────────────────────────
@@ -8049,10 +8070,17 @@ restoreState();
              inputmode="decimal" placeholder="e.g. -20" oninput="desApprPathCalc()">
     </div>
   </div>
-  <div class="fg" style="margin-top:8px">
-    <label>DME (NM) — 任意距離</label>
-    <input type="number" id="des-appr-dme" step="0.1" min="0.1" max="200"
-           inputmode="decimal" placeholder="e.g. 8.2" oninput="desApprPathCalc()">
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>QNH (hPa)</label>
+      <input type="number" id="des-appr-qnh" step="1" min="900" max="1050" value="1013"
+             inputmode="decimal" placeholder="1013" oninput="desApprPathCalc()">
+    </div>
+    <div class="fg">
+      <label>DME (NM) — 任意距離</label>
+      <input type="number" id="des-appr-dme" step="0.1" min="0.1" max="200"
+             inputmode="decimal" placeholder="e.g. 8.2" oninput="desApprPathCalc()">
+    </div>
   </div>
   <div id="des-appr-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>
