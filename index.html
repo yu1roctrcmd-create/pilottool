@@ -9861,14 +9861,14 @@ function wxrDraw() {
   _wxrTable(altFt, tilts, rangeNm);
 }
 
-// Earth curvature correction: +0.883 ft per NM² (R=3440 NM, D²/(2R)×6076)
-function _wxrBeamAlt(altFt, tilt, d) { return altFt + tilt*d*100 + d*d*0.883; }
+// Earth curvature correction: +0.8333 ft per NM² (slide basis: 120NM=12,000ft → 12000/14400)
+function _wxrBeamAlt(altFt, tilt, d) { return altFt + tilt*d*100 + d*d*0.8333; }
 
 // Distance (NM) where beam at given tilt reaches GND (0 ft), accounting for curvature
-// Solves: 0.883D² + tilt×100×D + altFt = 0
+// Solves: 0.8333D² + tilt×100×D + altFt = 0
 function _wxrGroundDist(altFt, tilt) {
   if (tilt >= 0) return Infinity;
-  const a=0.883, b=tilt*100, c=altFt;
+  const a=0.8333, b=tilt*100, c=altFt;
   const disc=b*b-4*a*c;
   if (disc < 0) return Infinity;
   const d=(-b-Math.sqrt(disc))/(2*a);
@@ -9968,8 +9968,8 @@ function _wxrDrawND(altFt, tilts, rangeNm, cb=null) {
   // ── FL250 ring per tilt (with Earth curvature) ──
   tilts.forEach((tilt,ti)=>{
     if (altFt<=25000) return;
-    // Solve: 0.883*D²+tilt*100*D+(altFt-25000)=0
-    const qa=0.883, qb=tilt*100, qc=altFt-25000;
+    // Solve: 0.8333*D²+tilt*100*D+(altFt-25000)=0
+    const qa=0.8333, qb=tilt*100, qc=altFt-25000;
     const disc=qb*qb-4*qa*qc;
     if (disc<0) return;
     const d250=(-qb-Math.sqrt(disc))/(2*qa);
