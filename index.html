@@ -8331,6 +8331,45 @@ restoreState();
     </div>
   </div>
 
+  <!-- CB Configuration -->
+  <div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:rgba(255,255,255,0.03)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="wxr-cb-en" onchange="wxrCbToggle()" style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent)">
+        <span style="font-size:0.78em;font-weight:700;letter-spacing:1.5px;color:var(--accent)">CB 配置</span>
+      </label>
+      <span style="font-size:0.72em;color:var(--muted)">Cumulonimbus — echo &amp; beam interaction</span>
+      <span style="font-size:0.7em;color:var(--muted);margin-left:auto">
+        <span style="color:#00cc44">■</span> Green (1-4mm/hr)&nbsp;
+        <span style="color:#ffaa00">■</span> Amber (4-12)&nbsp;
+        <span style="color:#ff3030">■</span> Red (12+)&nbsp;
+        <span style="color:#ff44ff">■</span> Magenta (Turb)
+      </span>
+    </div>
+    <div id="wxr-cb-inputs" style="display:none;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+      <div class="fg">
+        <label>Distance (NM)</label>
+        <input type="number" id="wxr-cb-dist" value="80" step="5" min="5" max="320"
+               inputmode="decimal" oninput="wxrDraw()">
+      </div>
+      <div class="fg">
+        <label>Bearing (°) <span style="font-size:0.8em;color:var(--muted)">0=正面</span></label>
+        <input type="number" id="wxr-cb-bear" value="0" step="5" min="-90" max="90"
+               inputmode="decimal" oninput="wxrDraw()">
+      </div>
+      <div class="fg">
+        <label>Top (FL)</label>
+        <input type="number" id="wxr-cb-top" value="400" step="10" min="100" max="600"
+               inputmode="decimal" oninput="wxrDraw()">
+      </div>
+      <div class="fg">
+        <label>Width (NM)</label>
+        <input type="number" id="wxr-cb-width" value="20" step="5" min="5" max="100"
+               inputmode="decimal" oninput="wxrDraw()">
+      </div>
+    </div>
+  </div>
+
   <div style="display:grid;grid-template-columns:5fr 7fr;gap:10px;margin-top:10px;align-items:start">
     <div>
       <div style="font-size:0.62em;letter-spacing:1.5px;color:var(--muted);text-align:center;margin-bottom:4px">◉ ND VIEW</div>
@@ -9792,15 +9831,33 @@ function wxrInit() {
   wxrDraw();
 }
 
+function wxrCbToggle() {
+  const en = $('wxr-cb-en') && $('wxr-cb-en').checked;
+  if ($('wxr-cb-inputs')) $('wxr-cb-inputs').style.display = en ? 'grid' : 'none';
+  wxrDraw();
+}
+
 function wxrDraw() {
   const altFt   = (parseFloat($('wxr-alt').value)||350)*100;
   const rangeNm = parseFloat($('wxr-range').value)||160;
-  const t1      = parseFloat($('wxr-tilt').value) || -2;
-  const tilts   = _wxrMode==='auto'
-    ? [t1, parseFloat($('wxr-tilt2').value)||-3]
+  const t1raw = parseFloat($('wxr-tilt').value);
+  const t1 = isNaN(t1raw) ? -2 : t1raw;
+  const t2raw = parseFloat($('wxr-tilt2').value);
+  const tilts = _wxrMode==='auto'
+    ? [t1, isNaN(t2raw) ? -3 : t2raw]
     : [t1];
-  _wxrDrawND(altFt, tilts, rangeNm);
-  _wxrDrawVert(altFt, tilts, rangeNm);
+  const cbEn = $('wxr-cb-en') && $('wxr-cb-en').checked;
+  const cb = cbEn ? {
+    dist  : Math.max(1, parseFloat($('wxr-cb-dist').value)  || 80),
+    bear  : parseFloat($('wxr-cb-bear').value)  || 0,
+    top   : (parseFloat($('wxr-cb-top').value)  || 400) * 100,
+    width : Math.max(1, parseFloat($('wxr-cb-width').value) || 20),
+    bot   : 1000,   // cloud base ~FL10
+    coreB : 15000,  // 0°C ≈ FL150
+    coreT : 25000   // −20°C ≈ FL250
+  } : null;
+  _wxrDrawND(altFt, tilts, rangeNm, cb);
+  _wxrDrawVert(altFt, tilts, rangeNm, cb);
   _wxrTable(altFt, tilts, rangeNm);
 }
 
@@ -9827,7 +9884,40 @@ function _wxrAltColor(h, a=0.85) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-function _wxrDrawND(altFt, tilts, rangeNm) {
+// Returns { color, fill } for CB echo given beam parameters, or null if beam misses CB.
+// fill 0-1: fraction of beam volume filled by CB precipitation
+function _cbEchoColor(altFt, tilts, cb) {
+  const HALF_DEG = 1.75;
+  const beamWNm  = 2 * cb.dist * Math.tan(HALF_DEG * Math.PI / 180); // lateral beam width (NM)
+  const latFill  = Math.min(1, cb.width / Math.max(beamWNm, 0.1));
+
+  let best = null; // 'red'|'amber'|'green'
+  for (const tilt of tilts) {
+    const halfFt  = HALF_DEG * cb.dist * 100;
+    const bCtr    = _wxrBeamAlt(altFt, tilt, cb.dist);
+    const bTop    = bCtr + halfFt, bBot = bCtr - halfFt;
+    if (bTop < cb.bot || bBot > cb.top) continue; // complete miss
+
+    const beamH = bTop - bBot;
+    const overlap = (a, b) => Math.max(0, Math.min(bTop, b) - Math.max(bBot, a));
+    const coreFill = overlap(cb.coreB, cb.coreT) / beamH * latFill;
+    const ambFill  = overlap(cb.coreT, cb.top)   / beamH * latFill;
+    const grnFill  = overlap(cb.bot,   cb.coreB)  / beamH * latFill;
+
+    let col = null;
+    if (coreFill > 0.05) col = 'red';
+    else if (ambFill > 0.05) col = 'amber';
+    else if (grnFill > 0.05) col = 'green';
+
+    if (col === 'red') { best = 'red'; break; }
+    if (col === 'amber' && best !== 'red') best = 'amber';
+    if (col === 'green' && !best) best = 'green';
+  }
+  const MAP = { red:'#ff3030', amber:'#ffaa00', green:'#00cc44' };
+  return best ? MAP[best] : null;
+}
+
+function _wxrDrawND(altFt, tilts, rangeNm, cb=null) {
   const cv=$('wxr-nd'); if (!cv) return;
   const DPR=window.devicePixelRatio||1;
   const W=cv.width/DPR, H=cv.height/DPR;
@@ -9885,6 +9975,46 @@ function _wxrDrawND(altFt, tilts, rangeNm) {
     const lbl=tilts.length>1?`FL250  ${Math.round(d250)}NM (T${ti+1})`:`FL250  ${Math.round(d250)}NM`;
     ctx.fillText(lbl,acX,acY-r250-5);
   });
+
+  // ── CB echo on ND ──
+  if (cb && cb.dist <= rangeNm && Math.abs(cb.bear) <= 90) {
+    const echoCol = _cbEchoColor(altFt, tilts, cb);
+    const bearRad = cb.bear * Math.PI / 180;
+    const ex = acX + cb.dist * pxNm * Math.sin(bearRad);
+    const ey = acY - cb.dist * pxNm * Math.cos(bearRad);
+    // Blob radius: max of CB half-width and beam half-width at that distance
+    const beamHalfNm = cb.dist * Math.tan(1.75 * Math.PI / 180);
+    const blobNm = Math.max(cb.width / 2, beamHalfNm);
+    const blobR = Math.min(blobNm * pxNm, W * 0.13);
+    // CB outline (cloud shape - always visible)
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(ex, ey, blobR, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    if (echoCol) {
+      // Gradient glow
+      const grd = ctx.createRadialGradient(ex, ey, 0, ex, ey, blobR);
+      grd.addColorStop(0,   echoCol + 'dd');
+      grd.addColorStop(0.45, echoCol + 'aa');
+      grd.addColorStop(1,   echoCol + '00');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(ex, ey, blobR, 0, Math.PI*2); ctx.fill();
+      // Solid core
+      const coreR = blobR * 0.35;
+      ctx.fillStyle = echoCol;
+      ctx.beginPath(); ctx.arc(ex, ey, coreR, 0, Math.PI*2); ctx.fill();
+    } else {
+      // Beam misses CB: show dashed X and label
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
+      const s = blobR * 0.4;
+      ctx.beginPath(); ctx.moveTo(ex-s, ey-s); ctx.lineTo(ex+s, ey+s);
+               ctx.moveTo(ex+s, ey-s); ctx.lineTo(ex-s, ey+s); ctx.stroke();
+    }
+    // Distance label
+    ctx.fillStyle = echoCol || 'rgba(255,255,255,0.5)';
+    ctx.font = `bold ${Math.round(W*0.038)}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(`${Math.round(cb.dist)}NM`, ex, ey + blobR + 3);
+  }
 
   // ── Compass arc (upper portion of ND, -160° to -20°) ──
   const compR=R-3;
@@ -9970,7 +10100,7 @@ function _wxrDrawND(altFt, tilts, rangeNm) {
   ctx.restore();
 }
 
-function _wxrDrawVert(altFt, tilts, rangeNm) {
+function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
   const cv=$('wxr-vert'); if (!cv) return;
   const DPR=window.devicePixelRatio||1;
   const W=cv.width/DPR, H=cv.height/DPR;
@@ -9983,7 +10113,8 @@ function _wxrDrawVert(altFt, tilts, rangeNm) {
   const BEAM_DEG=3.5;
   const ML=58, MR=14, MT=30, MB=40;
   const pW=W-ML-MR, pH=H-MT-MB;
-  const maxAlt=Math.max(62000,altFt+15000);
+  const topBeamMax=Math.max(...tilts.map(t=>altFt+(t+1.75)*rangeNm*100));
+  const maxAlt=Math.ceil(Math.max(62000,topBeamMax+5000)/5000)*5000;
   const xp=d=>ML+(d/rangeNm)*pW;
   const yp=a=>MT+pH*(1-Math.max(0,Math.min(a,maxAlt))/maxAlt);
   const fBase=Math.max(9,Math.round(W*0.024));
@@ -10084,6 +10215,55 @@ function _wxrDrawVert(altFt, tilts, rangeNm) {
   ctx.strokeStyle='rgba(120,180,70,0.6)'; ctx.lineWidth=1.2; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(ML,yp(0)); ctx.lineTo(ML+pW,yp(0)); ctx.stroke();
 
+  // ── CB structure in vertical section ──
+  if (cb && cb.dist >= 0 && cb.dist <= rangeNm) {
+    const cbX = xp(cb.dist);
+    // Show CB with a width proportional to its NM size (lateral, shown as chart fraction)
+    const cbHpx = Math.max(6, Math.min(cb.width / rangeNm * pW / 2, pW * 0.12));
+
+    // 1) Draw CB precipitation zones (3 color tiers)
+    const zones = [
+      { bot: cb.bot,   top: cb.coreB, fill:'rgba(0,180,50,0.30)',  stroke:'#00cc44' },
+      { bot: cb.coreB, top: cb.coreT, fill:'rgba(255,30,30,0.38)', stroke:'#ff3030' },
+      { bot: cb.coreT, top: cb.top,   fill:'rgba(255,150,0,0.32)', stroke:'#ffaa00' }
+    ];
+    zones.forEach(z=>{
+      const yt=yp(Math.min(z.top,maxAlt)), yb=yp(Math.max(z.bot,0));
+      if (yt>=yb) return;
+      ctx.fillStyle=z.fill; ctx.fillRect(cbX-cbHpx,yt,cbHpx*2,yb-yt);
+      ctx.strokeStyle=z.stroke; ctx.lineWidth=1; ctx.setLineDash([]);
+      ctx.strokeRect(cbX-cbHpx,yt,cbHpx*2,yb-yt);
+    });
+
+    // 2) Highlight beam × CB intersection per tilt
+    const BCOLS2=[['rgba(30,140,255,0.40)','#4af'],['rgba(255,130,0,0.38)','#fa0']];
+    tilts.forEach((tilt,ti)=>{
+      const [hFill,hStroke]=BCOLS2[ti]||BCOLS2[0];
+      const halfFt=1.75*cb.dist*100;
+      const bTop=_wxrBeamAlt(altFt,tilt,cb.dist)+halfFt;
+      const bBot=_wxrBeamAlt(altFt,tilt,cb.dist)-halfFt;
+      const hitTop=Math.min(cb.top,Math.max(cb.bot,bTop));
+      const hitBot=Math.max(cb.bot,Math.min(cb.top,bBot));
+      if (hitTop<=hitBot) return;
+      const hyt=yp(Math.min(hitTop,maxAlt)), hyb=yp(Math.max(hitBot,0));
+      ctx.fillStyle=hFill; ctx.fillRect(cbX-cbHpx,hyt,cbHpx*2,hyb-hyt);
+      ctx.strokeStyle=hStroke; ctx.lineWidth=2; ctx.setLineDash([]);
+      ctx.strokeRect(cbX-cbHpx,hyt,cbHpx*2,hyb-hyt);
+    });
+
+    // 3) CB outline and top label
+    ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.strokeRect(cbX-cbHpx,yp(Math.min(cb.top,maxAlt)),cbHpx*2,yp(cb.bot)-yp(Math.min(cb.top,maxAlt)));
+    ctx.setLineDash([]);
+    ctx.fillStyle='#fff'; ctx.font=`bold ${fBase}px monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText(`FL${Math.round(cb.top/100)}`,cbX,yp(Math.min(cb.top,maxAlt))-4);
+    // 0°C / -20°C isotherm labels
+    ctx.font=`${fBase-1}px monospace`; ctx.fillStyle='rgba(255,255,255,0.65)';
+    if (yp(cb.coreB)>MT&&yp(cb.coreB)<MT+pH) ctx.fillText('0°C',cbX+cbHpx+4,yp(cb.coreB)+3);
+    if (yp(cb.coreT)>MT&&yp(cb.coreT)<MT+pH) ctx.fillText('-20°C',cbX+cbHpx+4,yp(cb.coreT)+3);
+  }
+
   // ── FL250 reference line ──
   const y250=yp(25000);
   if (y250>=MT&&y250<=MT+pH){
@@ -10106,7 +10286,7 @@ function _wxrDrawVert(altFt, tilts, rangeNm) {
 
   // ── Y-axis labels ──
   ctx.font=`${fBase}px monospace`; ctx.textAlign='right';
-  [0,10000,20000,30000,40000,50000,60000].forEach(a=>{
+  [0,10000,20000,30000,40000,50000,60000,70000].forEach(a=>{
     if (a>maxAlt) return;
     const ya=yp(a);
     if (ya<MT||ya>MT+pH) return;
