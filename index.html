@@ -8814,6 +8814,7 @@ restoreState();
       <button class="flt-itab" onclick="FLT.tab(3)">📄 PDF</button>
       <button class="flt-itab" onclick="FLT.tab(4)">⚙ 設定</button>
       <button class="flt-itab" onclick="FLT.tab(5);FLT.renderDep()">NRT出発</button>
+      <button class="flt-itab" onclick="FLT.tab(6);FLT.renderArr()">NRT到着</button>
     </div>
 
     <!-- Pane 0: List -->
@@ -8989,6 +8990,36 @@ restoreState();
         </div>
       </div>
       <div id="dep-list"></div>
+    </div>
+
+    <!-- Pane 6: NRT ARR Schedule -->
+    <div class="flt-pane" id="p6">
+      <div style="margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+          <div>
+            <div class="flabel">出発空港 ETD (±1h)</div>
+            <input class="fi" type="time" id="arr-etd-f" oninput="FLT.renderArr()">
+          </div>
+          <div>
+            <div class="flabel">出発地 / 便名</div>
+            <input class="fi" id="arr-org-f" placeholder="HKG, 香港..." autocomplete="off"
+              oninput="FLT.renderArr()">
+          </div>
+          <button class="flt-btn btn-muted btn-sm" onclick="document.getElementById('arr-etd-f').value='';document.getElementById('arr-org-f').value='';FLT.renderArr()">クリア</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="ftab" onclick="FLT._arrDay='';FLT.renderArr()" style="font-size:11px;padding:4px 8px">すべて</button>
+          <button class="ftab" onclick="FLT._arrDay='月';FLT.renderArr()" style="font-size:11px;padding:4px 8px">月</button>
+          <button class="ftab" onclick="FLT._arrDay='火';FLT.renderArr()" style="font-size:11px;padding:4px 8px">火</button>
+          <button class="ftab" onclick="FLT._arrDay='水';FLT.renderArr()" style="font-size:11px;padding:4px 8px">水</button>
+          <button class="ftab" onclick="FLT._arrDay='木';FLT.renderArr()" style="font-size:11px;padding:4px 8px">木</button>
+          <button class="ftab" onclick="FLT._arrDay='金';FLT.renderArr()" style="font-size:11px;padding:4px 8px">金</button>
+          <button class="ftab" onclick="FLT._arrDay='土';FLT.renderArr()" style="font-size:11px;padding:4px 8px">土</button>
+          <button class="ftab" onclick="FLT._arrDay='日';FLT.renderArr()" style="font-size:11px;padding:4px 8px">日</button>
+          <button class="flt-btn btn-muted btn-sm" onclick="FLT._arrDay=['日','月','火','水','木','金','土'][new Date().getDay()];FLT.renderArr()">今日</button>
+        </div>
+      </div>
+      <div id="arr-list"></div>
     </div>
   </div>
 
@@ -9739,6 +9770,116 @@ function tab(n) {
     {std:'2240',flt:'NH8527',dst:'北京(PEK)',        days:'火木金日',s:0},
   ];
 
+  // NRT arrival schedule (flights inbound to NRT)
+  const NRT_ARR = [
+    {etd:'0435',sta:'0805+1',flt:'PO213', org:'シンシナティ(CVG)',  days:'火水木',s:0},
+    {etd:'0500',sta:'0830+1',flt:'PO749', org:'シンシナティ(CVG)',  days:'土',    s:0},
+    {etd:'0705',sta:'1035+1',flt:'PO213', org:'シンシナティ(CVG)',  days:'金',    s:0},
+    {etd:'0400',sta:'0755+1',flt:'PO217', org:'ロサンゼルス(LAX)', days:'土',    s:0},
+    {etd:'0620',sta:'1015+1',flt:'PO717', org:'ロサンゼルス(LAX)', days:'月水',  s:0},
+    {etd:'0815',sta:'1325+1',flt:'NH8407',org:'ロサンゼルス(LAX)', days:'火土',  s:0},
+    {etd:'1415',sta:'1740+1',flt:'CA1076',org:'ロサンゼルス(LAX)', days:'金',    s:0},
+    {etd:'1345',sta:'1815+1',flt:'NH8401',org:'シカゴ(ORD)',        days:'月木金',s:0},
+    {etd:'0400',sta:'0640+1',flt:'W81809',org:'バンクーバー(YVR)', days:'日',    s:0},
+    {etd:'1830',sta:'2110+1',flt:'W81809',org:'バンクーバー(YVR)', days:'金',    s:0},
+    {etd:'2225',sta:'1830+1',flt:'LH8384',org:'フランクフルト(FRA)',days:'月水金',s:0},
+    {etd:'2230',sta:'1830+1',flt:'LH8386',org:'フランクフルト(FRA)',days:'火木日',s:0},
+    {etd:'2230',sta:'1830+1',flt:'LH8382',org:'フランクフルト(FRA)',days:'土',    s:0},
+    {etd:'1615',sta:'1330+1',flt:'CV7355',org:'ルクセンブルグ(LUX)',days:'金',   s:0},
+    {etd:'2015',sta:'1730+1',flt:'CV7332',org:'ルクセンブルグ(LUX)',days:'火',   s:0},
+    {etd:'0601',sta:'1010+1',flt:'C89266',org:'ミラノ(MXP)',        days:'月',    s:0},
+    {etd:'0601',sta:'1010+1',flt:'C89263',org:'ミラノ(MXP)',        days:'金',    s:0},
+    {etd:'1255',sta:'1000+1',flt:'C89275',org:'ミラノ(MXP)',        days:'金',    s:0},
+    {etd:'1850',sta:'1600+1',flt:'CP125', org:'ミラノ(MXP)',        days:'日',    s:0},
+    {etd:'0500',sta:'1900',  flt:'7L901', org:'バクー(GYD)',         days:'木',    s:0},
+    {etd:'0530',sta:'1930',  flt:'7L903', org:'バクー(GYD)',         days:'土',    s:0},
+    {etd:'0210',sta:'0650',  flt:'YG9105',org:'杭州(HGH)',           days:'火水木金土',s:0},
+    {etd:'0530',sta:'0930',  flt:'W81802',org:'杭州(HGH)',           days:'月水金日',  s:0},
+    {etd:'0545',sta:'0945',  flt:'W81810',org:'杭州(HGH)',           days:'日',    s:0},
+    {etd:'1515',sta:'1915',  flt:'W81810',org:'杭州(HGH)',           days:'月',    s:0},
+    {etd:'0335',sta:'0820',  flt:'NH8528',org:'北京(PEK)',           days:'月水金土',  s:0},
+    {etd:'0240',sta:'0620',  flt:'NH8432',org:'上海浦東(PVG)',      days:'毎日',  s:0},
+    {etd:'0340',sta:'0720',  flt:'NH8416',org:'上海浦東(PVG)',      days:'月',    s:0},
+    {etd:'0340',sta:'0745',  flt:'JL6784',org:'上海浦東(PVG)',      days:'土日',  s:0},
+    {etd:'0400',sta:'0740',  flt:'CK241', org:'上海浦東(PVG)',      days:'木土日',s:0},
+    {etd:'0410',sta:'0750',  flt:'NH8404',org:'上海浦東(PVG)',      days:'火水木金土日',s:0},
+    {etd:'0425',sta:'0800',  flt:'PO212', org:'上海浦東(PVG)',      days:'火水木金',   s:0},
+    {etd:'0430',sta:'0810',  flt:'CF207', org:'上海浦東(PVG)',      days:'水金',  s:0},
+    {etd:'0500',sta:'0835',  flt:'PO212', org:'上海浦東(PVG)',      days:'土',    s:0},
+    {etd:'0540',sta:'0930',  flt:'CA1073',org:'上海浦東(PVG)',      days:'水',    s:0},
+    {etd:'0550',sta:'0935',  flt:'CA1075',org:'上海浦東(PVG)',      days:'水',    s:0},
+    {etd:'0550',sta:'0950',  flt:'CA1073',org:'上海浦東(PVG)',      days:'木金土日',   s:0},
+    {etd:'0550',sta:'0935',  flt:'PO232', org:'上海浦東(PVG)',      days:'日',    s:0},
+    {etd:'0620',sta:'1010',  flt:'CA1073',org:'上海浦東(PVG)',      days:'月',    s:0},
+    {etd:'0640',sta:'1030',  flt:'CA1075',org:'上海浦東(PVG)',      days:'月金',  s:0},
+    {etd:'1015',sta:'1400',  flt:'CF207', org:'上海浦東(PVG)',      days:'木土',  s:0},
+    {etd:'1045',sta:'1400',  flt:'CF207', org:'上海浦東(PVG)',      days:'火',    s:0},
+    {etd:'0225',sta:'0615',  flt:'NH8506',org:'青島(TAO)',           days:'火水木金土日',s:0},
+    {etd:'1455',sta:'1910',  flt:'JL6778',org:'天津(TSN)',           days:'水日',  s:0},
+    {etd:'1525',sta:'1940',  flt:'JL6778',org:'天津(TSN)',           days:'土',    s:0},
+    {etd:'1545',sta:'2000',  flt:'JL6778',org:'天津(TSN)',           days:'木',    s:0},
+    {etd:'0135',sta:'0610',  flt:'NH8526',org:'厦門(XMN)',           days:'火木日',s:0},
+    {etd:'1625',sta:'2100',  flt:'NH8516',org:'厦門(XMN)',           days:'火水金日',   s:0},
+    {etd:'0110',sta:'0635',  flt:'JL6782',org:'香港(HKG)',           days:'日',    s:0},
+    {etd:'0130',sta:'0620',  flt:'CX006', org:'香港(HKG)',           days:'火水木金土',  s:0},
+    {etd:'0240',sta:'0745',  flt:'NH8512',org:'香港(HKG)',           days:'水木金日',   s:0},
+    {etd:'0325',sta:'0840',  flt:'LD208', org:'香港(HKG)',           days:'火水木金',   s:0},
+    {etd:'0355',sta:'0910',  flt:'LD208', org:'香港(HKG)',           days:'土',    s:0},
+    {etd:'0405',sta:'0930',  flt:'LD208', org:'香港(HKG)',           days:'日',    s:0},
+    {etd:'1635',sta:'2140',  flt:'NH8514',org:'香港(HKG)',           days:'日',    s:0},
+    {etd:'0330',sta:'0730',  flt:'CI5706',org:'台北(TPE)',           days:'水',    s:0},
+    {etd:'0630',sta:'1030',  flt:'CI5706',org:'台北(TPE)',           days:'火',    s:0},
+    {etd:'1400',sta:'1800',  flt:'CI5706',org:'台北(TPE)',           days:'木金土',s:0},
+    {etd:'1535',sta:'1950',  flt:'NH8442',org:'台北(TPE)',           days:'日',    s:0},
+    {etd:'0400',sta:'0645',  flt:'OZ194', org:'ソウル(ICN)',         days:'火',    s:0},
+    {etd:'0555',sta:'0815',  flt:'JL6750',org:'ソウル(ICN)',         days:'火水木金',   s:0},
+    {etd:'0725',sta:'0945',  flt:'JL6750',org:'ソウル(ICN)',         days:'土',    s:0},
+    {etd:'1225',sta:'1455',  flt:'PO231', org:'ソウル(ICN)',         days:'火',    s:0},
+    {etd:'1330',sta:'1605',  flt:'NH8476',org:'ソウル(ICN)',         days:'火水木金土日',s:0},
+    {etd:'1340',sta:'1615',  flt:'OZ198', org:'ソウル(ICN)',         days:'水金',  s:0},
+    {etd:'0305',sta:'1100',  flt:'NH8510',org:'バンコク(BKK)',       days:'木土',  s:0},
+    {etd:'1745',sta:'1930',  flt:'IJ408', org:'札幌新千歳(CTS)',    days:'毎日',  s:0},
+    {etd:'0745',sta:'0935',  flt:'IJ422', org:'北九州(KKJ)',         days:'毎日',  s:0},
+    {etd:'1845',sta:'2035',  flt:'IJ426', org:'北九州(KKJ)',         days:'毎日',  s:0},
+  ];
+
+  function renderArr() {
+    const el = document.getElementById('arr-list');
+    if (!el) return;
+    const timeF = document.getElementById('arr-etd-f')?.value || '';
+    const orgF  = (document.getElementById('arr-org-f')?.value || '').trim().toUpperCase();
+    const dayF  = FLT._arrDay || '';
+    const _sm   = s => { const m = s.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : (parseTimeMin(s)||0); };
+
+    // Update day-button active state
+    document.querySelectorAll('#tab-flight #p6 .ftab').forEach(b => {
+      b.classList.toggle('on', b.textContent.trim() === (dayF || 'すべて'));
+    });
+
+    let rows = NRT_ARR.slice();
+    if (timeF) {
+      const refM = parseTimeMin(timeF);
+      if (refM !== null) rows = rows.filter(r => { const t = _sm(r.etd); return etaDiff(t, refM) <= 60; });
+    }
+    if (orgF) rows = rows.filter(r => r.org.toUpperCase().includes(orgF) || r.flt.toUpperCase().includes(orgF));
+    if (dayF) rows = rows.filter(r => r.days === '毎日' || r.days.includes(dayF));
+    rows.sort((a,b) => _sm(a.etd) - _sm(b.etd));
+
+    if (!rows.length) { el.innerHTML = '<div class="empty">該当なし</div>'; return; }
+    el.innerHTML = `<table class="tbl">
+      <thead><tr><th>ETD</th><th>STA(NRT)</th><th>便名</th><th>出発地</th><th>曜日</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>
+          <td style="color:var(--accent);font-weight:700">${esc(r.etd)}</td>
+          <td style="color:var(--sub)">${esc(r.sta)}</td>
+          <td><strong>${esc(r.flt)}</strong></td>
+          <td>${esc(r.org)}</td>
+          <td style="color:var(--sub);font-size:0.8em">${esc(r.days)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table><div class="count">${rows.length}便</div>`;
+  }
+
   function renderDep() {
     const el = document.getElementById('dep-list');
     if (!el) return;
@@ -9784,8 +9925,8 @@ function tab(n) {
     edit, del, saveFlight,
     doImport, doExport, scanFolder, refreshPdf,
     saveSettings, clearAll, updateApiStatus,
-    clearEtaFilter, renderDep,
-    _depDay: '', _ready: false
+    clearEtaFilter, renderDep, renderArr,
+    _depDay: '', _arrDay: '', _ready: false
   };
 
   FLT.init = function() {
