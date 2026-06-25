@@ -8794,6 +8794,18 @@ restoreState();
         <button class="ftab" onclick="FLT.setFilter('jp',this)">🇯🇵 日本</button>
         <button class="ftab" onclick="FLT.setFilter('int',this)">🌐 海外</button>
       </div>
+      <div style="margin:8px 0 12px;display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+        <div>
+          <div class="flabel">目的地 IATA</div>
+          <input class="fi" id="eta-dest" placeholder="HKG" maxlength="4" autocomplete="off"
+            oninput="this.value=this.value.replace(/[^A-Za-z]/g,'').toUpperCase(); FLT.render()">
+        </div>
+        <div>
+          <div class="flabel">到着時刻 ETA</div>
+          <input class="fi" id="eta-time" type="time" oninput="FLT.render()">
+        </div>
+        <button class="flt-btn btn-muted btn-sm" onclick="FLT.clearEtaFilter()">クリア</button>
+      </div>
       <div id="list"></div>
       <div class="acts" style="margin-top:14px">
         <button class="flt-btn btn-muted btn-sm" onclick="FLT.doExport()">CSVエクスポート</button>
@@ -8830,6 +8842,10 @@ restoreState();
           <div class="flabel">目的地空港名</div>
           <input class="fi" id="fi5" placeholder="ロサンゼルス国際空港">
         </div>
+        <div>
+          <div class="flabel">到着時刻 ETA</div>
+          <input class="fi" id="fi6" type="time">
+        </div>
         <div class="s2">
           <div class="flabel">メモ</div>
           <input class="fi" id="fi7" placeholder="備考">
@@ -8842,8 +8858,8 @@ restoreState();
     <div class="flt-pane" id="p2">
       <div class="hint">
         1行1フライト。カンマ区切り（ヘッダー行不要）<br>
-        <strong>便名, 航空会社, 出発IATA, 出発空港名, 目的地IATA, 目的地空港名, メモ</strong><br>
-        例: <code>JL123,Japan Airlines,NRT,成田国際空港,LAX,ロサンゼルス国際空港,</code>
+        <strong>便名, 航空会社, 出発IATA, 出発空港名, 目的地IATA, 目的地空港名, ETA(HH:MM), メモ</strong><br>
+        例: <code>JL123,Japan Airlines,NRT,成田国際空港,LAX,ロサンゼルス国際空港,14:30,</code>
       </div>
       <textarea class="fi" id="csv" placeholder="JL123,Japan Airlines,NRT,成田国際空港,LAX,ロサンゼルス国際空港,&#10;NH001,ANA,NRT,成田国際空港,LHR,ヒースロー空港,"></textarea>
       <div class="acts">
@@ -9089,11 +9105,12 @@ function saveFlight() {
     on: document.getElementById('fi3').value.trim(),
     di: document.getElementById('fi4').value.trim().toUpperCase(),
     dn: document.getElementById('fi5').value.trim(),
+    eta: document.getElementById('fi6').value,
     nt: document.getElementById('fi7').value.trim(),
     ts: new Date().toISOString()
   };
   wdb(d);
-  ['fi0','fi1','fi2','fi3','fi4','fi5','fi7'].forEach(id => document.getElementById(id).value='');
+  ['fi0','fi1','fi2','fi3','fi4','fi5','fi6','fi7'].forEach(id => document.getElementById(id).value='');
   render(); tab(0);
 }
 
@@ -9115,6 +9132,7 @@ function edit(iata) {
   document.getElementById('fi3').value = f.on||'';
   document.getElementById('fi4').value = f.di||'';
   document.getElementById('fi5').value = f.dn||'';
+  document.getElementById('fi6').value = f.eta||'';
   document.getElementById('fi7').value = f.nt||'';
   tab(1);
   window.scrollTo({top: document.getElementById('p1').getBoundingClientRect().top + window.scrollY - 60, behavior:'smooth'});
@@ -9130,7 +9148,7 @@ function doImport() {
     const iata = (p[0]||'').toUpperCase();
     if (!iata || iata.startsWith('#')) return;
     d[iata] = { iata, al:p[1]||'', oi:(p[2]||'').toUpperCase(), on:p[3]||'',
-      di:(p[4]||'').toUpperCase(), dn:p[5]||'', nt:p[6]||'',
+      di:(p[4]||'').toUpperCase(), dn:p[5]||'', eta:p[6]||'', nt:p[7]||'',
       ts: new Date().toISOString() };
     n++;
   });
@@ -9144,8 +9162,8 @@ function doImport() {
 function doExport() {
   const rows = Object.values(db()).sort((a,b)=>a.iata.localeCompare(b.iata));
   if (!rows.length) { alert('データがありません'); return; }
-  const hdr = '便名,航空会社,出発IATA,出発空港名,目的地IATA,目的地空港名,メモ';
-  const body = rows.map(f=>[f.iata,f.al,f.oi,f.on,f.di,f.dn,f.nt].join(',')).join('\n');
+  const hdr = '便名,航空会社,出発IATA,出発空港名,目的地IATA,目的地空港名,到着時刻ETA,メモ';
+  const body = rows.map(f=>[f.iata,f.al,f.oi,f.on,f.di,f.dn,f.eta||'',f.nt].join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+hdr+'\n'+body], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -9388,7 +9406,7 @@ function rowsHtml(rows) {
       ${rows.map(f=>`<tr>
         <td><strong>${esc(f.iata)}</strong>${f.al?`<br><span style="color:var(--sub);font-size:11px">${esc(f.al)}</span>`:''}</td>
         <td><strong>${esc(f.oi)}</strong>${f.on?`<br><span style="color:var(--sub);font-size:11px">${esc(f.on)}</span>`:''}</td>
-        <td><strong>${esc(f.di)}</strong>${f.dn?`<br><span style="color:var(--sub);font-size:11px">${esc(f.dn)}</span>`:''}</td>
+        <td><strong>${esc(f.di)}</strong>${f.dn?`<br><span style="color:var(--sub);font-size:11px">${esc(f.dn)}</span>`:''}${f.eta?`<br><span style="color:var(--accent);font-size:11px;font-weight:600">${esc(f.eta)}</span>`:''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-muted btn-sm" onclick="go2('${esc(f.iata)}')">表示</button>
           <button class="btn btn-muted btn-sm" style="margin-left:4px" onclick="edit('${esc(f.iata)}')">編集</button>
@@ -9427,10 +9445,79 @@ function sectionHtml(label, rows, color) {
   return html;
 }
 
+/* ── ETA helpers ── */
+function parseTimeMin(s) {
+  if (!s) return null;
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  return parseInt(m[1]) * 60 + parseInt(m[2]);
+}
+function etaDiff(a, b) { let d = Math.abs(a - b); return d > 720 ? 1440 - d : d; }
+
+function fmtEtaCell(eta, refM) {
+  if (!eta) return '<span style="color:var(--sub)">—</span>';
+  const t = parseTimeMin(eta);
+  if (t === null) return `<span style="color:var(--sub)">${esc(eta)}</span>`;
+  const diff = refM !== null ? etaDiff(t, refM) : null;
+  const col = diff !== null && diff <= 20 ? '#ff9f0a' : 'var(--accent)';
+  return `<span style="color:${col};font-weight:700">${esc(eta)}</span>`;
+}
+
+function rowsEtaHtml(rows, refM) {
+  return `<table class="tbl">
+    <thead><tr><th>ETA</th><th>便名</th><th>出発</th><th>目的地</th><th></th></tr></thead>
+    <tbody>
+      ${rows.map(f=>`<tr>
+        <td>${fmtEtaCell(f.eta, refM)}</td>
+        <td><strong>${esc(f.iata)}</strong>${f.al?`<br><span style="color:var(--sub);font-size:11px">${esc(f.al)}</span>`:''}</td>
+        <td><strong>${esc(f.oi)}</strong>${f.on?`<br><span style="color:var(--sub);font-size:11px">${esc(f.on)}</span>`:''}</td>
+        <td><strong>${esc(f.di)}</strong>${f.dn?`<br><span style="color:var(--sub);font-size:11px">${esc(f.dn)}</span>`:''}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-muted btn-sm" onclick="go2('${esc(f.iata)}')">表示</button>
+          <button class="btn btn-muted btn-sm" style="margin-left:4px" onclick="edit('${esc(f.iata)}')">編集</button>
+          <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="del('${esc(f.iata)}')">削除</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function clearEtaFilter() {
+  const d = document.getElementById('eta-dest');
+  const t = document.getElementById('eta-time');
+  if (d) d.value = '';
+  if (t) t.value = '';
+  render();
+}
+
 /* ── Render list ── */
 function render() {
-  let all = Object.values(db()).sort((a,b)=>a.iata.localeCompare(b.iata));
   const el = document.getElementById('list');
+  if (!el) return;
+
+  // ETA / destination filter takes priority
+  const destF = (document.getElementById('eta-dest')?.value||'').trim().toUpperCase();
+  const etaF  = document.getElementById('eta-time')?.value||'';
+  const refM  = parseTimeMin(etaF);
+
+  if (destF || refM !== null) {
+    let rows = Object.values(db());
+    if (destF) rows = rows.filter(f => f.di === destF);
+    if (refM !== null) {
+      rows = rows.filter(f => { const t = parseTimeMin(f.eta); return t !== null && etaDiff(t, refM) <= 60; });
+      rows.sort((a, b) => (parseTimeMin(a.eta)??0) - (parseTimeMin(b.eta)??0));
+    } else {
+      rows.sort((a, b) => a.iata.localeCompare(b.iata));
+    }
+    const note = destF && refM !== null ? `${destF} 着 ETA ${etaF} ±1h — ${rows.length}件`
+               : destF                  ? `${destF} 着 — ${rows.length}件`
+               :                          `ETA ${etaF} ±1h — ${rows.length}件`;
+    el.innerHTML = (rows.length ? rowsEtaHtml(rows, refM) : '<div class="empty">該当するフライトがありません</div>')
+      + `<div class="count">${note}</div>`;
+    return;
+  }
+
+  let all = Object.values(db()).sort((a,b)=>a.iata.localeCompare(b.iata));
   if (!all.length) {
     el.innerHTML = '<div class="empty">登録済みフライトはありません<br>「追加・編集」または「CSVインポート」から追加してください</div>';
     return;
@@ -9514,6 +9601,7 @@ function tab(n) {
     edit, del, saveFlight,
     doImport, doExport, scanFolder, refreshPdf,
     saveSettings, clearAll, updateApiStatus,
+    clearEtaFilter,
     _ready: false
   };
 
