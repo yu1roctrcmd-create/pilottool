@@ -918,6 +918,7 @@
   <button class="tab-btn"        onclick="switchTab('des',this)">DES</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
+  <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
@@ -2168,6 +2169,7 @@ function switchTab(name, btn) {
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
   if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
+  if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
 }
 
@@ -8277,6 +8279,75 @@ restoreState();
 <!-- ════════════════════════════════════════
      PREP TAB
 ═════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     WX RADAR VISUALIZER TAB
+═════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-wxrdr">
+<div class="tab-content">
+
+<div class="card">
+  <div class="card-title">WX Radar — Tilt &amp; Beam Visualizer
+    <span>B747-8F WRT-2100 MULTISCAN</span>
+  </div>
+
+  <div class="row2" style="margin-bottom:8px">
+    <div class="fg">
+      <label>Altitude (FL)</label>
+      <input type="number" id="wxr-alt" value="350" step="10" min="0" max="500"
+             inputmode="decimal" placeholder="e.g. 350" oninput="wxrDraw()">
+    </div>
+    <div class="fg">
+      <label>Range</label>
+      <select id="wxr-range" onchange="wxrDraw()"
+              style="height:40px;padding:0 10px;border-radius:10px;background:var(--input);border:1px solid var(--border);color:var(--text);font-size:1rem;width:100%">
+        <option value="40">40 NM</option>
+        <option value="80">80 NM</option>
+        <option value="160" selected>160 NM</option>
+        <option value="320">320 NM</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row2" style="margin-bottom:8px">
+    <div class="fg">
+      <label>Mode</label>
+      <div class="tgl-group">
+        <button id="wxr-btn-man" class="tgl on" onclick="wxrSetMode('man')">MAN</button>
+        <button id="wxr-btn-auto" class="tgl" onclick="wxrSetMode('auto')">AUTO</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>TILT 1 (°)</label>
+      <input type="number" id="wxr-tilt" value="-2" step="0.25" min="-15" max="15"
+             inputmode="decimal" oninput="wxrDraw()">
+    </div>
+  </div>
+
+  <div id="wxr-tilt2-row" style="display:none;margin-bottom:8px">
+    <div class="fg" style="max-width:50%;padding-right:6px">
+      <label>TILT 2 (°) <span style="font-size:0.8em;color:var(--muted)">2nd beam</span></label>
+      <input type="number" id="wxr-tilt2" value="-3" step="0.25" min="-15" max="15"
+             inputmode="decimal" oninput="wxrDraw()">
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:5fr 7fr;gap:10px;margin-top:10px;align-items:start">
+    <div>
+      <div style="font-size:0.62em;letter-spacing:1.5px;color:var(--muted);text-align:center;margin-bottom:4px">◉ ND VIEW</div>
+      <canvas id="wxr-nd" style="width:100%;display:block;border-radius:50%"></canvas>
+    </div>
+    <div>
+      <div style="font-size:0.62em;letter-spacing:1.5px;color:var(--muted);text-align:center;margin-bottom:4px">▶ VERTICAL SECTION</div>
+      <canvas id="wxr-vert" style="width:100%;display:block;border-radius:8px"></canvas>
+    </div>
+  </div>
+
+  <div id="wxr-table" style="margin-top:12px"></div>
+</div>
+
+</div>
+</div><!-- /tab-wxrdr -->
+
 <div class="tab-panel" id="tab-prep">
 <div class="tab-content">
 
@@ -9694,6 +9765,316 @@ function calcInop1Eng() {
       <li>Engine anti-ice ON: LRC capability −400 ft</li>
       <li>Engine &amp; wing anti-ice ON: LRC capability −1,100 ft</li>
     </ul>`;
+}
+
+/* ─────────────────────────────────────────────
+   WX RADAR — Beam Visualizer
+──────────────────────────────────────────────*/
+let _wxrMode = 'man';
+
+function wxrSetMode(m) {
+  _wxrMode = m;
+  $('wxr-btn-man').classList.toggle('on', m==='man');
+  $('wxr-btn-auto').classList.toggle('on', m==='auto');
+  $('wxr-tilt2-row').style.display = m==='auto' ? '' : 'none';
+  if (m==='auto') { $('wxr-tilt').value='-1'; $('wxr-tilt2').value='-3'; }
+  wxrDraw();
+}
+
+function wxrInit() {
+  const DPR = window.devicePixelRatio||1;
+  const nd = $('wxr-nd'), vt = $('wxr-vert');
+  if (!nd||!vt) return;
+  const ndW = nd.parentElement.clientWidth || 220;
+  nd.width = ndW*DPR; nd.height = ndW*DPR;
+  const vtW = vt.parentElement.clientWidth || 300;
+  vt.width = vtW*DPR; vt.height = Math.round(vtW*0.74)*DPR;
+  wxrDraw();
+}
+
+function wxrDraw() {
+  const altFt   = (parseFloat($('wxr-alt').value)||350)*100;
+  const rangeNm = parseFloat($('wxr-range').value)||160;
+  const t1      = parseFloat($('wxr-tilt').value) || -2;
+  const tilts   = _wxrMode==='auto'
+    ? [t1, parseFloat($('wxr-tilt2').value)||-3]
+    : [t1];
+  _wxrDrawND(altFt, tilts, rangeNm);
+  _wxrDrawVert(altFt, tilts, rangeNm);
+  _wxrTable(altFt, tilts, rangeNm);
+}
+
+function _wxrBeamAlt(altFt, tilt, d) { return altFt + tilt*d*100; }
+
+function _wxrAltColor(h, a=0.85) {
+  if (h < 0) return `rgba(20,20,40,${a*0.25})`;
+  const stops = [
+    [0,     [20,50,200]],
+    [8000,  [0,130,220]],
+    [18000, [0,200,140]],
+    [25000, [255,220,0]],
+    [32000, [255,100,0]],
+    [45000, [200,20,20]],
+    [65000, [80,0,0]]
+  ];
+  let lo=stops[0], hi=stops[stops.length-1];
+  for (let i=0;i<stops.length-1;i++) {
+    if (h>=stops[i][0] && h<=stops[i+1][0]) { lo=stops[i]; hi=stops[i+1]; break; }
+  }
+  if (h > stops[stops.length-1][0]) lo=hi=stops[stops.length-1];
+  const t = lo[0]===hi[0] ? 1 : (h-lo[0])/(hi[0]-lo[0]);
+  const [r,g,b] = lo[1].map((v,i)=>Math.round(v+(hi[1][i]-v)*t));
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function _wxrDrawND(altFt, tilts, rangeNm) {
+  const cv=$('wxr-nd'); if (!cv) return;
+  const DPR=window.devicePixelRatio||1;
+  const W=cv.width/DPR, H=cv.height/DPR;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.save(); ctx.scale(DPR,DPR);
+
+  // Circular clip
+  ctx.beginPath(); ctx.arc(W/2,H/2,W/2-1,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle='#05050e'; ctx.fillRect(0,0,W,H);
+
+  const cx=W/2, cy=H*0.78;
+  const px=(cy-4)/rangeNm; // pixels per NM
+
+  // Beam sector arcs (100 steps)
+  for (let i=0;i<100;i++) {
+    const d0=i/100*rangeNm, d1=(i+1)/100*rangeNm, dm=(d0+d1)/2;
+    const h=tilts.reduce((s,t)=>s+_wxrBeamAlt(altFt,t,dm),0)/tilts.length;
+    const r0=d0*px, r1=d1*px;
+    ctx.fillStyle=_wxrAltColor(h, h<0?0.08:0.78);
+    ctx.beginPath();
+    ctx.arc(cx,cy,r1,-Math.PI,0,false);
+    ctx.arc(cx,cy,r0,0,-Math.PI,true);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Range rings
+  ctx.setLineDash([3,3]); ctx.lineWidth=0.7;
+  ctx.strokeStyle='rgba(255,255,255,0.22)';
+  ctx.font='8.5px monospace'; ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.textAlign='center';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    const d=f*rangeNm, r=d*px;
+    ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI,0); ctx.stroke();
+    const ang=-Math.PI*0.68;
+    ctx.fillText(`${Math.round(d)}`, cx+r*Math.cos(ang), cy+r*Math.sin(ang));
+  });
+  ctx.setLineDash([]);
+
+  // FL250 ring per tilt
+  tilts.forEach((tilt,ti)=>{
+    if (altFt<=25000 || tilt>=0) return;
+    const d250=(altFt-25000)/(-tilt*100);
+    if (d250>0 && d250<=rangeNm) {
+      const r250=d250*px;
+      ctx.strokeStyle=ti===0?'#ffdd00':'#ffa040';
+      ctx.lineWidth=1.8; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cx,cy,r250,-Math.PI,0); ctx.stroke();
+      ctx.fillStyle=ti===0?'#ffdd00':'#ffa040';
+      ctx.font='bold 8px monospace'; ctx.textAlign='center';
+      const label=tilts.length>1?`FL250@${Math.round(d250)}NM(T${ti+1})`:`FL250@${Math.round(d250)}NM`;
+      ctx.fillText(label, cx, cy-r250-4);
+    }
+  });
+
+  // Aircraft triangle
+  ctx.fillStyle='#fff';
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-9); ctx.lineTo(cx+6,cy+4); ctx.lineTo(cx,cy+2); ctx.lineTo(cx-6,cy+4);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(cx,cy-9); ctx.lineTo(cx,cy-18); ctx.stroke();
+
+  // Altitude color legend (right strip)
+  const lx=W-7, lTop=H*0.25, lBot=H*0.85, lH=lBot-lTop;
+  const grad=ctx.createLinearGradient(0,lTop,0,lBot);
+  [[0,'#500000'],[0.28,'#c81414'],[0.44,'#ff6400'],[0.6,'#ffdc00'],
+   [0.75,'#00c88c'],[0.88,'#0082dc'],[1,'#1432c8']].forEach(([s,c])=>grad.addColorStop(s,c));
+  ctx.fillStyle=grad; ctx.fillRect(lx-5,lTop,5,lH);
+  ctx.fillStyle='rgba(255,221,0,0.9)'; ctx.font='7px monospace'; ctx.textAlign='right';
+  const y250=lTop+lH*(1-(25000/65000));
+  ctx.fillText('FL250',lx-7,y250+3);
+  ctx.strokeStyle='#ffdd00'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.moveTo(lx-12,y250); ctx.lineTo(lx-5,y250); ctx.stroke();
+
+  ctx.restore();
+  ctx.save(); ctx.scale(DPR,DPR);
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(W/2,H/2,W/2-0.5,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+}
+
+function _wxrDrawVert(altFt, tilts, rangeNm) {
+  const cv=$('wxr-vert'); if (!cv) return;
+  const DPR=window.devicePixelRatio||1;
+  const W=cv.width/DPR, H=cv.height/DPR;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.save(); ctx.scale(DPR,DPR);
+
+  ctx.fillStyle='#05050e'; ctx.fillRect(0,0,W,H);
+
+  const ML=46,MR=8,MT=10,MB=26;
+  const pW=W-ML-MR, pH=H-MT-MB;
+  const maxAlt=Math.max(55000,altFt+12000);
+  const xp=d=>ML+(d/rangeNm)*pW;
+  const yp=a=>MT+pH*(1-Math.max(0,Math.min(a,maxAlt))/maxAlt);
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=0.5; ctx.setLineDash([]);
+  [10000,20000,25000,30000,40000,50000].filter(a=>a<maxAlt).forEach(a=>{
+    ctx.beginPath(); ctx.moveTo(ML,yp(a)); ctx.lineTo(ML+pW,yp(a)); ctx.stroke();
+  });
+  [0.25,0.5,0.75,1].forEach(f=>{
+    ctx.beginPath(); ctx.moveTo(xp(f*rangeNm),MT); ctx.lineTo(xp(f*rangeNm),MT+pH); ctx.stroke();
+  });
+
+  // Beam wedges
+  const BCOLS=[['rgba(30,140,255,0.20)','#4af'],['rgba(255,130,0,0.18)','#fa0']];
+  tilts.forEach((tilt,ti)=>{
+    const [fill,stroke]=BCOLS[ti]||BCOLS[0];
+    const topTilt=tilt+1.75, botTilt=tilt-1.75;
+    const gndBot=botTilt<0?altFt/(-botTilt*100):Infinity;
+    const gndCtr=tilt<0?altFt/(-tilt*100):Infinity;
+
+    // Fill polygon
+    ctx.fillStyle=fill;
+    ctx.beginPath();
+    ctx.moveTo(xp(0),yp(altFt));
+    ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,topTilt,rangeNm))));
+    if (gndBot<rangeNm) {
+      ctx.lineTo(xp(gndBot),yp(0));
+    } else {
+      ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,rangeNm))));
+    }
+    ctx.closePath(); ctx.fill();
+
+    // Beam edge lines (dashed)
+    ctx.strokeStyle=stroke; ctx.lineWidth=0.8; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
+    ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,topTilt,rangeNm)))); ctx.stroke();
+    const bEnd=Math.min(rangeNm,gndBot);
+    ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
+    ctx.lineTo(xp(bEnd),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,bEnd)))); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Center line
+    ctx.lineWidth=1.6;
+    const cEnd=Math.min(rangeNm,gndCtr);
+    ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
+    ctx.lineTo(xp(cEnd),yp(Math.max(0,_wxrBeamAlt(altFt,tilt,cEnd)))); ctx.stroke();
+
+    // Tilt label
+    const ld=Math.min(rangeNm*0.52,cEnd*0.62);
+    const lh=_wxrBeamAlt(altFt,tilt,ld);
+    if (lh>500&&lh<maxAlt) {
+      ctx.fillStyle=stroke; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+      ctx.fillText(`${tilt>0?'+':''}${tilt}°`, xp(ld), yp(lh)-5);
+    }
+  });
+
+  // Ground
+  ctx.fillStyle='rgba(40,65,25,0.65)'; ctx.fillRect(ML,yp(0),pW,MT+pH-yp(0));
+  ctx.strokeStyle='rgba(100,160,60,0.5)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(ML,yp(0)); ctx.lineTo(ML+pW,yp(0)); ctx.stroke();
+
+  // FL250 reference line
+  const y250=yp(25000);
+  if (y250>=MT&&y250<=MT+pH) {
+    ctx.strokeStyle='#ffdd00'; ctx.lineWidth=1.4; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(ML,y250); ctx.lineTo(ML+pW,y250); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffdd00'; ctx.font='bold 8.5px monospace'; ctx.textAlign='left';
+    ctx.fillText('FL250',ML+3,y250-3);
+  }
+
+  // Aircraft altitude line
+  const yAC=yp(altFt);
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(ML,yAC); ctx.lineTo(ML+pW,yAC); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.moveTo(ML-1,yAC-5); ctx.lineTo(ML+10,yAC); ctx.lineTo(ML-1,yAC+5); ctx.closePath(); ctx.fill();
+
+  // Y-axis labels
+  ctx.fillStyle='rgba(200,200,220,0.65)'; ctx.font='8px monospace'; ctx.textAlign='right';
+  [0,10000,20000,30000,40000,50000].forEach(a=>{
+    if (a>maxAlt) return;
+    const ya=yp(a);
+    if (ya<MT||ya>MT+pH) return;
+    ctx.fillText(a===0?'GND':`FL${a/100}`, ML-3, ya+3);
+  });
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.textAlign='right';
+  ctx.fillText(`FL${Math.round(altFt/100)}`, ML-3, yAC-5);
+
+  // X-axis labels
+  ctx.fillStyle='rgba(200,200,220,0.65)'; ctx.font='8px monospace'; ctx.textAlign='center';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    ctx.fillText(`${Math.round(f*rangeNm)}`, xp(f*rangeNm), MT+pH+14);
+  });
+  ctx.fillText('NM', ML+pW/2, H-2);
+
+  // Axes border
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.strokeRect(ML,MT,pW,pH);
+
+  ctx.restore();
+}
+
+function _wxrTable(altFt, tilts, rangeNm) {
+  const el=$('wxr-table'); if (!el) return;
+  const steps=(rangeNm<=40 ?[5,10,20,30,40]:
+               rangeNm<=80 ?[10,20,40,60,80]:
+               rangeNm<=160?[20,40,60,80,120,160]:
+               [40,80,120,160,240,320]).filter(d=>d<=rangeNm);
+  const flStr=ft=>ft<=0?'GND':ft>90000?'---':`FL${Math.round(ft/100)}`;
+  const cColor=h=>h>=24000&&h<=26000?'#ffdd00':h>26000&&h<40000?'#ff8c42':h<=0?'rgba(128,128,128,0.4)':'var(--text)';
+  const HCOLS=['#4af','#fa0'];
+
+  el.innerHTML=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  <table style="border-collapse:collapse;font-size:0.75em;min-width:max-content;width:100%;font-variant-numeric:tabular-nums">
+    <thead>
+      <tr style="background:rgba(255,255,255,0.06);font-size:0.8em">
+        <th style="padding:5px 10px;text-align:center;border-bottom:1px solid var(--border);color:var(--muted)" rowspan="2">DME<br>(NM)</th>
+        ${tilts.map((t,i)=>`
+        <th colspan="3" style="padding:4px 8px;text-align:center;border-bottom:1px solid var(--border);color:${HCOLS[i]||HCOLS[0]}">
+          ${tilts.length>1?`TILT ${t>0?'+':''}${t}°`:'Beam'}</th>
+        `).join('')}
+        <th style="padding:5px 8px;text-align:center;border-bottom:1px solid var(--border);color:#ffdd00" rowspan="2">FL250<br>in beam</th>
+      </tr>
+      <tr style="background:rgba(255,255,255,0.03);font-size:0.78em;color:var(--muted)">
+        ${tilts.map(_=>`
+        <th style="padding:3px 6px;border-bottom:1px solid var(--border)">Center</th>
+        <th style="padding:3px 6px;border-bottom:1px solid var(--border)">Bottom</th>
+        <th style="padding:3px 6px;border-bottom:1px solid var(--border)">Top</th>
+        `).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${steps.map((d,i)=>{
+        const data=tilts.map(t=>({
+          ctr:_wxrBeamAlt(altFt,t,d),
+          bot:_wxrBeamAlt(altFt,t-1.75,d),
+          top:_wxrBeamAlt(altFt,t+1.75,d)
+        }));
+        const fl250=data.some(r=>r.bot<25000&&r.top>25000);
+        return `<tr style="border-bottom:1px solid rgba(128,128,128,0.1);${i%2?'background:rgba(255,255,255,0.02)':''}">
+          <td style="padding:4px 10px;text-align:center;font-weight:700">${d}</td>
+          ${data.map(r=>`
+          <td style="padding:4px 7px;text-align:center;font-weight:600;color:${cColor(r.ctr)}">${flStr(r.ctr)}</td>
+          <td style="padding:4px 7px;text-align:center;color:var(--muted)">${flStr(r.bot)}</td>
+          <td style="padding:4px 7px;text-align:center;color:var(--muted)">${flStr(r.top)}</td>
+          `).join('')}
+          <td style="padding:4px 8px;text-align:center;font-size:1.1em;color:${fl250?'#ffdd00':'rgba(128,128,128,0.35)'}">${fl250?'●':'·'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
 }
 
 </script>
