@@ -9861,7 +9861,19 @@ function wxrDraw() {
   _wxrTable(altFt, tilts, rangeNm);
 }
 
-function _wxrBeamAlt(altFt, tilt, d) { return altFt + tilt*d*100; }
+// Earth curvature correction: +0.883 ft per NM² (R=3440 NM, D²/(2R)×6076)
+function _wxrBeamAlt(altFt, tilt, d) { return altFt + tilt*d*100 + d*d*0.883; }
+
+// Distance (NM) where beam at given tilt reaches GND (0 ft), accounting for curvature
+// Solves: 0.883D² + tilt×100×D + altFt = 0
+function _wxrGroundDist(altFt, tilt) {
+  if (tilt >= 0) return Infinity;
+  const a=0.883, b=tilt*100, c=altFt;
+  const disc=b*b-4*a*c;
+  if (disc < 0) return Infinity;
+  const d=(-b-Math.sqrt(disc))/(2*a);
+  return d > 0 ? d : Infinity;
+}
 
 function _wxrAltColor(h, a=0.85) {
   if (h < 0) return `rgba(20,20,40,${a*0.25})`;
@@ -9935,17 +9947,11 @@ function _wxrDrawND(altFt, tilts, rangeNm, cb=null) {
   ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
 
-  // ── Beam sector arcs (altitude-coded) ──
-  for (let i=0;i<120;i++) {
-    const d0=i/120*rangeNm, d1=(i+1)/120*rangeNm, dm=(d0+d1)/2;
-    const h=tilts.reduce((s,t)=>s+_wxrBeamAlt(altFt,t,dm),0)/tilts.length;
-    ctx.fillStyle=_wxrAltColor(h,h<0?0.06:0.82);
-    const r0=d0*pxNm, r1=d1*pxNm;
-    ctx.beginPath();
-    ctx.arc(acX,acY,r1,-Math.PI,0,false);
-    ctx.arc(acX,acY,r0,0,-Math.PI,true);
-    ctx.closePath(); ctx.fill();
-  }
+  // ── Radar scan sector (subtle, no altitude coding) ──
+  ctx.fillStyle='rgba(20,50,140,0.14)';
+  ctx.beginPath();
+  ctx.arc(acX,acY,rangeNm*pxNm,-Math.PI,0,false);
+  ctx.lineTo(acX,acY); ctx.closePath(); ctx.fill();
 
   // ── Range rings (solid white, like real ND) ──
   ctx.font=`${fBase}px monospace`;
@@ -9959,10 +9965,14 @@ function _wxrDrawND(altFt, tilts, rangeNm, cb=null) {
     ctx.fillText(`${Math.round(f*rangeNm)}`,acX+r*Math.cos(ang),acY+r*Math.sin(ang));
   });
 
-  // ── FL250 ring per tilt ──
+  // ── FL250 ring per tilt (with Earth curvature) ──
   tilts.forEach((tilt,ti)=>{
-    if (altFt<=25000||tilt>=0) return;
-    const d250=(altFt-25000)/(-tilt*100);
+    if (altFt<=25000) return;
+    // Solve: 0.883*D²+tilt*100*D+(altFt-25000)=0
+    const qa=0.883, qb=tilt*100, qc=altFt-25000;
+    const disc=qb*qb-4*qa*qc;
+    if (disc<0) return;
+    const d250=(-qb-Math.sqrt(disc))/(2*qa);
     if (d250<=0||d250>rangeNm) return;
     const r250=d250*pxNm;
     const col=ti===0?'#ffee00':'#ffaa30';
@@ -10076,22 +10086,7 @@ function _wxrDrawND(altFt, tilts, rangeNm, cb=null) {
   ctx.font=`${Math.round(W*0.038)}px monospace`;
   ctx.fillText(`${tiltStr}${modeStr}`,bx+bw/2,by+bh*0.88);
 
-  // ── Altitude legend (right strip) ──
-  const lx=cx+R-13, lTop=cy-R*0.48, lH=R*0.96;
-  const grad=ctx.createLinearGradient(0,lTop,0,lTop+lH);
-  [[0,'#500000'],[0.28,'#c81414'],[0.44,'#ff6400'],[0.58,'#ffdc00'],
-   [0.73,'#00c88c'],[0.87,'#0082dc'],[1,'#1432c8']].forEach(([s,c])=>grad.addColorStop(s,c));
-  const lw=7;
-  ctx.fillStyle=grad;
-  ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(lx-lw,lTop,lw,lH,3); else ctx.rect(lx-lw,lTop,lw,lH);
-  ctx.fill();
-  const y250l=lTop+lH*(1-25000/65000);
-  ctx.strokeStyle='#ffee00'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(lx-lw-6,y250l); ctx.lineTo(lx-lw,y250l); ctx.stroke();
-  ctx.fillStyle='rgba(255,238,0,0.85)';
-  ctx.font=`${Math.max(7,Math.round(W*0.028))}px monospace`;
-  ctx.textAlign='right'; ctx.textBaseline='middle';
-  ctx.fillText('250',lx-lw-7,y250l);
+  // (Altitude legend removed — info shown in vertical section)
 
   // ── Circle border ──
   ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=2;
@@ -10133,8 +10128,8 @@ function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
   tilts.forEach((tilt,ti)=>{
     const [fill,stroke]=BCOLS[ti]||BCOLS[0];
     const topTilt=tilt+BEAM_DEG/2, botTilt=tilt-BEAM_DEG/2;
-    const gndBot=botTilt<0?altFt/(-botTilt*100):Infinity;
-    const gndCtr=tilt<0?altFt/(-tilt*100):Infinity;
+    const gndBot=_wxrGroundDist(altFt,botTilt);
+    const gndCtr=_wxrGroundDist(altFt,tilt);
 
     // Beam fill polygon
     ctx.fillStyle=fill;
@@ -10188,10 +10183,16 @@ function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
       ctx.fillStyle=stroke; ctx.font=`bold ${fBase+1}px monospace`;
       ctx.textAlign='center'; ctx.textBaseline='alphabetic';
       ctx.fillText(`${Math.round(d)} NM`,xx,yt-6);
-      // Beam width label below bar (total diameter)
-      ctx.font=`${fBase}px monospace`; ctx.textBaseline='top';
+      // Beam WIDTH label — centered within the bar
+      const yMid=(yt+yb)/2;
+      ctx.font=`bold ${fBase}px monospace`; ctx.textBaseline='middle';
       const wk=widthFt>=1000?`${Math.round(widthFt/1000)},000 ft`:`${widthFt} ft`;
-      ctx.fillText(wk,xx,yb+4);
+      ctx.fillText(wk,xx,yMid);
+      // Beam BOTTOM altitude label — below bar
+      ctx.font=`${fBase-1}px monospace`; ctx.textBaseline='top';
+      const botAlt=beamBot<0?'GND':`FL${Math.round(beamBot/100)}`;
+      ctx.fillStyle=hitGnd?'rgba(120,180,70,0.85)':stroke;
+      ctx.fillText(botAlt,xx,yb+3);
     });
 
     // Tilt angle label on center line
