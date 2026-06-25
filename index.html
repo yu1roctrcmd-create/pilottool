@@ -8318,7 +8318,7 @@ restoreState();
     </div>
     <div class="fg">
       <label>TILT 1 (°)</label>
-      <input type="number" id="wxr-tilt" value="-2" step="0.25" min="-15" max="15"
+      <input type="number" id="wxr-tilt" value="-2" step="1" min="-15" max="15"
              inputmode="decimal" oninput="wxrDraw()">
     </div>
   </div>
@@ -8326,7 +8326,7 @@ restoreState();
   <div id="wxr-tilt2-row" style="display:none;margin-bottom:8px">
     <div class="fg" style="max-width:50%;padding-right:6px">
       <label>TILT 2 (°) <span style="font-size:0.8em;color:var(--muted)">2nd beam</span></label>
-      <input type="number" id="wxr-tilt2" value="-3" step="0.25" min="-15" max="15"
+      <input type="number" id="wxr-tilt2" value="-3" step="1" min="-15" max="15"
              inputmode="decimal" oninput="wxrDraw()">
     </div>
   </div>
@@ -9785,10 +9785,10 @@ function wxrInit() {
   const DPR = window.devicePixelRatio||1;
   const nd = $('wxr-nd'), vt = $('wxr-vert');
   if (!nd||!vt) return;
-  const ndW = nd.parentElement.clientWidth || 220;
+  const ndW = Math.max(220, nd.parentElement.clientWidth);
   nd.width = ndW*DPR; nd.height = ndW*DPR;
-  const vtW = vt.parentElement.clientWidth || 300;
-  vt.width = vtW*DPR; vt.height = Math.round(vtW*0.74)*DPR;
+  const vtW = Math.max(300, vt.parentElement.clientWidth);
+  vt.width = vtW*DPR; vt.height = Math.round(vtW*0.86)*DPR;
   wxrDraw();
 }
 
@@ -9835,77 +9835,138 @@ function _wxrDrawND(altFt, tilts, rangeNm) {
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.save(); ctx.scale(DPR,DPR);
 
-  // Circular clip
-  ctx.beginPath(); ctx.arc(W/2,H/2,W/2-1,0,Math.PI*2); ctx.clip();
-  ctx.fillStyle='#05050e'; ctx.fillRect(0,0,W,H);
+  const R=Math.min(W,H)/2-1;
+  const cx=W/2, cy=H/2;
+  const acX=cx, acY=H*0.78;
+  const pxNm=(acY-10)/rangeNm;
+  const fBase=Math.max(9,Math.round(W*0.046));
 
-  const cx=W/2, cy=H*0.78;
-  const px=(cy-4)/rangeNm; // pixels per NM
+  // ── Circular clip + black bg ──
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
 
-  // Beam sector arcs (100 steps)
-  for (let i=0;i<100;i++) {
-    const d0=i/100*rangeNm, d1=(i+1)/100*rangeNm, dm=(d0+d1)/2;
+  // ── Beam sector arcs (altitude-coded) ──
+  for (let i=0;i<120;i++) {
+    const d0=i/120*rangeNm, d1=(i+1)/120*rangeNm, dm=(d0+d1)/2;
     const h=tilts.reduce((s,t)=>s+_wxrBeamAlt(altFt,t,dm),0)/tilts.length;
-    const r0=d0*px, r1=d1*px;
-    ctx.fillStyle=_wxrAltColor(h, h<0?0.08:0.78);
+    ctx.fillStyle=_wxrAltColor(h,h<0?0.06:0.82);
+    const r0=d0*pxNm, r1=d1*pxNm;
     ctx.beginPath();
-    ctx.arc(cx,cy,r1,-Math.PI,0,false);
-    ctx.arc(cx,cy,r0,0,-Math.PI,true);
+    ctx.arc(acX,acY,r1,-Math.PI,0,false);
+    ctx.arc(acX,acY,r0,0,-Math.PI,true);
     ctx.closePath(); ctx.fill();
   }
 
-  // Range rings
-  ctx.setLineDash([3,3]); ctx.lineWidth=0.7;
-  ctx.strokeStyle='rgba(255,255,255,0.22)';
-  ctx.font='8.5px monospace'; ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.textAlign='center';
-  [0.25,0.5,0.75,1].forEach(f=>{
-    const d=f*rangeNm, r=d*px;
-    ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI,0); ctx.stroke();
-    const ang=-Math.PI*0.68;
-    ctx.fillText(`${Math.round(d)}`, cx+r*Math.cos(ang), cy+r*Math.sin(ang));
+  // ── Range rings (solid white, like real ND) ──
+  ctx.font=`${fBase}px monospace`;
+  [0.25,0.5,0.75,1.0].forEach((f,fi)=>{
+    const r=f*rangeNm*pxNm;
+    ctx.strokeStyle=fi===1?'rgba(255,255,255,0.55)':'rgba(255,255,255,0.38)';
+    ctx.lineWidth=fi===1?1.5:1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(acX,acY,r,-Math.PI,0); ctx.stroke();
+    const ang=-Math.PI*0.73;
+    ctx.fillStyle='rgba(255,255,255,0.72)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`${Math.round(f*rangeNm)}`,acX+r*Math.cos(ang),acY+r*Math.sin(ang));
   });
-  ctx.setLineDash([]);
 
-  // FL250 ring per tilt
+  // ── FL250 ring per tilt ──
   tilts.forEach((tilt,ti)=>{
-    if (altFt<=25000 || tilt>=0) return;
+    if (altFt<=25000||tilt>=0) return;
     const d250=(altFt-25000)/(-tilt*100);
-    if (d250>0 && d250<=rangeNm) {
-      const r250=d250*px;
-      ctx.strokeStyle=ti===0?'#ffdd00':'#ffa040';
-      ctx.lineWidth=1.8; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(cx,cy,r250,-Math.PI,0); ctx.stroke();
-      ctx.fillStyle=ti===0?'#ffdd00':'#ffa040';
-      ctx.font='bold 8px monospace'; ctx.textAlign='center';
-      const label=tilts.length>1?`FL250@${Math.round(d250)}NM(T${ti+1})`:`FL250@${Math.round(d250)}NM`;
-      ctx.fillText(label, cx, cy-r250-4);
-    }
+    if (d250<=0||d250>rangeNm) return;
+    const r250=d250*pxNm;
+    const col=ti===0?'#ffee00':'#ffaa30';
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.arc(acX,acY,r250,-Math.PI,0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=col;
+    ctx.font=`bold ${Math.max(8,Math.round(W*0.038))}px monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    const lbl=tilts.length>1?`FL250  ${Math.round(d250)}NM (T${ti+1})`:`FL250  ${Math.round(d250)}NM`;
+    ctx.fillText(lbl,acX,acY-r250-5);
   });
 
-  // Aircraft triangle
+  // ── Compass arc (upper portion of ND, -160° to -20°) ──
+  const compR=R-3;
+  const arcS=-160*Math.PI/180, arcE=-20*Math.PI/180;
+  ctx.strokeStyle='rgba(255,255,255,0.72)'; ctx.lineWidth=2.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(cx,cy,compR,arcS,arcE,false); ctx.stroke();
+  // Subtler inner ring for depth
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,compR-11,arcS+0.04,arcE-0.04,false); ctx.stroke();
+  // Tick marks every 5°
+  for (let a=-160;a<=-20;a+=5) {
+    const rad=a*Math.PI/180;
+    const cos=Math.cos(rad), sin=Math.sin(rad);
+    const isMaj=a%10===0;
+    const tickLen=isMaj?11:5;
+    ctx.strokeStyle=isMaj?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.45)';
+    ctx.lineWidth=isMaj?1.6:0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx+compR*cos,cy+compR*sin);
+    ctx.lineTo(cx+(compR-tickLen)*cos,cy+(compR-tickLen)*sin);
+    ctx.stroke();
+  }
+  // Heading triangle at 12 o'clock
   ctx.fillStyle='#fff';
+  const htY=cy-compR+1;
   ctx.beginPath();
-  ctx.moveTo(cx,cy-9); ctx.lineTo(cx+6,cy+4); ctx.lineTo(cx,cy+2); ctx.lineTo(cx-6,cy+4);
+  ctx.moveTo(cx,htY+2); ctx.lineTo(cx-6,htY+15); ctx.lineTo(cx+6,htY+15);
   ctx.closePath(); ctx.fill();
-  ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(cx,cy-9); ctx.lineTo(cx,cy-18); ctx.stroke();
 
-  // Altitude color legend (right strip)
-  const lx=W-7, lTop=H*0.25, lBot=H*0.85, lH=lBot-lTop;
-  const grad=ctx.createLinearGradient(0,lTop,0,lBot);
-  [[0,'#500000'],[0.28,'#c81414'],[0.44,'#ff6400'],[0.6,'#ffdc00'],
-   [0.75,'#00c88c'],[0.88,'#0082dc'],[1,'#1432c8']].forEach(([s,c])=>grad.addColorStop(s,c));
-  ctx.fillStyle=grad; ctx.fillRect(lx-5,lTop,5,lH);
-  ctx.fillStyle='rgba(255,221,0,0.9)'; ctx.font='7px monospace'; ctx.textAlign='right';
-  const y250=lTop+lH*(1-(25000/65000));
-  ctx.fillText('FL250',lx-7,y250+3);
-  ctx.strokeStyle='#ffdd00'; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.moveTo(lx-12,y250); ctx.lineTo(lx-5,y250); ctx.stroke();
+  // ── Aircraft symbol (fuselage + wings + stabilizer) ──
+  const sz=Math.max(7,W*0.038);
+  ctx.strokeStyle='#fff'; ctx.lineWidth=sz*0.26; ctx.setLineDash([]); ctx.lineCap='round';
+  // Fuselage
+  ctx.beginPath(); ctx.moveTo(acX,acY-sz*2.0); ctx.lineTo(acX,acY+sz*1.0); ctx.stroke();
+  // Wings
+  ctx.lineWidth=sz*0.22;
+  ctx.beginPath(); ctx.moveTo(acX-sz*2.4,acY-sz*0.3); ctx.lineTo(acX+sz*2.4,acY-sz*0.3); ctx.stroke();
+  // Horizontal stabilizer
+  ctx.lineWidth=sz*0.18;
+  ctx.beginPath(); ctx.moveTo(acX-sz*0.95,acY+sz*0.75); ctx.lineTo(acX+sz*0.95,acY+sz*0.75); ctx.stroke();
+  // Heading line (dashed, up from nose to compass arc)
+  ctx.lineWidth=sz*0.12; ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.setLineDash([5,5]);
+  ctx.beginPath(); ctx.moveTo(acX,acY-sz*2.1); ctx.lineTo(acX,cy-compR+13); ctx.stroke();
+  ctx.setLineDash([]); ctx.lineCap='butt';
 
-  ctx.restore();
-  ctx.save(); ctx.scale(DPR,DPR);
-  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(W/2,H/2,W/2-0.5,0,Math.PI*2); ctx.stroke();
+  // ── WXR indicator box (lower left, yellow oval outline) ──
+  const modeStr=_wxrMode==='auto'?'A':'';
+  const tiltStr=tilts.map(t=>`${t>0?'+':''}${t}`).join('/');
+  const bx=cx-R*0.76, by=cy+R*0.44;
+  const bw=R*0.66, bh=R*0.28;
+  ctx.strokeStyle='#ffee00'; ctx.lineWidth=1.8;
+  ctx.beginPath();
+  if (ctx.roundRect){ctx.roundRect(bx,by,bw,bh,bh/2.2);}
+  else {ctx.rect(bx,by,bw,bh);}
+  ctx.stroke();
+  ctx.fillStyle='#ffee00'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.font=`bold ${Math.round(W*0.044)}px monospace`;
+  ctx.fillText('WXR',bx+bw/2,by+bh*0.5);
+  ctx.font=`${Math.round(W*0.038)}px monospace`;
+  ctx.fillText(`${tiltStr}${modeStr}`,bx+bw/2,by+bh*0.88);
+
+  // ── Altitude legend (right strip) ──
+  const lx=cx+R-13, lTop=cy-R*0.48, lH=R*0.96;
+  const grad=ctx.createLinearGradient(0,lTop,0,lTop+lH);
+  [[0,'#500000'],[0.28,'#c81414'],[0.44,'#ff6400'],[0.58,'#ffdc00'],
+   [0.73,'#00c88c'],[0.87,'#0082dc'],[1,'#1432c8']].forEach(([s,c])=>grad.addColorStop(s,c));
+  const lw=7;
+  ctx.fillStyle=grad;
+  ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(lx-lw,lTop,lw,lH,3); else ctx.rect(lx-lw,lTop,lw,lH);
+  ctx.fill();
+  const y250l=lTop+lH*(1-25000/65000);
+  ctx.strokeStyle='#ffee00'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(lx-lw-6,y250l); ctx.lineTo(lx-lw,y250l); ctx.stroke();
+  ctx.fillStyle='rgba(255,238,0,0.85)';
+  ctx.font=`${Math.max(7,Math.round(W*0.028))}px monospace`;
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.fillText('250',lx-lw-7,y250l);
+
+  // ── Circle border ──
+  ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,R-1,0,Math.PI*2); ctx.stroke();
+
   ctx.restore();
 }
 
@@ -9919,43 +9980,42 @@ function _wxrDrawVert(altFt, tilts, rangeNm) {
 
   ctx.fillStyle='#05050e'; ctx.fillRect(0,0,W,H);
 
-  const ML=46,MR=8,MT=10,MB=26;
+  const BEAM_DEG=3.5;
+  const ML=58, MR=14, MT=30, MB=40;
   const pW=W-ML-MR, pH=H-MT-MB;
-  const maxAlt=Math.max(55000,altFt+12000);
+  const maxAlt=Math.max(62000,altFt+15000);
   const xp=d=>ML+(d/rangeNm)*pW;
   const yp=a=>MT+pH*(1-Math.max(0,Math.min(a,maxAlt))/maxAlt);
+  const fBase=Math.max(9,Math.round(W*0.024));
 
-  // Grid
-  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=0.5; ctx.setLineDash([]);
-  [10000,20000,25000,30000,40000,50000].filter(a=>a<maxAlt).forEach(a=>{
+  // ── Subtle grid ──
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5; ctx.setLineDash([]);
+  [10000,20000,25000,30000,40000,50000,60000].filter(a=>a<maxAlt).forEach(a=>{
     ctx.beginPath(); ctx.moveTo(ML,yp(a)); ctx.lineTo(ML+pW,yp(a)); ctx.stroke();
   });
   [0.25,0.5,0.75,1].forEach(f=>{
     ctx.beginPath(); ctx.moveTo(xp(f*rangeNm),MT); ctx.lineTo(xp(f*rangeNm),MT+pH); ctx.stroke();
   });
 
-  // Beam wedges
-  const BCOLS=[['rgba(30,140,255,0.20)','#4af'],['rgba(255,130,0,0.18)','#fa0']];
+  // ── Beam wedges + width markers at each quarter range ──
+  const BCOLS=[['rgba(30,140,255,0.18)','#4af'],['rgba(255,130,0,0.16)','#fa0']];
   tilts.forEach((tilt,ti)=>{
     const [fill,stroke]=BCOLS[ti]||BCOLS[0];
-    const topTilt=tilt+1.75, botTilt=tilt-1.75;
+    const topTilt=tilt+BEAM_DEG/2, botTilt=tilt-BEAM_DEG/2;
     const gndBot=botTilt<0?altFt/(-botTilt*100):Infinity;
     const gndCtr=tilt<0?altFt/(-tilt*100):Infinity;
 
-    // Fill polygon
+    // Beam fill polygon
     ctx.fillStyle=fill;
     ctx.beginPath();
     ctx.moveTo(xp(0),yp(altFt));
     ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,topTilt,rangeNm))));
-    if (gndBot<rangeNm) {
-      ctx.lineTo(xp(gndBot),yp(0));
-    } else {
-      ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,rangeNm))));
-    }
+    if (gndBot<rangeNm){ctx.lineTo(xp(gndBot),yp(0));}
+    else {ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,rangeNm))));}
     ctx.closePath(); ctx.fill();
 
     // Beam edge lines (dashed)
-    ctx.strokeStyle=stroke; ctx.lineWidth=0.8; ctx.setLineDash([3,3]);
+    ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.setLineDash([5,3]);
     ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
     ctx.lineTo(xp(rangeNm),yp(Math.max(0,_wxrBeamAlt(altFt,topTilt,rangeNm)))); ctx.stroke();
     const bEnd=Math.min(rangeNm,gndBot);
@@ -9963,64 +10023,112 @@ function _wxrDrawVert(altFt, tilts, rangeNm) {
     ctx.lineTo(xp(bEnd),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,bEnd)))); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Center line
-    ctx.lineWidth=1.6;
+    // Beam center line
+    ctx.strokeStyle=stroke; ctx.lineWidth=2;
     const cEnd=Math.min(rangeNm,gndCtr);
     ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
     ctx.lineTo(xp(cEnd),yp(Math.max(0,_wxrBeamAlt(altFt,tilt,cEnd)))); ctx.stroke();
 
-    // Tilt label
-    const ld=Math.min(rangeNm*0.52,cEnd*0.62);
+    // ── Fig 4-21 style beam width markers at each quarter range ──
+    [0.25,0.5,0.75,1.0].forEach(f=>{
+      const d=f*rangeNm;
+      const beamTop=_wxrBeamAlt(altFt,topTilt,d);
+      const beamBot=_wxrBeamAlt(altFt,botTilt,d);
+      const beamCtr=_wxrBeamAlt(altFt,tilt,d);
+      if (beamCtr<=0&&beamTop<=0) return; // fully underground
+      const widthFt=Math.round(BEAM_DEG*d*100); // total beam diameter (ft)
+      const visTop=Math.min(maxAlt,Math.max(0,beamTop));
+      const visBot=Math.max(0,Math.min(beamBot,maxAlt));
+      const hitGnd=beamBot<0;
+      const xx=xp(d);
+      const yt=yp(visTop), yb=yp(visBot);
+      const tick=7;
+
+      // Vertical bar
+      ctx.strokeStyle=stroke; ctx.lineWidth=2.5; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(xx,yt); ctx.lineTo(xx,yb); ctx.stroke();
+      // End caps
+      ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(xx-tick,yt); ctx.lineTo(xx+tick,yt); ctx.stroke();
+      if (!hitGnd){
+        ctx.beginPath(); ctx.moveTo(xx-tick,yb); ctx.lineTo(xx+tick,yb); ctx.stroke();
+      }
+      // "D NM" label above bar
+      ctx.fillStyle=stroke; ctx.font=`bold ${fBase+1}px monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText(`${Math.round(d)} NM`,xx,yt-6);
+      // Beam width label below bar (total diameter)
+      ctx.font=`${fBase}px monospace`; ctx.textBaseline='top';
+      const wk=widthFt>=1000?`${Math.round(widthFt/1000)},000 ft`:`${widthFt} ft`;
+      ctx.fillText(wk,xx,yb+4);
+    });
+
+    // Tilt angle label on center line
+    const ld=Math.min(rangeNm*0.38,cEnd*0.45);
     const lh=_wxrBeamAlt(altFt,tilt,ld);
-    if (lh>500&&lh<maxAlt) {
-      ctx.fillStyle=stroke; ctx.font='bold 9px monospace'; ctx.textAlign='center';
-      ctx.fillText(`${tilt>0?'+':''}${tilt}°`, xp(ld), yp(lh)-5);
+    if (lh>500&&lh<maxAlt){
+      ctx.fillStyle=stroke; ctx.font=`bold ${Math.round(W*0.028)}px monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText(`${tilt>0?'+':''}${tilt}°`,xp(ld),yp(lh)-6);
     }
   });
 
-  // Ground
-  ctx.fillStyle='rgba(40,65,25,0.65)'; ctx.fillRect(ML,yp(0),pW,MT+pH-yp(0));
-  ctx.strokeStyle='rgba(100,160,60,0.5)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  // ── 3.5° beam width annotation ──
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.font=`italic ${Math.round(W*0.024)}px monospace`;
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('3.5° beam width',ML+4,MT+4);
+
+  // ── Ground fill ──
+  ctx.fillStyle='rgba(40,65,25,0.7)'; ctx.fillRect(ML,yp(0),pW,MT+pH-yp(0));
+  ctx.strokeStyle='rgba(120,180,70,0.6)'; ctx.lineWidth=1.2; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(ML,yp(0)); ctx.lineTo(ML+pW,yp(0)); ctx.stroke();
 
-  // FL250 reference line
+  // ── FL250 reference line ──
   const y250=yp(25000);
-  if (y250>=MT&&y250<=MT+pH) {
-    ctx.strokeStyle='#ffdd00'; ctx.lineWidth=1.4; ctx.setLineDash([5,4]);
+  if (y250>=MT&&y250<=MT+pH){
+    ctx.strokeStyle='#ffee00'; ctx.lineWidth=1.5; ctx.setLineDash([7,4]);
     ctx.beginPath(); ctx.moveTo(ML,y250); ctx.lineTo(ML+pW,y250); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#ffdd00'; ctx.font='bold 8.5px monospace'; ctx.textAlign='left';
-    ctx.fillText('FL250',ML+3,y250-3);
+    ctx.fillStyle='#ffee00'; ctx.font=`bold ${Math.round(W*0.026)}px monospace`;
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.fillText('FL250',ML+4,y250-3);
   }
 
-  // Aircraft altitude line
+  // ── Aircraft altitude line + symbol ──
   const yAC=yp(altFt);
-  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+  ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
   ctx.beginPath(); ctx.moveTo(ML,yAC); ctx.lineTo(ML+pW,yAC); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle='#fff';
-  ctx.beginPath(); ctx.moveTo(ML-1,yAC-5); ctx.lineTo(ML+10,yAC); ctx.lineTo(ML-1,yAC+5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ML-2,yAC-6); ctx.lineTo(ML+14,yAC); ctx.lineTo(ML-2,yAC+6);
+  ctx.closePath(); ctx.fill();
 
-  // Y-axis labels
-  ctx.fillStyle='rgba(200,200,220,0.65)'; ctx.font='8px monospace'; ctx.textAlign='right';
-  [0,10000,20000,30000,40000,50000].forEach(a=>{
+  // ── Y-axis labels ──
+  ctx.font=`${fBase}px monospace`; ctx.textAlign='right';
+  [0,10000,20000,30000,40000,50000,60000].forEach(a=>{
     if (a>maxAlt) return;
     const ya=yp(a);
     if (ya<MT||ya>MT+pH) return;
-    ctx.fillText(a===0?'GND':`FL${a/100}`, ML-3, ya+3);
+    ctx.fillStyle=a===25000?'#ffee00':'rgba(200,200,220,0.62)';
+    ctx.textBaseline='middle';
+    ctx.fillText(a===0?'GND':`FL${a/100}`,ML-4,ya);
   });
-  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.textAlign='right';
-  ctx.fillText(`FL${Math.round(altFt/100)}`, ML-3, yAC-5);
+  ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.font=`bold ${fBase}px monospace`;
+  ctx.textBaseline='alphabetic';
+  ctx.fillText(`FL${Math.round(altFt/100)}`,ML-4,yAC-8);
 
-  // X-axis labels
-  ctx.fillStyle='rgba(200,200,220,0.65)'; ctx.font='8px monospace'; ctx.textAlign='center';
+  // ── X-axis labels ──
+  ctx.fillStyle='rgba(200,200,220,0.62)'; ctx.font=`${fBase}px monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='top';
   [0.25,0.5,0.75,1].forEach(f=>{
-    ctx.fillText(`${Math.round(f*rangeNm)}`, xp(f*rangeNm), MT+pH+14);
+    ctx.fillText(`${Math.round(f*rangeNm)}`,xp(f*rangeNm),MT+pH+6);
   });
-  ctx.fillText('NM', ML+pW/2, H-2);
+  ctx.fillStyle='rgba(180,180,200,0.45)';
+  ctx.fillText('NM',ML+pW/2,H-8);
 
-  // Axes border
-  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  // ── Axes border ──
+  ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=1; ctx.setLineDash([]);
   ctx.strokeRect(ML,MT,pW,pH);
 
   ctx.restore();
