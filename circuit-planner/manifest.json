@@ -1,0 +1,58 @@
+{
+  "name": "Circuit Planner - NCA航空運航支援ツール",
+  "short_name": "Circuit Planner",
+  "description": "B747-8F進入ルート計算・グライドパス解析・着陸支援ツール",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d1b2a",
+  "theme_color": "#1a3c6e",
+  "categories": ["aviation", "tools"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a3c6e' width='192' height='192'/><text x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%234fc3f7' font-size='80' font-weight='bold' font-family='Arial'>CP</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%231a3c6e' width='512' height='512'/><text x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%234fc3f7' font-size='200' font-weight='bold' font-family='Arial'>CP</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%230d1b2a' width='540' height='720'/><text x='20' y='40' fill='%234fc3f7' font-size='28' font-weight='bold'>Circuit Planner</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "グライドパス解析",
+      "short_name": "PAPI",
+      "description": "PAPI グライドパス解析ツール",
+      "url": "./index.html?tab=papi",
+      "icons": []
+    },
+    {
+      "name": "着陸目標点解析",
+      "short_name": "Aiming Point",
+      "description": "Aiming Point 着陸目標点解析ツール",
+      "url": "./index.html?tab=aim",
+      "icons": []
+    },
+    {
+      "name": "偏差分析",
+      "short_name": "DEV",
+      "description": "GS/LOC 偏差分析ツール",
+      "url": "./index.html?tab=dev",
+      "icons": []
+    }
+  ],
+  "prefer_related_applications": false
+}

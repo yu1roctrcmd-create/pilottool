@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="B747-8F進入ルート計算・グライドパス解析・着陸支援ツール">
+<meta name="theme-color" content="#1a3c6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a3c6e' width='192' height='192'/><text x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%234fc3f7' font-size='80' font-weight='bold'>CP</text></svg>">
+<title>Circuit Planner | NCA</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== トップバー ===== -->
+<div id="topbar">
+  <h1>✈ Circuit Planner</h1>
+  <button class="tab-btn active" id="tab-circuit">Visual Circuit</button>
+  <button class="tab-btn" id="tab-papi">PAPI</button>
+  <button class="tab-btn" id="tab-aim">Aiming Point</button>
+  <button class="tab-btn" id="tab-dev">DEV</button>
+  <span id="offline-indicator">ONLINE</span>
+  <button id="pdf-btn">🖨 PDF書き出し</button>
+  <button id="cache-btn">📥 タイルキャッシュ</button>
+  <button id="clear-cache-btn" style="background:#b71c1c;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer">🔄 アップデート</button>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('clear-cache-btn').addEventListener('click', function() {
+      if (confirm('キャッシュをクリアして最新データを読み込みますか？')) {
+        caches.keys().then(function(keys) {
+          return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+        }).then(function() { location.reload(true); });
+      }
+    });
+  });
+</script>
+
+<!-- ===== メインエリア ===== -->
+<div id="main">
+
+  <!-- 左サイドバー -->
+  <div class="sidebar" id="left-sidebar">
+
+    <div class="section-title">空港・滑走路</div>
+    <div class="param-row">
+      <label>空港</label>
+      <select id="airport-sel">
+        <option value="RJAA">RJAA 成田国際</option>
+        <option value="RJTT">RJTT 東京(羽田)</option>
+        <option value="RJFR">RJFR 北九州</option>
+        <option value="PANC">PANC アンカレッジ</option>
+        <option value="RJGG">RJGG 中部(セントレア)</option>
+        <option value="VTBS">VTBS スワンナプーム</option>
+        <option value="KLAX">KLAX ロサンゼルス</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>滑走路</label>
+      <select id="runway-sel">
+        <option value="16R">16R</option>
+        <option value="34L">34L</option>
+        <option value="16L">16L</option>
+        <option value="34R">34R</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>旋回方向</label>
+      <select id="traffic-dir">
+        <option value="left">Left Traffic</option>
+        <option value="right">Right Traffic</option>
+      </select>
+    </div>
+
+    <div class="param-row">
+      <label>エントリー種別</label>
+      <select id="entry-type">
+        <option value="downwind">標準（ダウンウィンド）</option>
+        <option value="circling">サークリング</option>
+        <option value="directBase">ダイレクトベース</option>
+        <option value="vorA">VOR A（ラジアル→ダウンウィンド）</option>
+        <option value="vorB">VOR B（ラジアル→ダウンウィンド）</option>
+        <option value="ldaW22">LDA W22（IKL / 277°）</option>
+        <option value="ldaW23">LDA W23（ITL / 277°）</option>
+      </select>
+    </div>
+
+    <div class="param-row" id="vorb-course-row" style="display:none">
+      <label id="course-row-label">VOR B 進入コース（磁方位）</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="vorb-course" min="0" max="360" step="1" value="274" style="width:60px"><span>°(M)</span>
+      </div>
+      <div id="vorb-pattern-section">
+      <label style="margin-top:6px">VOR B パターン（ティアドロップ秒数）</label>
+      <select id="vorb-pattern">
+        <option value="2.5" selected>2.5nm Norm（35秒）</option>
+        <option value="1.5">1.5nm Low（20秒）</option>
+      </select>
+      <div class="param-values" style="margin-top:6px">
+        <span>2nm</span><span id="vorb-leg-val" class="value-badge">6nm</span><span>12nm</span>
+      </div>
+      <input type="range" id="vorb-leg" min="2" max="12" step="0.5" value="6">
+      <label style="margin-top:6px">VOR B 会合旋回 バンク角</label>
+      <div class="param-values">
+        <span>5°</span><span id="vorb-bank-val" class="value-badge">23°</span><span>45°</span>
+      </div>
+      <input type="range" id="vorb-bank" min="5" max="45" step="1" value="23">
+      </div><!-- /vorb-pattern-section -->
+    </div>
+
+    <div class="param-row" id="direct-base-row" style="display:none">
+      <label>ダイレクトベース 距離（接地点から）</label>
+      <div class="param-values">
+        <span>1.0nm</span><span id="db-dist-val" class="value-badge">3.0nm</span><span>6.0nm</span>
+      </div>
+      <input type="range" id="db-dist" min="1.0" max="6.0" step="0.1" value="3.0">
+      <label style="margin-top:6px">ベースレグ長（中心線会合まで）</label>
+      <div class="param-values">
+        <span>0.3nm</span><span id="db-leg-val" class="value-badge">1.0nm</span><span>4.0nm</span>
+      </div>
+      <input type="range" id="db-leg" min="0.3" max="4.0" step="0.1" value="1.0">
+    </div>
+
+    <div class="section-title">パターン幅・速度</div>
+
+    <div class="param-row">
+      <label>ダウンウィンド 幅</label>
+      <div class="param-values">
+        <span>0.5nm</span><span id="dw-width-val" class="value-badge">1.7nm</span><span>15nm</span>
+      </div>
+      <input type="range" id="dw-width" min="0.5" max="15" step="0.1" value="1.7">
+    </div>
+
+    <div class="param-row">
+      <label>ダウンウィンド 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="dw-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="dw-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <div class="param-row">
+      <label>ベースターン 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="base-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="base-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <div class="param-row">
+      <label>ファイナルターン 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="final-turn-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="final-turn-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <div class="param-row">
+      <label>ファイナル 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="final-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="final-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <div class="param-row">
+      <label>アップウィンド 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="upwind-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="upwind-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <div class="param-row">
+      <label>クロスウィンド 速度</label>
+      <div class="param-values">
+        <span>60kt</span><span id="crosswind-speed-val" class="value-badge">160kt</span><span>200kt</span>
+      </div>
+      <input type="range" id="crosswind-speed" min="60" max="200" step="1" value="160">
+    </div>
+
+    <!-- MDA / 3° グライドパス -->
+    <div class="section-title">MDA / 3° パス</div>
+    <div class="mda-section">
+      <div class="param-row">
+        <label id="mda-label">MDA (ft MSL)</label>
+        <input type="number" id="mda-input" value="800" min="0" max="5000" step="10">
+      </div>
+      <div class="mda-result" id="mda-result">FAF距離: — NM</div>
+    </div>
+
+    <!-- VOR リファレンス -->
+    <div class="section-title">VOR リファレンス</div>
+    <div class="mda-section">
+      <div class="param-row">
+        <label>VOR識別</label>
+        <input type="text" id="vor-ident" value="" placeholder="例: SPK / NRE">
+      </div>
+      <div class="param-row">
+        <label>緯度 (decimal)</label>
+        <input type="number" id="vor-lat" step="0.0001" placeholder="35.7000">
+      </div>
+      <div class="param-row">
+        <label>経度 (decimal)</label>
+        <input type="number" id="vor-lon" step="0.0001" placeholder="140.3000">
+      </div>
+      <div class="param-row">
+        <label>磁気偏差 (°E正 / W負)</label>
+        <input type="number" id="vor-var" step="0.1" value="-8">
+      </div>
+      <div id="vor-ref" style="font-size:11px;color:#80d8ff;line-height:1.8;margin-top:6px">
+        緯度経度を入力するとラジアル/DMEを表示
+      </div>
+    </div>
+
+  </div><!-- /left-sidebar -->
+
+  <!-- 地図 + プロファイル -->
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="profile-panel">
+      <h3>3° グライドパス プロファイル</h3>
+      <canvas id="profile-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- 右サイドバー -->
+  <div class="sidebar" id="right-sidebar">
+
+    <div class="section-title">風</div>
+
+    <div class="param-row">
+      <label>風向 / 風速（磁方位, 例 330/15）</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" id="wind-dir" min="0" max="360" step="1" value="0" style="width:60px"><span>° /</span>
+        <input type="number" id="wind-speed" min="0" max="120" step="1" value="0" style="width:50px"><span>kt</span>
+      </div>
+      <div id="wind-comp" style="font-size:11px;color:#80cbc4;line-height:1.7;margin-top:6px">無風</div>
+      <button id="apply-bank-btn" style="margin-top:8px;width:100%;padding:6px;background:#ffb300;color:#000;border:none;border-radius:4px;font-weight:bold;font-size:12px;cursor:pointer">最適バンク角を適用（全ターン）</button>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:#b3e5fc;cursor:pointer">
+        <input type="checkbox" id="show-hdgtrk" checked> HDG/TRK を地図に表示
+      </label>
+    </div>
+
+    <div class="param-row">
+      <label>Upwind 秒数（滑走路末端から延長）</label>
+      <div class="param-values">
+        <span>0s</span><span id="upwind-sec-val" class="value-badge">10s</span><span>60s</span>
+      </div>
+      <input type="range" id="upwind-sec" min="0" max="60" step="1" value="10">
+    </div>
+
+    <div class="param-row">
+      <label>タイムチェック秒数（ダウンウィンド延長）</label>
+      <div class="param-values">
+        <span>0s</span><span id="timecheck-val" class="value-badge">20s</span><span>60s</span>
+      </div>
+      <input type="range" id="timecheck" min="0" max="60" step="1" value="20">
+    </div>
+
+    <div class="section-title">WCA・バンク角</div>
+
+    <div class="param-row">
+      <label>クロスウィンドターン バンク角</label>
+      <div class="param-values">
+        <span>5°</span><span id="cw-turn-bank-val" class="value-badge">23°</span><span>45°</span>
+      </div>
+      <input type="range" id="cw-turn-bank" min="5" max="45" step="1" value="23">
+    </div>
+
+    <div class="param-row">
+      <label>ダウンウィンドターン バンク角</label>
+      <div class="param-values">
+        <span>5°</span><span id="dw-turn-bank-val" class="value-badge">23°</span><span>45°</span>
+      </div>
+      <input type="range" id="dw-turn-bank" min="5" max="45" step="1" value="23">
+    </div>
+
+    <div class="param-row">
+      <label>ダウンウィンド WCA (内側−)</label>
+      <div class="param-values">
+        <span>-30°</span><span id="dw-wca-val" class="value-badge">0°</span><span>30°</span>
+      </div>
+      <input type="range" id="dw-wca" min="-30" max="30" step="1" value="0">
+    </div>
+
+    <div class="param-row">
+      <label>ベースターン バンク角</label>
+      <div class="param-values">
+        <span>5°</span><span id="base-bank-val" class="value-badge">28°</span><span>45°</span>
+      </div>
+      <input type="range" id="base-bank" min="5" max="45" step="1" value="28">
+    </div>
+
+    <div class="param-row">
+      <label>ベース WCA (内側−)</label>
+      <div class="param-values">
+        <span>-30°</span><span id="base-wca-val" class="value-badge">0°</span><span>30°</span>
+      </div>
+      <input type="range" id="base-wca" min="-30" max="30" step="1" value="0">
+    </div>
+
+    <div class="param-row">
+      <label>ベース 秒数</label>
+      <div class="param-values">
+        <span>0s</span><span id="base-time-val" class="value-badge">0s</span><span>120s</span>
+      </div>
+      <input type="range" id="base-time" min="0" max="120" step="1" value="0">
+    </div>
+
+    <div class="param-row">
+      <label>ファイナルターン バンク角</label>
+      <div class="param-values">
+        <span>5°</span><span id="final-bank-val" class="value-badge">22°</span><span>45°</span>
+      </div>
+      <input type="range" id="final-bank" min="5" max="45" step="1" value="22">
+    </div>
+
+    <div class="section-title">凡例</div>
+    <div style="font-size:11px;line-height:1.8;color:#90a4ae;">
+      <div><span style="color:#ab47bc">━━</span> Upwind / Downwind Turn</div>
+      <div><span style="color:#ef5350">━━</span> サーキットパス</div>
+      <div><span style="color:#4caf50">━━</span> ファイナル</div>
+      <div><span style="color:#4caf50">╌╌</span> 延長ファイナル(VDPがパターン外側時)</div>
+      <div><span style="color:#76ff03">╌╌</span> 3° グライドパス</div>
+      <div><span style="color:#ff9800">◆</span> 降下開始点 (VDP / MDA降下開始)</div>
+      <div><span style="color:#ff4081">●</span> 接地点 (Displaced THR)</div>
+      <div><span style="color:#ffcc02">●</span> Abeam THR</div>
+      <div><span style="color:#ffcc02">━━</span> 滑走路</div>
+    </div>
+
+    <div class="section-title">プロファイル凡例</div>
+    <div style="font-size:11px;line-height:1.8;color:#90a4ae;">
+      <div><span style="color:#76ff03">━</span> 3° グライドパス</div>
+      <div><span style="color:#ff9800">╌</span> MDA</div>
+      <div><span style="color:#ffcc02">━</span> TDZE</div>
+      <div><span style="color:#ff9800">▼</span> 降下開始点 (VDP)</div>
+    </div>
+
+  </div><!-- /right-sidebar -->
+
+</div><!-- /main -->
+
+<!-- ===== PAPIビュー ===== -->
+<div id="papi-view" style="display:none">
+  <div class="sidebar" id="papi-left">
+    <div class="section-title">PAPI / グライドパス解析</div>
+    <div class="param-row">
+      <label>空港</label>
+      <select id="papi-airport-sel">
+        <option value="RJAA">RJAA 成田国際</option>
+        <option value="RJTT">RJTT 東京(羽田)</option>
+        <option value="RJFR">RJFR 北九州</option>
+        <option value="PANC">PANC アンカレッジ</option>
+        <option value="RJGG">RJGG 中部(セントレア)</option>
+        <option value="VTBS">VTBS スワンナプーム</option>
+        <option value="KLAX">KLAX ロサンゼルス</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>滑走路</label>
+      <select id="papi-runway-sel">
+        <option value="16R">16R</option>
+        <option value="34L">34L</option>
+        <option value="16L">16L</option>
+        <option value="34R">34R</option>
+      </select>
+    </div>
+    <div id="papi-rwy-label" style="font-weight:bold;color:#80cbc4;font-size:10px;margin-top:2px">—</div>
+    <div class="param-row">
+      <label>機種（EAH）</label>
+      <select id="papi-aircraft">
+        <option value="B747-8F">B747-8F (NCA) — EAH 20.9ft</option>
+        <option value="B747-400">B747-400 — EAH 15.3ft</option>
+        <option value="B767-300">B767-300 — EAH 6.9ft</option>
+        <option value="B737-900">B737-900 — EAH 1.1ft</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>Aiming Point 基準</label>
+      <div style="display:flex;gap:6px;margin-top:3px">
+        <button id="std-icao" class="std-btn std-active">ICAO</button>
+        <button id="std-faa"  class="std-btn">FAA</button>
+      </div>
+      <div style="font-size:10px;color:#546e7a;margin-top:2px">ICAO ≥2400m→400m(1312ft) / FAA→1000ft</div>
+    </div>
+    <div class="param-row">
+      <label>降下角度</label>
+      <div class="param-values"><span>2.0°</span><span id="papi-angle-val" class="value-badge">3.0°</span><span>4.0°</span></div>
+      <input type="range" id="papi-angle" min="2.0" max="4.0" step="0.05" value="3.0">
+    </div>
+    <div class="param-row">
+      <label>GP Aiming Point（ILS接地点, 末端から）</label>
+      <div class="param-values"><span>500ft</span><span id="papi-aim-val" class="value-badge">1127ft</span><span>3000ft</span></div>
+      <input type="range" id="papi-aim" min="500" max="3000" step="5" value="1127">
+    </div>
+    <div class="param-row">
+      <label>PAPI 設置位置（滑走路末端から）</label>
+      <div class="param-values"><span>500ft</span><span id="papi-loc-val" class="value-badge">1414ft</span><span>2500ft</span></div>
+      <input type="range" id="papi-loc" min="500" max="2500" step="5" value="1414">
+    </div>
+    <div class="param-row">
+      <label>PAPI 角度間隔（±）</label>
+      <div class="param-values"><span>±0.3°</span><span id="papi-spread-val" class="value-badge">±0.5°</span><span>±0.7°</span></div>
+      <input type="range" id="papi-spread" min="0.3" max="0.7" step="0.01" value="0.5">
+    </div>
+    <div class="param-row">
+      <label>PAPI 角度モード</label>
+      <div style="display:flex;gap:4px;margin-top:3px">
+        <button class="std-btn std-active" id="papi-ils-btn">ILS あり</button>
+        <button class="std-btn"            id="papi-noils-btn">ILS なし</button>
+      </div>
+    </div>
+    <div class="param-row">
+      <label>GS アンテナ位置（末端から）</label>
+      <div class="param-values"><span>300ft</span><span id="papi-gsant-val" class="value-badge">1115ft</span><span>2000ft</span></div>
+      <input type="range" id="papi-gsant" min="300" max="2000" step="5" value="1115">
+    </div>
+    <div class="param-row">
+      <label>滑走路勾配（%、上り正）</label>
+      <div class="param-values"><span>-2.0%</span><span id="papi-slope-val" class="value-badge">0.0%</span><span>+2.0%</span></div>
+      <input type="range" id="papi-slope" min="-2.0" max="2.0" step="0.1" value="0.0">
+    </div>
+    <div class="param-row">
+      <label>進入速度（VREF+5kt）</label>
+      <div class="param-values"><span>100kt</span><span id="papi-aspd-val" class="value-badge">165kt</span><span>200kt</span></div>
+      <input type="range" id="papi-aspd" min="100" max="200" step="1" value="165">
+    </div>
+    <div class="param-row">
+      <label>チャート表示距離（NM）</label>
+      <div class="param-values"><span>0.5</span><span id="papi-range-val" class="value-badge">1</span><span>12</span></div>
+      <input type="range" id="papi-range" min="0.5" max="12" step="0.5" value="1">
+    </div>
+    <div class="param-row">
+      <label>地上気温 OAT（°C、Baro VNAV補正）</label>
+      <div class="param-values"><span>-40°C</span><span id="papi-oat-val" class="value-badge">15°C</span><span>+40°C</span></div>
+      <input type="range" id="papi-oat" min="-40" max="40" step="1" value="15">
+    </div>
+
+    <!-- 滑走路勾配と Pitch/Flare補正 -->
+    <div class="section-title" style="margin-top:8px">滑走路勾配 補正</div>
+    <div class="param-row">
+      <label>滑走路勾配（%、上り正）</label>
+      <div class="param-values"><span>-2.0%</span><span id="rwy-slope-val" class="value-badge">0.0%</span><span>+2.0%</span></div>
+      <input type="range" id="rwy-slope" min="-2.0" max="2.0" step="0.1" value="0.0">
+    </div>
+    <div id="rwy-slope-info" style="font-size:9px;line-height:1.8;background:#0d1b2a;padding:6px;border-radius:3px;margin-top:4px;border:1px solid #0f3460;color:#80cbc4"></div>
+
+    <div class="param-row" style="padding:4px 0 2px">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:11px;color:#80cbc4">
+        <input type="checkbox" id="gs-dev-show" checked style="width:14px;height:14px;accent-color:#ff8f00">
+        GS 偏差ライン表示（±1/±2 dot）
+      </label>
+    </div>
+    <div id="papi-info" style="font-size:11px;color:#80cbc4;line-height:1.7;margin-top:8px"></div>
+    <div id="ian-approach-section" style="display:none;margin-top:12px;padding:8px;background:rgba(0,50,100,0.3);border-left:3px solid #0277bd;font-size:11px;color:#81d4fa;line-height:1.6">
+      <div style="font-weight:bold;margin-bottom:4px">🔹 IAN Approach（TCH 50ft、温度補正）</div>
+      <div id="ian-vpa-info"></div>
+    </div>
+    <div class="section-title" style="margin-top:10px">GS 偏差 修正計算</div>
+    <div class="param-row">
+      <label>現在高度 (ft MSL)</label>
+      <input type="number" id="gs-corr-alt" value="1000" min="0" max="8000" step="50"
+        style="width:100%;box-sizing:border-box;background:#1a2a3a;color:#e0e8f0;border:1px solid #37474f;border-radius:4px;padding:4px 8px;font-size:12px;margin-top:2px">
+    </div>
+    <div class="param-row">
+      <label>GS ズレ（dot、上が正）</label>
+      <select id="gs-corr-dot"
+        style="width:100%;box-sizing:border-box;background:#1a2a3a;color:#e0e8f0;border:1px solid #37474f;border-radius:4px;padding:4px;font-size:12px;margin-top:2px">
+        <option value="2">+2 dot（4W – TOO HIGH）</option>
+        <option value="1" selected>+1 dot（3W1R – SLIGHTLY HIGH）</option>
+        <option value="0">0 dot（On GS）</option>
+        <option value="-1">-1 dot（1W3R – SLIGHTLY LOW）</option>
+        <option value="-2">-2 dot（4R – TOO LOW）</option>
+      </select>
+    </div>
+    <div id="gs-corr-result" style="font-size:11px;color:#b0bec5;line-height:1.8;margin-top:4px;padding:6px 8px;background:rgba(0,0,0,0.25);border-radius:4px;min-height:64px"></div>
+    <div class="section-title" style="margin-top:8px">滑走路 基準点図</div>
+    <canvas id="runway-canvas" style="width:100%;height:110px;background:#0a1628;border-radius:4px;margin-top:4px"></canvas>
+
+    <!-- Blind Zone情報 -->
+    <div class="section-title" style="margin-top:8px">Blind Zone 情報</div>
+    <div id="papi-blindzone" style="font-size:9px;line-height:1.8;background:#0d1b2a;padding:6px;border-radius:3px;margin-top:4px;border:1px solid #0f3460;color:#80cbc4"></div>
+  </div>
+  <div id="papi-main">
+    <canvas id="papi-canvas"></canvas>
+    <div id="papi-sat-overlay">
+      <img id="papi-sat-img" src="" alt="" crossorigin="anonymous">
+      <canvas id="sat-mark-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6;"></canvas>
+      <div class="papi-sat-label">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Aiming Point ビュー ===== -->
+<div id="aim-view" style="display:none">
+  <div class="sidebar" id="aim-left">
+    <div class="section-title">Aiming Point 解析</div>
+    <div class="param-row">
+      <label>空港</label>
+      <select id="aim-airport-sel">
+        <option value="RJAA">RJAA 成田国際</option>
+        <option value="RJTT">RJTT 東京(羽田)</option>
+        <option value="RJFR">RJFR 北九州</option>
+        <option value="PANC">PANC アンカレッジ</option>
+        <option value="RJGG">RJGG 中部(セントレア)</option>
+        <option value="VTBS">VTBS スワンナプーム</option>
+        <option value="KLAX">KLAX ロサンゼルス</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>滑走路</label>
+      <select id="aim-runway-sel">
+        <option value="16R">16R</option>
+      </select>
+    </div>
+    <div class="param-row">
+      <label>機種</label>
+      <select id="aim-aircraft">
+        <option value="B747-8F">B747-8F (NCA) — 20.9ft</option>
+        <option value="B747-400">B747-400 — 15.3ft</option>
+        <option value="B767-300">B767-300 — 6.9ft</option>
+        <option value="B737-900">B737-900 — 1.1ft</option>
+      </select>
+    </div>
+    <div class="section-title" style="margin-top:6px">ILS データ</div>
+    <div class="param-row">
+      <label>GP 角度（°）</label>
+      <input type="number" id="aim-angle" value="3.0" step="0.05" min="2.0" max="6.0">
+    </div>
+    <div class="param-row">
+      <label>GS アンテナ（ft from TH）</label>
+      <input type="number" id="aim-gsant" value="1115" step="1" min="100" max="3000">
+    </div>
+    <div class="param-row">
+      <label>PAPI 位置（ft from TH）</label>
+      <input type="number" id="aim-papi" value="1414" step="1" min="100" max="3000">
+    </div>
+    <div class="section-title" style="margin-top:6px">Aiming Point 標準</div>
+    <div class="param-row" style="display:flex;gap:3px;flex-wrap:wrap">
+      <button class="aim-std-btn aim-std-active" data-std="japan" style="flex:1;padding:5px 0;font-size:11px;background:#1565c0;color:#e3f2fd;border:1px solid #4fc3f7;border-radius:3px;cursor:pointer;font-weight:bold">日本 (1312ft)</button>
+      <button class="aim-std-btn" data-std="icao" style="flex:1;padding:5px 0;font-size:11px;background:#0f3460;color:#aaa;border:1px solid #1a4a7a;border-radius:3px;cursor:pointer">ICAO (1312ft)</button>
+      <button class="aim-std-btn" data-std="faa" style="flex:1;padding:5px 0;font-size:11px;background:#0f3460;color:#aaa;border:1px solid #1a4a7a;border-radius:3px;cursor:pointer">FAA (1000ft)</button>
+    </div>
+
+    <div class="section-title" style="margin-top:6px">Aiming Point</div>
+    <div class="param-row">
+      <label>Aiming Point（ft from TH）</label>
+      <input type="number" id="aim-aim" value="1312" step="1" min="100" max="5000">
+    </div>
+    <div class="param-row">
+      <label>ストライプ長（ft）</label>
+      <input type="number" id="aim-stripe" value="197" step="1" min="50" max="500">
+    </div>
+    <div class="section-title" style="margin-top:10px">Runway Diagram</div>
+    <canvas id="aim-rwy-diagram" style="width:100%;height:100px;background:#0a1628;border-radius:4px;display:block;margin-top:4px;"></canvas>
+
+    <div id="aim-info" style="font-size:10px;color:#80cbc4;line-height:1.8;margin-top:6px"></div>
+    <button id="aim-download-btn" style="margin-top:auto;padding:7px 0;background:#1565c0;border:1px solid #4fc3f7;color:#e3f2fd;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;width:100%">⬇ PNG 保存</button>
+    <button id="aim-kml-btn" style="margin-top:4px;padding:7px 0;background:#1b5e20;border:1px solid #43a047;color:#c8e6c9;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;width:100%">🌍 KML 書き出し</button>
+  </div>
+  <div id="aim-main">
+    <div id="aim-view-toggle">
+      <button class="aim-view-btn aim-view-active" id="aim-btn-persp">進入視点</button>
+      <button class="aim-view-btn" id="aim-btn-sat">衛星画像</button>
+    </div>
+    <canvas id="aim-canvas"></canvas>
+    <div id="aim-map"></div>
+  </div>
+</div>
+
+<!-- ===== DEV (GS/LOC 偏差) ビュー ===== -->
+<div id="dev-view" style="display:none;flex:1;overflow:hidden">
+  <div class="sidebar" id="dev-left" style="width:240px;overflow-y:auto">
+    <div class="section-title">GS/LOC 偏差 設定</div>
+
+    <div class="param-row">
+      <label>GS 1dot 感度（° / dot）</label>
+      <div class="param-values">
+        <span>0.20°</span><span id="dev-gs-dot-val" class="value-badge">0.35°</span><span>0.70°</span>
+      </div>
+      <input type="range" id="dev-gs-dot" min="0.20" max="0.70" step="0.01" value="0.35">
+      <div style="font-size:10px;color:#546e7a;margin-top:1px">ILS標準: 1dot = 0.35°（Full Scale ±0.70°）</div>
+    </div>
+
+    <div class="param-row">
+      <label>滑走路長（LOC計算用）</label>
+      <div class="param-values">
+        <span>1500m</span><span id="dev-rwy-len-val" class="value-badge">4000m</span><span>4500m</span>
+      </div>
+      <input type="range" id="dev-rwy-len" min="1500" max="4500" step="100" value="4000">
+      <div style="font-size:10px;color:#546e7a;margin-top:1px">RJAA 16R: 4000m / RJTT 34R: 3000m / RJGG 36: 3500m</div>
+    </div>
+
+    <div class="param-row">
+      <label>LOCアンテナ オフセット（停止端〜LOC）</label>
+      <div class="param-values">
+        <span>100m</span><span id="dev-loc-offset-val" class="value-badge">472m</span><span>600m</span>
+      </div>
+      <input type="range" id="dev-loc-offset" min="100" max="600" step="1" value="472">
+      <div style="font-size:10px;color:#546e7a;margin-top:1px">RJAA 16R: 472m / RJTT 34R: 235m / RJGG 36: 322m</div>
+    </div>
+
+    <!-- HAT 表示範囲 -->
+    <div class="param-row" style="margin-top:6px">
+      <label>HAT 表示範囲（X軸）</label>
+      <div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap">
+        <button class="dev-hat-btn" data-max="500"  style="flex:1;padding:3px 0;font-size:10px;background:#0f2744;color:#78909c;border:1px solid #1e3a50;border-radius:3px;cursor:pointer">~500ft</button>
+        <button class="dev-hat-btn" data-max="1000" style="flex:1;padding:3px 0;font-size:10px;background:#0f2744;color:#78909c;border:1px solid #1e3a50;border-radius:3px;cursor:pointer">~1000ft</button>
+        <button class="dev-hat-btn" data-max="2000" style="flex:1;padding:3px 0;font-size:10px;background:#0f2744;color:#78909c;border:1px solid #1e3a50;border-radius:3px;cursor:pointer">~2000ft</button>
+        <button class="dev-hat-btn active" data-max="5000" style="flex:1;padding:3px 0;font-size:10px;background:#1a3c6e;color:#4fc3f7;border:1px solid #4fc3f7;border-radius:3px;cursor:pointer;font-weight:bold">~5000ft</button>
+      </div>
+    </div>
+
+    <!-- コールアウト基準 -->
+    <div class="section-title" style="margin-top:6px">コールアウト基準</div>
+    <div style="font-size:10px;line-height:1.8;padding:4px 0">
+      <div><span style="color:#ff5252;font-weight:bold">LOC ▶ 1/3 dot超</span>
+        <span style="color:#78909c"> ≈ 17.5m at THR</span></div>
+      <div><span style="color:#ffd740;font-weight:bold">GS ▶ 1 dot超</span>
+        <span style="color:#78909c"> ≈ 高度の10%</span></div>
+      <div style="color:#78909c;margin-top:2px">Stabilized (1,000ft AFE):</div>
+      <div style="color:#80cbc4;padding-left:6px">LOC/GS ±1dot以内</div>
+      <div style="color:#78909c;margin-top:2px;font-size:9px">GS 1dot high@THR → +6ft → 着陸距離 +114ft</div>
+    </div>
+
+    <!-- PFD ミニ図 -->
+    <div class="section-title" style="margin-top:4px">Deviation Scale on PFD</div>
+    <canvas id="dev-pfd-canvas" style="width:100%;height:340px;display:block;border-radius:4px;background:#0d1b2a"></canvas>
+
+    <div class="section-title" style="margin-top:6px">偏差早見表</div>
+    <div id="dev-table" style="margin-top:4px"></div>
+
+    <!-- Auto Call ガイダンス -->
+    <div class="section-title" style="margin-top:8px">Auto Call ガイダンス</div>
+    <div id="dev-autocall" style="font-size:9px;line-height:1.8;background:#0d1b2a;padding:6px;border-radius:3px;margin-top:4px;border:1px solid #0f3460"></div>
+
+    <div style="font-size:10px;color:#546e7a;margin-top:8px;line-height:1.7;border-top:1px solid #0f3460;padding-top:6px">
+      <span style="color:#80cbc4;font-weight:bold">算出式</span><br>
+      GS: D(NM)×6076×tan(dot°) = ft<br>
+      LOC: 52.5m×(D×1852+RWY+300)/(RWY+300)<br><br>
+      <span style="color:#ff5252">──</span> 1/3dot CALLOUT (LOC)<br>
+      <span style="color:#ffd740">──</span> 1dot STABLE LIMIT<br>
+      <span style="color:#ef5350">──</span> 2dot DANGER
+    </div>
+  </div>
+
+  <div id="dev-main" style="flex:1;background:#0d1b2a;padding:8px;overflow:hidden;display:flex">
+    <canvas id="dev-canvas" style="width:100%;height:100%;background:#0a1628;border-radius:6px"></canvas>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/airports.js"></script>
+<script src="js/geometry.js"></script>
+<script src="js/circuit.js"></script>
+<script src="js/app.js"></script>
+<script src="js/papi.js"></script>
+<script src="js/aimpoint.js"></script>
+<script src="js/dev.js"></script>
+<script>
+  // Service Worker 登録
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(e => console.warn('SW error:', e));
+  }
+
+  // オフラインインジケータ
+  const offlineIndicator = document.createElement('div');
+  offlineIndicator.id = 'offline-indicator';
+  offlineIndicator.style.cssText = `
+    position: fixed;
+    top: 0;
+    right: 0;
+    background: #ff5252;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 0 0 0 4px;
+    z-index: 10000;
+    display: none;
+  `;
+  offlineIndicator.textContent = '📡 OFFLINE MODE';
+  document.body.appendChild(offlineIndicator);
+
+  function updateOfflineStatus() {
+    const isOnline = navigator.onLine;
+    if (!isOnline) {
+      offlineIndicator.style.display = 'block';
+    } else {
+      offlineIndicator.style.display = 'none';
+    }
+  }
+
+  window.addEventListener('online', updateOfflineStatus);
+  window.addEventListener('offline', updateOfflineStatus);
+  updateOfflineStatus();
+</script>
+</body>
+</html>
