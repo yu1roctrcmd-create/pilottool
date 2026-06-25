@@ -10149,8 +10149,8 @@ function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
     ctx.lineTo(xp(bEnd),yp(Math.max(0,_wxrBeamAlt(altFt,botTilt,bEnd)))); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Beam center line
-    ctx.strokeStyle=stroke; ctx.lineWidth=2;
+    // Beam center line (red)
+    ctx.strokeStyle='#ff4444'; ctx.lineWidth=2;
     const cEnd=Math.min(rangeNm,gndCtr);
     ctx.beginPath(); ctx.moveTo(xp(0),yp(altFt));
     ctx.lineTo(xp(cEnd),yp(Math.max(0,_wxrBeamAlt(altFt,tilt,cEnd)))); ctx.stroke();
@@ -10193,13 +10193,19 @@ function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
       const botAlt=beamBot<0?'GND':`FL${Math.round(beamBot/100)}`;
       ctx.fillStyle=hitGnd?'rgba(120,180,70,0.85)':stroke;
       ctx.fillText(botAlt,xx,yb+3);
+      // Beam CENTER altitude label — red, at center line height
+      const cAltY=yp(Math.min(maxAlt,Math.max(0,beamCtr)));
+      ctx.fillStyle='#ff4444'; ctx.font=`bold ${fBase}px monospace`;
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(`FL${Math.round(beamCtr/100)}`,xx+tick+4,cAltY);
+      ctx.textAlign='center';
     });
 
     // Tilt angle label on center line
     const ld=Math.min(rangeNm*0.38,cEnd*0.45);
     const lh=_wxrBeamAlt(altFt,tilt,ld);
     if (lh>500&&lh<maxAlt){
-      ctx.fillStyle=stroke; ctx.font=`bold ${Math.round(W*0.028)}px monospace`;
+      ctx.fillStyle='#ff4444'; ctx.font=`bold ${Math.round(W*0.028)}px monospace`;
       ctx.textAlign='center'; ctx.textBaseline='alphabetic';
       ctx.fillText(`${tilt>0?'+':''}${tilt}°`,xp(ld),yp(lh)-6);
     }
