@@ -975,13 +975,13 @@
       <option value="">選択...</option>
     </select>
   </div>
-  <div class="xd-drum-wrap">
+  <div style="margin-top:10px">
     <div class="picker-group-label">RW HDG (°MAG)</div>
-    <div class="drum xd-drum-solo">
-      <div class="drum-col" id="xd-rwyhdg"></div>
-      <div class="drum-sel"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input type="range" id="xd-rwyhdg" data-pad="3" min="1" max="360" step="1" value="270"
+             style="flex:1;accent-color:var(--accent);cursor:pointer">
+      <div class="drum-display" id="disp-xd-rwyhdg" style="min-width:42px;text-align:right">270°</div>
     </div>
-    <div class="drum-display" id="disp-xd-rwyhdg">270°</div>
   </div>
 </div>
 
@@ -1459,13 +1459,13 @@
       <option value="">選択...</option>
     </select>
   </div>
-  <div class="xd-drum-wrap">
+  <div style="margin-top:10px">
     <div class="picker-group-label">RW HDG (°MAG)</div>
-    <div class="drum xd-drum-solo">
-      <div class="drum-col" id="ldg-rwyhdg"></div>
-      <div class="drum-sel"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input type="range" id="ldg-rwyhdg" data-pad="3" min="1" max="360" step="1" value="270"
+             style="flex:1;accent-color:var(--accent);cursor:pointer">
+      <div class="drum-display" id="disp-ldg-rwyhdg" style="min-width:42px;text-align:right">270°</div>
     </div>
-    <div class="drum-display" id="disp-ldg-rwyhdg">270°</div>
   </div>
 </div>
 
@@ -2232,7 +2232,14 @@ function toggleMagVar() {
 function setDrumVal(colId, dispId, suffix, value) {
   const colEl  = document.getElementById(colId);
   const dispEl = document.getElementById(dispId);
-  if (!colEl || colEl._from === undefined) return;
+  if (!colEl || !dispEl) return;
+  if (colEl.tagName === 'INPUT') {
+    colEl.value = value;
+    const pad = parseInt(colEl.dataset.pad || '0');
+    dispEl.textContent = String(value).padStart(pad, '0') + suffix;
+    return;
+  }
+  if (colEl._from === undefined) return;
   const pad = colEl.children[0] ? colEl.children[0].textContent.length : 1;
   colEl._skipNotify = true;
   colEl.scrollTop = (value - colEl._from) * ITEM_H;
@@ -3934,6 +3941,7 @@ function updateCrewSelectColors() {
 const ITEM_H = 44;
 
 function buildColRange(colEl, from, to, pad, initVal) {
+  if (!colEl || colEl.tagName === 'INPUT') return;
   for (let i = from; i <= to; i++) {
     const d = document.createElement('div');
     d.className = 'drum-item';
@@ -3946,6 +3954,7 @@ function buildColRange(colEl, from, to, pad, initVal) {
   requestAnimationFrame(() => { colEl._skipNotify = false; });
 }
 function getColRangeVal(colEl) {
+  if (colEl && colEl.tagName === 'INPUT') return parseInt(colEl.value) || 0;
   return colEl._from + Math.min(Math.round(colEl.scrollTop / ITEM_H), colEl.children.length - 1);
 }
 function getWindDirVal(colEl) {
@@ -4015,6 +4024,17 @@ function buildWindDirDrum(colId, dispId, calcFn, forceDir) {
 function wireXwindDrum(colId, dispId, suffix, onChange) {
   const colEl  = document.getElementById(colId);
   const dispEl = document.getElementById(dispId);
+  if (!colEl || !dispEl) return;
+  if (colEl.tagName === 'INPUT') {
+    const pad = parseInt(colEl.dataset.pad || '0');
+    colEl.addEventListener('input', () => {
+      const v = parseInt(colEl.value) || 0;
+      dispEl.textContent = String(v).padStart(pad, '0') + suffix;
+      onChange();
+    });
+    dispEl.textContent = String(parseInt(colEl.value)||0).padStart(pad,'0') + suffix;
+    return;
+  }
   const pad    = colEl.children[0] ? colEl.children[0].textContent.length : 1;
   const upd = () => {
     const v = getColRangeVal(colEl);
@@ -7468,6 +7488,7 @@ function saveState() {
       const el = document.getElementById(col);
       if (!el) return;
       if (el._windDirBuilt || el._vals) data['drum:' + col] = getWindDirVal(el);
+      else if (el.tagName === 'INPUT') data['drum:' + col] = parseInt(el.value) || 0;
       else if (el._from !== undefined) data['drum:' + col] = getColRangeVal(el);
     });
     data.fdpSectors   = fdpSectors;
@@ -7492,7 +7513,14 @@ function _restoreDrum(drums) {
     if (val === undefined) return;
     const colEl = document.getElementById(col);
     const disEl = document.getElementById(disp);
-    if (!colEl || !disEl || colEl._from === undefined) return;
+    if (!colEl || !disEl) return;
+    if (colEl.tagName === 'INPUT') {
+      colEl.value = val;
+      const pad = parseInt(colEl.dataset.pad || '0');
+      disEl.textContent = String(val).padStart(pad, '0') + sfx;
+      return;
+    }
+    if (colEl._from === undefined) return;
     const pad = colEl.children[0] ? colEl.children[0].textContent.length : 1;
     colEl._skipNotify = true;
     colEl.scrollTop   = (val - colEl._from) * ITEM_H;
@@ -8785,6 +8813,7 @@ restoreState();
       <button class="flt-itab" onclick="FLT.tab(2)">CSVインポート</button>
       <button class="flt-itab" onclick="FLT.tab(3)">📄 PDF</button>
       <button class="flt-itab" onclick="FLT.tab(4)">⚙ 設定</button>
+      <button class="flt-itab" onclick="FLT.tab(5);FLT.renderDep()">NRT出発</button>
     </div>
 
     <!-- Pane 0: List -->
@@ -8930,6 +8959,36 @@ restoreState();
           <div id="scanResult" style="margin-top:12px"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Pane 5: NRT DEP Schedule -->
+    <div class="flt-pane" id="p5">
+      <div style="margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+          <div>
+            <div class="flabel">出発時刻 (±1h)</div>
+            <input class="fi" type="time" id="dep-time-f" oninput="FLT.renderDep()">
+          </div>
+          <div>
+            <div class="flabel">目的地 / 便名</div>
+            <input class="fi" id="dep-dest-f" placeholder="HKG, 香港..." autocomplete="off"
+              oninput="FLT.renderDep()">
+          </div>
+          <button class="flt-btn btn-muted btn-sm" onclick="document.getElementById('dep-time-f').value='';document.getElementById('dep-dest-f').value='';FLT.renderDep()">クリア</button>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="ftab" id="dep-day-all" onclick="FLT._depDay='';FLT.renderDep()" style="font-size:11px;padding:4px 8px">すべて</button>
+          <button class="ftab" onclick="FLT._depDay='月';FLT.renderDep()" style="font-size:11px;padding:4px 8px">月</button>
+          <button class="ftab" onclick="FLT._depDay='火';FLT.renderDep()" style="font-size:11px;padding:4px 8px">火</button>
+          <button class="ftab" onclick="FLT._depDay='水';FLT.renderDep()" style="font-size:11px;padding:4px 8px">水</button>
+          <button class="ftab" onclick="FLT._depDay='木';FLT.renderDep()" style="font-size:11px;padding:4px 8px">木</button>
+          <button class="ftab" onclick="FLT._depDay='金';FLT.renderDep()" style="font-size:11px;padding:4px 8px">金</button>
+          <button class="ftab" onclick="FLT._depDay='土';FLT.renderDep()" style="font-size:11px;padding:4px 8px">土</button>
+          <button class="ftab" onclick="FLT._depDay='日';FLT.renderDep()" style="font-size:11px;padding:4px 8px">日</button>
+          <button class="flt-btn btn-muted btn-sm" onclick="FLT._depDay=['日','月','火','水','木','金','土'][new Date().getDay()];FLT.renderDep()">今日</button>
+        </div>
+      </div>
+      <div id="dep-list"></div>
     </div>
   </div>
 
@@ -9594,6 +9653,130 @@ function tab(n) {
 })();
 
 
+  // NRT departure schedule
+  const NRT_DEP = [
+    {std:'0720',flt:'W81808',dst:'ロサンゼルス(LAX)',days:'月',s:1},
+    {std:'0720',flt:'W81808',dst:'バンクーバー(YVR)',days:'月',s:0},
+    {std:'0805',flt:'OZ193', dst:'ソウル(ICN)',     days:'火',s:0},
+    {std:'0820',flt:'CX005', dst:'香港(HKG)',        days:'水木金日',s:1},
+    {std:'0820',flt:'CX005', dst:'香港(HKG)',        days:'土',s:0},
+    {std:'0820',flt:'CX005', dst:'台北(TPE)',        days:'木日',s:0},
+    {std:'0830',flt:'CX005', dst:'香港(HKG)',        days:'火',s:1},
+    {std:'0830',flt:'CX005', dst:'台北(TPE)',        days:'火水金',s:0},
+    {std:'0835',flt:'NH8475',dst:'ソウル(ICN)',      days:'火水木金土日',s:0},
+    {std:'0835',flt:'OZ1816',dst:'ソウル(ICN)',      days:'火木',s:0},
+    {std:'0845',flt:'W81809',dst:'杭州(HGH)',        days:'月',s:0},
+    {std:'0920',flt:'CA1074',dst:'上海浦東(PVG)',    days:'日',s:0},
+    {std:'0940',flt:'PO752', dst:'シンシナティ(CVG)',days:'火水木金',s:1},
+    {std:'1000',flt:'CI5705',dst:'台北(TPE)',        days:'水',s:0},
+    {std:'1000',flt:'PO749', dst:'香港(HKG)',        days:'日',s:0},
+    {std:'1005',flt:'NH8513',dst:'香港(HKG)',        days:'日',s:0},
+    {std:'1010',flt:'JL6777',dst:'天津(TSN)',        days:'水木土日',s:0},
+    {std:'1010',flt:'PO213', dst:'ソウル(ICN)',      days:'木金土',s:0},
+    {std:'1020',flt:'NH8441',dst:'台北(TPE)',        days:'日',s:0},
+    {std:'1050',flt:'CA1074',dst:'上海浦東(PVG)',    days:'水',s:0},
+    {std:'1100',flt:'MU7784',dst:'上海浦東(PVG)',    days:'火水木金',s:0},
+    {std:'1100',flt:'NH8515',dst:'厦門(XMN)',        days:'火木金日',s:0},
+    {std:'1130',flt:'CA1074',dst:'上海浦東(PVG)',    days:'土',s:0},
+    {std:'1135',flt:'MU7784',dst:'上海浦東(PVG)',    days:'日',s:0},
+    {std:'1200',flt:'C89276',dst:'ミラノ(MXP)',      days:'土',s:1},
+    {std:'1200',flt:'C89276',dst:'香港(HKG)',        days:'土',s:0},
+    {std:'1205',flt:'CA1075',dst:'ロサンゼルス(LAX)',days:'月水金',s:0},
+    {std:'1210',flt:'C89264',dst:'ミラノ(MXP)',      days:'木',s:1},
+    {std:'1210',flt:'C89264',dst:'香港(HKG)',        days:'木',s:0},
+    {std:'1210',flt:'C89267',dst:'ミラノ(MXP)',      days:'日',s:1},
+    {std:'1210',flt:'C89267',dst:'香港(HKG)',        days:'日',s:0},
+    {std:'1230',flt:'W81802',dst:'バンクーバー(YVR)',days:'月水金日',s:0},
+    {std:'1300',flt:'CI5705',dst:'台北(TPE)',        days:'火',s:0},
+    {std:'1325',flt:'NH8408',dst:'ロサンゼルス(LAX)',days:'火土',s:0},
+    {std:'1330',flt:'MU7524',dst:'上海浦東(PVG)',    days:'毎日',s:0},
+    {std:'1355',flt:'W81810',dst:'バンクーバー(YVR)',days:'日',s:0},
+    {std:'1425',flt:'NH8402',dst:'シカゴ(ORD)',      days:'月木金',s:0},
+    {std:'1425',flt:'PO217', dst:'上海浦東(PVG)',    days:'日',s:1},
+    {std:'1425',flt:'PO217', dst:'ソウル(ICN)',      days:'日',s:0},
+    {std:'1425',flt:'PO717', dst:'上海浦東(PVG)',    days:'木',s:1},
+    {std:'1425',flt:'PO717', dst:'ソウル(ICN)',      days:'木',s:0},
+    {std:'1425',flt:'PO962', dst:'シンシナティ(CVG)',days:'日',s:1},
+    {std:'1455',flt:'PO717', dst:'上海浦東(PVG)',    days:'火',s:1},
+    {std:'1455',flt:'PO717', dst:'ソウル(ICN)',      days:'火',s:0},
+    {std:'1530',flt:'CV7366',dst:'ルクセンブルグ(LUX)',days:'土',s:1},
+    {std:'1555',flt:'JL6719',dst:'台北(TPE)',        days:'月火水木金',s:0},
+    {std:'1730',flt:'CF208', dst:'上海浦東(PVG)',    days:'火木土',s:0},
+    {std:'1750',flt:'PO215', dst:'台北(TPE)',        days:'土',s:0},
+    {std:'1815',flt:'OZ197', dst:'ソウル(ICN)',      days:'水金',s:0},
+    {std:'1920',flt:'JL6781',dst:'香港(HKG)',        days:'土',s:0},
+    {std:'1930',flt:'CV7333',dst:'ルクセンブルグ(LUX)',days:'水',s:1},
+    {std:'1935',flt:'PO232', dst:'ソウル(ICN)',      days:'日',s:0},
+    {std:'2010',flt:'CA1076',dst:'上海浦東(PVG)',    days:'土',s:0},
+    {std:'2010',flt:'NH8507',dst:'バンコク(BKK)',    days:'水金',s:0},
+    {std:'2010',flt:'NH8525',dst:'厦門(XMN)',        days:'月水土',s:0},
+    {std:'2025',flt:'LH8385',dst:'フランクフルト(FRA)',days:'火',s:1},
+    {std:'2025',flt:'LH8385',dst:'ソウル(ICN)',      days:'火',s:0},
+    {std:'2030',flt:'CI5705',dst:'台北(TPE)',        days:'木金土',s:0},
+    {std:'2030',flt:'LH8383',dst:'フランクフルト(FRA)',days:'日',s:1},
+    {std:'2030',flt:'LH8383',dst:'ソウル(ICN)',      days:'日',s:0},
+    {std:'2030',flt:'LH8385',dst:'フランクフルト(FRA)',days:'土',s:1},
+    {std:'2030',flt:'LH8385',dst:'ソウル(ICN)',      days:'土',s:0},
+    {std:'2030',flt:'LH8387',dst:'フランクフルト(FRA)',days:'月',s:1},
+    {std:'2030',flt:'LH8387',dst:'フランクフルト(FRA)',days:'水',s:1},
+    {std:'2030',flt:'LH8387',dst:'ソウル(ICN)',      days:'月',s:0},
+    {std:'2030',flt:'LH8387',dst:'ソウル(ICN)',      days:'月水',s:0},
+    {std:'2045',flt:'NH8511',dst:'香港(HKG)',        days:'火水木土',s:0},
+    {std:'2120',flt:'IJ407', dst:'札幌新千歳(CTS)', days:'毎日',s:0},
+    {std:'2125',flt:'LH8385',dst:'フランクフルト(FRA)',days:'火木土',s:1},
+    {std:'2125',flt:'LH8385',dst:'ソウル(ICN)',      days:'火木土',s:0},
+    {std:'2125',flt:'LH8387',dst:'フランクフルト(FRA)',days:'水金',s:1},
+    {std:'2125',flt:'LH8387',dst:'ソウル(ICN)',      days:'水金',s:0},
+    {std:'2130',flt:'7L902', dst:'バクー(GYD)',      days:'木',s:0},
+    {std:'2130',flt:'LD209', dst:'香港(HKG)',        days:'月火水木金土',s:0},
+    {std:'2200',flt:'7L904', dst:'バクー(GYD)',      days:'土',s:0},
+    {std:'2200',flt:'IJ425', dst:'北九州(KKJ)',      days:'毎日',s:0},
+    {std:'2200',flt:'JL6783',dst:'上海浦東(PVG)',    days:'月火水木金',s:1},
+    {std:'2200',flt:'NH8431',dst:'上海浦東(PVG)',    days:'毎日',s:0},
+    {std:'2205',flt:'PO213', dst:'上海浦東(PVG)',    days:'土',s:0},
+    {std:'2230',flt:'NH8415',dst:'上海浦東(PVG)',    days:'日',s:0},
+    {std:'2230',flt:'NH8427',dst:'青島(TAO)',        days:'月火水木金土',s:0},
+    {std:'2240',flt:'NH8527',dst:'北京(PEK)',        days:'火木金日',s:0},
+  ];
+
+  function renderDep() {
+    const el = document.getElementById('dep-list');
+    if (!el) return;
+    const timeF = document.getElementById('dep-time-f')?.value || '';
+    const destF = (document.getElementById('dep-dest-f')?.value || '').trim().toUpperCase();
+    const dayF  = FLT._depDay || '';
+
+    // Update day-button active state
+    document.querySelectorAll('#tab-flight #p5 .ftab').forEach(b => {
+      b.classList.toggle('on', b.textContent.trim() === (dayF || 'すべて'));
+    });
+
+    let rows = NRT_DEP.slice();
+    if (timeF) {
+      const refM = parseTimeMin(timeF);
+      const stdMin = s => { const m = s.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : parseTimeMin(s); };
+      if (refM !== null) rows = rows.filter(r => { const t = stdMin(r.std); return t !== null && etaDiff(t, refM) <= 60; });
+    }
+    if (destF) rows = rows.filter(r => r.dst.toUpperCase().includes(destF) || r.flt.toUpperCase().includes(destF));
+    if (dayF)  rows = rows.filter(r => r.days === '毎日' || r.days.includes(dayF));
+    const _sm = s => { const m = s.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : (parseTimeMin(s)||0); };
+    rows.sort((a,b) => _sm(a.std) - _sm(b.std));
+
+    if (!rows.length) { el.innerHTML = '<div class="empty">該当なし</div>'; return; }
+    el.innerHTML = `<table class="tbl">
+      <thead><tr><th>STD</th><th>便名</th><th>目的地</th><th>曜日</th><th>経由</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr>
+          <td style="color:var(--accent);font-weight:700">${esc(r.std)}</td>
+          <td><strong>${esc(r.flt)}</strong></td>
+          <td>${esc(r.dst)}</td>
+          <td style="color:var(--sub);font-size:0.8em">${esc(r.days)}</td>
+          <td style="color:var(--sub);font-size:0.8em">${r.s?'1STOP':'DIRECT'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table><div class="count">${rows.length}便</div>`;
+  }
+
   // Expose public API
   const FLT = window.FLT = {
     go, go2, tab, render,
@@ -9601,8 +9784,8 @@ function tab(n) {
     edit, del, saveFlight,
     doImport, doExport, scanFolder, refreshPdf,
     saveSettings, clearAll, updateApiStatus,
-    clearEtaFilter,
-    _ready: false
+    clearEtaFilter, renderDep,
+    _depDay: '', _ready: false
   };
 
   FLT.init = function() {
