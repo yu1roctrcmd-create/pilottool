@@ -223,7 +223,11 @@
       max-width: 480px; margin: 0 auto; padding: 16px 16px 40px;
     }
     @media (min-width: 768px) {
-      #tab-to .tab-content { max-width: 960px; padding: 20px 24px 48px; }
+      #tab-to .tab-content,
+      #tab-clb .tab-content,
+      #tab-crz .tab-content,
+      #tab-des .tab-content,
+      #tab-wxrdr .tab-content { max-width: 960px; padding: 20px 24px 48px; }
     }
 
     /* ══════════════════════════════════════════
@@ -7595,6 +7599,8 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-clb">
 <div class="tab-content">
+<div class="xw-layout">
+<div class="xw-col">
 
 <!-- 0. ECON(CI=40) Climb Speed -->
 <div class="card">
@@ -7720,6 +7726,9 @@ restoreState();
   </p>
 </div>
 
+</div><!-- /xw-col left -->
+<div class="xw-col">
+
 <!-- 4. Max Rate Climb Card -->
 <div class="card" style="margin-top:12px">
   <div class="card-title">Max Rate Climb &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">747-8 · VREF30 + 120 kt → M0.83</span></div>
@@ -7820,6 +7829,8 @@ restoreState();
   </ul>
 </div>
 
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
 </div><!-- /tab-content -->
 </div><!-- /tab-clb -->
 
@@ -7828,6 +7839,8 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-crz">
 <div class="tab-content">
+<div class="xw-layout">
+<div class="xw-col">
 
 <div class="card">
   <div class="card-title">IAS / TAS / Mach Converter</div>
@@ -7893,6 +7906,9 @@ restoreState();
   </div>
   <div id="crz-table"></div>
 </div>
+
+</div><!-- /xw-col left -->
+<div class="xw-col">
 
 <!-- Mach/IAS/TAS Reference Table -->
 <div class="card" style="margin-top:12px">
@@ -7988,6 +8004,8 @@ restoreState();
   </div>
 </div>
 
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
 </div><!-- /tab-content -->
 </div><!-- /tab-crz -->
 
@@ -7996,6 +8014,8 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-des">
 <div class="tab-content">
+<div class="xw-layout">
+<div class="xw-col">
 
 <!-- ECON (CI=40) Descent Speed -->
 <div class="card">
@@ -8088,6 +8108,9 @@ restoreState();
     <p style="font-size:0.78em;color:var(--muted)">RWY ElevとISA Devを入力してください</p>
   </div>
 </div>
+
+</div><!-- /xw-col left -->
+<div class="xw-col">
 
 <!-- ── Energy Control Leaflet ── -->
 <div class="card" style="margin-top:12px">
@@ -8273,6 +8296,8 @@ restoreState();
   </ul>
 </div>
 
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
 </div><!-- /tab-content -->
 </div><!-- /tab-des -->
 
@@ -8284,7 +8309,9 @@ restoreState();
 ═════════════════════════════════════════ -->
 <div class="tab-panel" id="tab-wxrdr">
 <div class="tab-content">
+<div class="xw-layout">
 
+<div class="xw-col">
 <div class="card">
   <div class="card-title">WX Radar — Tilt &amp; Beam Visualizer
     <span>B747-8F WRT-2100 MULTISCAN</span>
@@ -8370,6 +8397,11 @@ restoreState();
     </div>
   </div>
 
+</div><!-- /controls card -->
+</div><!-- /xw-col left -->
+
+<div class="xw-col">
+<div class="card">
   <div style="display:grid;grid-template-columns:5fr 7fr;gap:10px;margin-top:10px;align-items:start">
     <div>
       <div style="font-size:0.62em;letter-spacing:1.5px;color:var(--muted);text-align:center;margin-bottom:4px">◉ ND VIEW</div>
@@ -8383,7 +8415,9 @@ restoreState();
 
   <div id="wxr-table" style="margin-top:12px"></div>
 
-  <!-- 地球曲率 補正Tilt Reference -->
+</div><!-- /visualization card -->
+
+<!-- 地球曲率 補正Tilt Reference -->
   <div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,0.02)">
     <div style="font-size:0.65em;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px">地球曲率 補正TILT</div>
     <!-- Table -->
@@ -8409,8 +8443,9 @@ restoreState();
     <div style="background:rgba(68,170,255,0.07);border-radius:6px;padding:7px 10px;font-family:monospace;font-size:0.82em;color:#4af;margin-bottom:5px">曲率補正 Tilt = −( 距離 NM ÷ 120 )°</div>
     <div style="font-size:0.75em;color:var(--muted)">→ 120NM ごとに −1° 追加</div>
   </div>
-</div>
 
+</div><!-- /xw-col right -->
+</div><!-- /xw-layout -->
 </div>
 </div><!-- /tab-wxrdr -->
 
@@ -10238,11 +10273,13 @@ function _wxrDrawVert(altFt, tilts, rangeNm, cb=null) {
     }
   });
 
-  // ── 3.5° beam width annotation ──
-  ctx.fillStyle='rgba(255,255,255,0.35)';
-  ctx.font=`italic ${Math.round(W*0.024)}px monospace`;
-  ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('3.5° beam width',ML+4,MT+4);
+  // ── 3.5° beam width annotation (MAN mode only) ──
+  if (_wxrMode !== 'auto') {
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.font=`italic ${Math.round(W*0.024)}px monospace`;
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('3.5° beam width',ML+4,MT+4);
+  }
 
   // ── Ground fill ──
   ctx.fillStyle='rgba(40,65,25,0.7)'; ctx.fillRect(ML,yp(0),pW,MT+pH-yp(0));
