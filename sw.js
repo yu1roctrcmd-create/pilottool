@@ -1,4 +1,4 @@
-const CACHE = 'nca-tools-v1';
+const CACHE = 'nca-tools-v2';
 const ASSETS = ['./'];
 
 self.addEventListener('install', e => {
