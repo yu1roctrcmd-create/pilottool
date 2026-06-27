@@ -1196,8 +1196,13 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
       }
       // KORD は自動的に FAA 方式を選択
       if (apSel.value === 'KORD') {
+        console.log('🔧 KORD selected - auto-selecting FAA standard');
         const faaBtn = document.querySelector('.aim-std-btn[data-std="faa"]');
-        if (faaBtn) faaBtn.click();
+        console.log('FAA button found:', !!faaBtn);
+        if (faaBtn) {
+          console.log('Clicking FAA button...');
+          faaBtn.click();
+        }
       }
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
       if (typeof window.syncPapiTo === 'function')
