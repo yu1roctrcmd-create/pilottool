@@ -7607,9 +7607,12 @@ function resetAllState() {
 }
 
 function circuitReset() {
+  const auth = parseInt(localStorage.getItem('circuit_auth') || '0');
+  const valid = Date.now() - auth < 12 * 60 * 60 * 1000;
   const lock = document.getElementById('circuit-lock');
   const err  = document.getElementById('circuit-pw-err');
   const inp  = document.getElementById('circuit-pw');
+  if (valid) { if (lock) lock.style.display = 'none'; return; }
   if (lock) lock.style.display = 'flex';
   if (err)  err.style.display  = 'none';
   if (inp)  { inp.value = ''; setTimeout(() => inp.focus(), 150); }
@@ -7619,6 +7622,7 @@ function circuitUnlock() {
   const err = document.getElementById('circuit-pw-err');
   if (!inp) return;
   if (inp.value === '7700') {
+    localStorage.setItem('circuit_auth', Date.now());
     document.getElementById('circuit-lock').style.display = 'none';
     inp.value = '';
   } else {
