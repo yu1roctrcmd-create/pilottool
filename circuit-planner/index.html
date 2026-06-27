@@ -42,11 +42,25 @@
   // ===== iframe 判定 =====
   const isInIframe = window.self !== window.top;
 
-  // iframe 内では topbar を非表示
+  // iframe 内では topbar のスタイルを調整（h1とボタンを非表示、タブのみ表示）
   if (isInIframe) {
     document.addEventListener('DOMContentLoaded', () => {
       const topbar = document.getElementById('topbar');
-      if (topbar) topbar.style.display = 'none';
+      const h1 = topbar ? topbar.querySelector('h1') : null;
+      const pdfBtn = document.getElementById('pdf-btn');
+      const cacheBtn = document.getElementById('cache-btn');
+      const offlineIndicator = document.getElementById('offline-indicator');
+      const clearCacheBtn = document.getElementById('clear-cache-btn');
+
+      if (topbar) {
+        topbar.style.padding = '4px 12px';
+        topbar.style.gap = '4px';
+      }
+      if (h1) h1.style.display = 'none';
+      if (pdfBtn) pdfBtn.style.display = 'none';
+      if (cacheBtn) cacheBtn.style.display = 'none';
+      if (offlineIndicator) offlineIndicator.style.display = 'none';
+      if (clearCacheBtn) clearCacheBtn.style.display = 'none';
     });
   }
 
