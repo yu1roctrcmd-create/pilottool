@@ -337,7 +337,7 @@ const AIRPORTS = {
       // RW 15/33: 10,865ft ≈ 3312m
       "33": {
         name: "33",
-        threshold: [61.17181, -149.99891],   // Google Earth: 61°10'18.50"N 149°59'56.09"W
+        threshold: [61.17180555555555, -149.99987777777775],   // Google Earth: 61°10'18.50"N 149°59'56.09"W
         elevation: 122,
         trueHeading: 345,          // FAA AIP AD2.12 True Bearing: 345°
         length_m: 3312,
