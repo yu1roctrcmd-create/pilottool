@@ -39,8 +39,18 @@
   <button id="clear-cache-btn" style="background:#b71c1c;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer">🔄 アップデート</button>
 </div>
 <script>
-  // ===== パスワード認証（iframe内では無効化） =====
+  // ===== iframe 判定 =====
   const isInIframe = window.self !== window.top;
+
+  // iframe 内では topbar を非表示
+  if (isInIframe) {
+    document.addEventListener('DOMContentLoaded', () => {
+      const topbar = document.getElementById('topbar');
+      if (topbar) topbar.style.display = 'none';
+    });
+  }
+
+  // ===== パスワード認証（iframe内では無効化） =====
   const AUTH_PASSWORD = '7700';
   const AUTH_KEY = 'circuit-planner-auth';
   const AUTH_DURATION = 12 * 60 * 60 * 1000; // 12時間
