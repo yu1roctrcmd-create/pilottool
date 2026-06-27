@@ -225,6 +225,9 @@
     .tab-content {
       max-width: 480px; margin: 0 auto; padding: 16px 16px 40px;
     }
+    #tab-circuit .tab-content {
+      max-width: 100% !important; padding: 0 !important; margin: 0 !important;
+    }
     @media (min-width: 768px) {
       #tab-to .tab-content,
       #tab-clb .tab-content,
@@ -923,6 +926,7 @@
   <button class="tab-btn"        onclick="switchTab('clb',this)">CLB</button>
   <button class="tab-btn"        onclick="switchTab('crz',this)">CRZ</button>
   <button class="tab-btn"        onclick="switchTab('des',this)">DES</button>
+  <button class="tab-btn"        onclick="switchTab('circuit',this)">CIRCUIT</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
@@ -978,13 +982,15 @@
       <option value="">選択...</option>
     </select>
   </div>
-  <div style="margin-top:10px">
+  <div class="xd-drum-wrap">
     <div class="picker-group-label">RW HDG (°MAG)</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-      <input type="range" id="xd-rwyhdg" data-pad="3" min="1" max="360" step="1" value="270"
-             style="flex:1;accent-color:var(--accent);cursor:pointer">
-      <div class="drum-display" id="disp-xd-rwyhdg" style="min-width:42px;text-align:right">270°</div>
+    <div class="xd-drum-solo">
+      <div class="drum">
+        <div class="drum-col" id="xd-rwyhdg"></div>
+        <div class="drum-sel"></div>
+      </div>
     </div>
+    <div class="drum-display" id="disp-xd-rwyhdg">270°</div>
   </div>
 </div>
 
@@ -1462,13 +1468,15 @@
       <option value="">選択...</option>
     </select>
   </div>
-  <div style="margin-top:10px">
+  <div class="xd-drum-wrap">
     <div class="picker-group-label">RW HDG (°MAG)</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-      <input type="range" id="ldg-rwyhdg" data-pad="3" min="1" max="360" step="1" value="270"
-             style="flex:1;accent-color:var(--accent);cursor:pointer">
-      <div class="drum-display" id="disp-ldg-rwyhdg" style="min-width:42px;text-align:right">270°</div>
+    <div class="xd-drum-solo">
+      <div class="drum">
+        <div class="drum-col" id="ldg-rwyhdg"></div>
+        <div class="drum-sel"></div>
+      </div>
     </div>
+    <div class="drum-display" id="disp-ldg-rwyhdg">270°</div>
   </div>
 </div>
 
@@ -9000,15 +9008,15 @@ restoreState();
       <div style="margin-bottom:14px">
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
           <div>
-            <div class="flabel">出発空港 ETD (±1h)</div>
-            <input class="fi" type="time" id="arr-etd-f" oninput="FLT.renderArr()">
+            <div class="flabel">NRT到着 ETA (±1h)</div>
+            <input class="fi" type="time" id="arr-eta-f" oninput="FLT.renderArr()">
           </div>
           <div>
             <div class="flabel">出発地 / 便名</div>
             <input class="fi" id="arr-org-f" placeholder="HKG, 香港..." autocomplete="off"
               oninput="FLT.renderArr()">
           </div>
-          <button class="flt-btn btn-muted btn-sm" onclick="document.getElementById('arr-etd-f').value='';document.getElementById('arr-org-f').value='';FLT.renderArr()">クリア</button>
+          <button class="flt-btn btn-muted btn-sm" onclick="document.getElementById('arr-eta-f').value='';document.getElementById('arr-org-f').value='';FLT.renderArr()">クリア</button>
         </div>
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
           <button class="ftab" onclick="FLT._arrDay='';FLT.renderArr()" style="font-size:11px;padding:4px 8px">すべて</button>
@@ -9030,6 +9038,11 @@ restoreState();
 </div>
 </div>
 
+<div class="tab-panel" id="tab-circuit">
+<div class="tab-content" style="padding:0; border:none; height:calc(100vh - 120px);">
+  <iframe src="./circuit-planner/index.html" style="width:100%; height:100%; border:none; display:block;"></iframe>
+</div>
+</div>
 
 <script>
 
@@ -9849,10 +9862,10 @@ function tab(n) {
   function renderArr() {
     const el = document.getElementById('arr-list');
     if (!el) return;
-    const timeF = document.getElementById('arr-etd-f')?.value || '';
+    const timeF = document.getElementById('arr-eta-f')?.value || '';
     const orgF  = (document.getElementById('arr-org-f')?.value || '').trim().toUpperCase();
     const dayF  = FLT._arrDay || '';
-    const _sm   = s => { const m = s.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : (parseTimeMin(s)||0); };
+    const _sm   = s => { const c = s.replace(/\+\d+$/, ''); const m = c.match(/^(\d{2})(\d{2})$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : (parseTimeMin(c)||0); };
 
     // Update day-button active state
     document.querySelectorAll('#tab-flight #p6 .ftab').forEach(b => {
@@ -9862,19 +9875,19 @@ function tab(n) {
     let rows = NRT_ARR.slice();
     if (timeF) {
       const refM = parseTimeMin(timeF);
-      if (refM !== null) rows = rows.filter(r => { const t = _sm(r.etd); return etaDiff(t, refM) <= 60; });
+      if (refM !== null) rows = rows.filter(r => { const t = _sm(r.sta); return etaDiff(t, refM) <= 60; });
     }
     if (orgF) rows = rows.filter(r => r.org.toUpperCase().includes(orgF) || r.flt.toUpperCase().includes(orgF));
     if (dayF) rows = rows.filter(r => r.days === '毎日' || r.days.includes(dayF));
-    rows.sort((a,b) => _sm(a.etd) - _sm(b.etd));
+    rows.sort((a,b) => _sm(a.sta) - _sm(b.sta));
 
     if (!rows.length) { el.innerHTML = '<div class="empty">該当なし</div>'; return; }
     el.innerHTML = `<table class="tbl">
-      <thead><tr><th>ETD</th><th>STA(NRT)</th><th>便名</th><th>出発地</th><th>曜日</th></tr></thead>
+      <thead><tr><th>ETA(NRT)</th><th>ETD</th><th>便名</th><th>出発地</th><th>曜日</th></tr></thead>
       <tbody>
         ${rows.map(r=>`<tr>
-          <td style="color:var(--accent);font-weight:700">${esc(r.etd)}</td>
-          <td style="color:var(--sub)">${esc(r.sta)}</td>
+          <td style="color:var(--accent);font-weight:700">${esc(r.sta)}</td>
+          <td style="color:var(--sub)">${esc(r.etd)}</td>
           <td><strong>${esc(r.flt)}</strong></td>
           <td>${esc(r.org)}</td>
           <td style="color:var(--sub);font-size:0.8em">${esc(r.days)}</td>
