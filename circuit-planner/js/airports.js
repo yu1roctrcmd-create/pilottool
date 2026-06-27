@@ -804,5 +804,127 @@ const AIRPORTS = {
         }
       }
     }
+  },
+  VHHH: {
+    name: "香港国際空港",
+    icao: "VHHH",
+    elevation: 23,
+    center: [22.309, 113.915],
+    runways: {
+      "07L": {
+        name: "07L",
+        threshold: [22.321589, 113.882295],
+        elevation: 23,
+        trueHeading: 70.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "25R",
+        tdze: 23.3,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "25R": {
+        name: "25R",
+        threshold: [22.331236, 113.913955],
+        elevation: 23,
+        trueHeading: 250.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "07L",
+        tdze: 23.1,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'R',
+          aimFt: 1712,
+        }
+      },
+      "07C": {
+        name: "07C",
+        threshold: [22.311272, 113.898511],
+        elevation: 22,
+        trueHeading: 70.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "25C",
+        tdze: 22.3,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "25C": {
+        name: "25C",
+        threshold: [22.320236, 113.926883],
+        elevation: 22,
+        trueHeading: 250.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "07C",
+        tdze: 22.0,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'R',
+          aimFt: 1712,
+        }
+      },
+      "07R": {
+        name: "07R",
+        threshold: [22.296675, 113.898886],
+        elevation: 27,
+        trueHeading: 70.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "25L",
+        tdze: 27.0,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "25L": {
+        name: "25L",
+        threshold: [22.307431, 113.932265],
+        elevation: 27,
+        trueHeading: 250.90,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "07R",
+        tdze: 26.9,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1312,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'R',
+          aimFt: 1712,
+        }
+      }
+    }
   }
 };
