@@ -823,7 +823,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // GS Antenna position
           papiFt: 1312,
           papiMeht: 65.3,
           papiSide: 'L',
