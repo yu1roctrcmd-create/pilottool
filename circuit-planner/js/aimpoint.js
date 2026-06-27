@@ -1180,6 +1180,11 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     if (apSel) apSel.addEventListener('change', () => {
       updateAimRunwayOptions();
       loadAimIlsDefaults();
+      // ZSPD は自動的に CHINA 方式を選択
+      if (apSel.value === 'ZSPD') {
+        const chinaBtn = document.querySelector('.aim-std-btn[data-std="china"]');
+        if (chinaBtn) chinaBtn.click();
+      }
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
       if (typeof window.syncPapiTo === 'function')
         window.syncPapiTo(apSel.value, el('aim-runway-sel') ? el('aim-runway-sel').value : null);
