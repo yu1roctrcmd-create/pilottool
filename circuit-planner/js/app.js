@@ -833,7 +833,11 @@ function onAirportChange() {
   rwySelect.innerHTML = '';
   Object.keys(airport.runways).forEach(k => {
     const opt = document.createElement('option');
-    opt.value = k; opt.textContent = k;
+    const rwy = airport.runways[k];
+    opt.value = k;
+    // disabled フラグがある場合は B747-8F 使用不可の表示を追加
+    opt.textContent = rwy.disabled ? k + ' (B747-8F 使用不可)' : k;
+    if (rwy.disabled) opt.disabled = true;
     rwySelect.appendChild(opt);
   });
   currentRunway = Object.keys(airport.runways)[0];

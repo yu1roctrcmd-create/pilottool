@@ -926,5 +926,305 @@ const AIRPORTS = {
         }
       }
     }
+  },
+  KORD: {
+    name: "Chicago O'Hare International",
+    icao: "KORD",
+    elevation: 680,
+    center: [41.974259, -87.907253],  // 41-58-36.985N 87-54-29.339W
+    magVar: -3,  // 3W (2010)
+    runways: {
+      // B747-8F 使用可能な滑走路のみ
+      // ============ RW 04L/22R (7500 ft) ============
+      "04L": {
+        name: "04L",
+        threshold: [41.98165559, -87.91392333],  // 41-58-53.9601N 87-54-50.1039W
+        elevation: 656,
+        trueHeading: 39,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "22R",
+        tdze: 658,
+        ils: {}  // No ILS
+      },
+      "22R": {
+        name: "22R",
+        threshold: [41.99753222, -87.89637122],  // 41-59-51.1336N 87-53-46.9364W
+        elevation: 648,
+        trueHeading: 219,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "04L",
+        tdze: 652,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      // ============ RW 04R/22L (8075 ft) ============
+      "04R": {
+        name: "04R",
+        threshold: [41.95332717, -87.89941295],  // 41-57-11.9778N 87-53-57.9066W
+        elevation: 661,
+        trueHeading: 42,
+        length_m: 2461,
+        displaced_ft: 0,
+        opposite: "22L",
+        tdze: 661,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'R',
+          aimFt: 1450,
+        }
+      },
+      "22L": {
+        name: "22L",
+        threshold: [41.96992167, -87.88640441],  // 41-58-11.718N 87-52-47.0759W
+        elevation: 654,
+        trueHeading: 222,
+        length_m: 2461,
+        displaced_ft: 0,
+        opposite: "04R",
+        tdze: 654,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      // ============ RW 09C/27C (11245 ft) ============
+      "09C": {
+        name: "09C",
+        threshold: [41.98830322, -87.93129623],  // 41-59-17.8916N 87-55-53.6564W
+        elevation: 673,
+        trueHeading: 90,
+        length_m: 3427,
+        displaced_ft: 0,
+        opposite: "27C",
+        tdze: 673,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      "27C": {
+        name: "27C",
+        threshold: [41.98831589, -87.88965450],  // 41-59-17.9172N 87-53-24.7562W
+        elevation: 652,
+        trueHeading: 270,
+        length_m: 3427,
+        displaced_ft: 0,
+        opposite: "09C",
+        tdze: 653,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      // ============ RW 10C/28C (10800 ft) ============
+      "10C": {
+        name: "10C",
+        threshold: [41.96568197, -87.93152161],  // 41-57-56.5251N 87-55-53.4778W
+        elevation: 669,
+        trueHeading: 90,
+        length_m: 3292,
+        displaced_ft: 0,
+        opposite: "28C",
+        tdze: 669,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      "28C": {
+        name: "28C",
+        threshold: [41.96576578, -87.89180475],  // 41-57-56.7568N 87-53-30.5171W
+        elevation: 650,
+        trueHeading: 270,
+        length_m: 3292,
+        displaced_ft: 0,
+        opposite: "10C",
+        tdze: 651,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      // ============ RW 10L/28R (13000 ft) ============
+      "10L": {
+        name: "10L",
+        threshold: [41.96899489, -87.93153761],  // 41-58-08.3816N 87-55-53.5142W
+        elevation: 672,
+        trueHeading: 90,
+        length_m: 3962,
+        displaced_ft: 0,
+        opposite: "28R",
+        tdze: 672,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      "28R": {
+        name: "28R",
+        threshold: [41.96907303, -87.88372845],  // 41-58-08.6529N 87-53-01.4244W
+        elevation: 651,
+        trueHeading: 270,
+        length_m: 3962,
+        displaced_ft: 0,
+        opposite: "10L",
+        tdze: 651,
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      // ============ B747-8F 使用不可な滑走路（グレーアウト） ============
+      "09L": {
+        name: "09L",
+        threshold: [42.00282650, -87.92667594],  // 42-00-10.1954N 87-55-36.0339W
+        elevation: 668,
+        trueHeading: 90,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "27R",
+        tdze: 668,
+        disabled: true,  // B747-8F 使用不可
+        ils: {}  // No ILS
+      },
+      "27R": {
+        name: "27R",
+        threshold: [42.00282525, -87.89908326],  // 42-00-10.1909N 87-53-56.6997W
+        elevation: 664,
+        trueHeading: 270,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "09L",
+        tdze: 664,
+        disabled: true,  // B747-8F 使用不可
+        ils: {}  // No ILS
+      },
+      "09R": {
+        name: "09R",
+        threshold: [41.98389364, -87.93129111],  // 41-59-02.0171N 87-55-53.6481W
+        elevation: 668,
+        trueHeading: 90,
+        length_m: 3432,
+        displaced_ft: 0,
+        opposite: "27L",
+        tdze: 668,
+        disabled: true,  // B747-8F 使用不可
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'L',
+          aimFt: 1450,
+        }
+      },
+      "27L": {
+        name: "27L",
+        threshold: [41.98389492, -87.88959883],  // 41-59-02.0417N 87-53-24.5558W
+        elevation: 650,
+        trueHeading: 270,
+        length_m: 3432,
+        displaced_ft: 0,
+        opposite: "09R",
+        tdze: 654,
+        disabled: true,  // B747-8F 使用不可
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          papiSide: 'R',
+          aimFt: 1450,
+        }
+      },
+      "10R": {
+        name: "10R",
+        threshold: [41.95720111, -87.92786668],  // 41-57-25.924N 87-55-40.3004W
+        elevation: 680,
+        trueHeading: 90,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "28L",
+        tdze: 680,
+        disabled: true,  // B747-8F 使用不可
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          aimFt: 1450,
+        }
+      },
+      "28L": {
+        name: "28L",
+        threshold: [41.95724624, -87.90028876],  // 41-57-26.0865N 87-54-01.0355W
+        elevation: 658,
+        trueHeading: 270,
+        length_m: 2286,
+        displaced_ft: 0,
+        opposite: "10R",
+        tdze: 667,
+        disabled: true,  // B747-8F 使用不可
+        ils: {
+          gpAngle: 3.0,
+          tch: 55,
+          gsAntFt: 1050,
+          papiFt: 1312,
+          papiMeht: 68.0,
+          aimFt: 1450,
+        }
+      }
+    }
   }
 };

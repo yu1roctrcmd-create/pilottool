@@ -86,7 +86,12 @@
     console.log('  ✅ Updating runways. Current:', cur, 'Available:', rwKeys);
 
     rwSel.innerHTML = rwKeys
-      .map(r => `<option value="${r}"${r === cur ? ' selected' : ''}>${r}</option>`)
+      .map(r => {
+        const rwy = ap.runways[r];
+        const isDisabled = rwy?.disabled ? ' disabled' : '';
+        const displayText = rwy?.disabled ? r + ' (B747-8F 使用不可)' : r;
+        return `<option value="${r}"${r === cur ? ' selected' : ''}${isDisabled}>${displayText}</option>`;
+      })
       .join('');
 
     if (rwKeys.length > 0 && !rwKeys.includes(cur)) {
@@ -1206,11 +1211,13 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     const lonDecBtn = document.getElementById('aim-lon-dec');
     const coordCancel = document.getElementById('coord-cancel');
     const coordSave = document.getElementById('coord-save');
+    const exportBtn = document.getElementById('aim-export-json');
 
     if (latDecBtn) latDecBtn.addEventListener('click', showCoordModal);
     if (lonDecBtn) lonDecBtn.addEventListener('click', showCoordModal);
     if (coordCancel) coordCancel.addEventListener('click', closeCoordModal);
     if (coordSave) coordSave.addEventListener('click', saveCoords);
+    if (exportBtn) exportBtn.addEventListener('click', exportCoordsAsJSON);
 
     // 初期座標表示
     updateCoordinateDisplay();
@@ -1463,11 +1470,43 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     alert('座標を保存しました。');
   }
 
-  function exportCoords() {
-    const { apCode, rwCode } = currentAimApRw();
-    const { lat, lon } = getAdjustedCoords();
-    const json = `  "${rwCode}": { threshold: [${lat.toFixed(6)}, ${lon.toFixed(6)}], ... }`;
-    alert('airports.js に以下を貼り付けてください：\n\n' + json);
+  function exportCoordsAsJSON() {
+    // すべての調整済み座標を収集
+    const adjustedCoords = {};
+    for (const apCode in AIRPORTS) {
+      const ap = AIRPORTS[apCode];
+      adjustedCoords[apCode] = {};
+      for (const rwCode in ap.runways) {
+        const key = `coords_${apCode}_${rwCode}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const [lat, lon] = JSON.parse(stored);
+          adjustedCoords[apCode][rwCode] = { threshold: [lat, lon] };
+        }
+      }
+    }
+
+    // 調整がない場合
+    const hasAdjustments = Object.values(adjustedCoords).some(a => Object.keys(a).length > 0);
+    if (!hasAdjustments) {
+      alert('調整された座標がありません。');
+      return;
+    }
+
+    // JSON を airports.js 形式で生成
+    let json = '// Adjusted runway thresholds (paste into airports.js)\n';
+    json += '// Format: "APCODE": { "RUNWAY": { threshold: [lat, lon] } }\n\n';
+    json += 'const ADJUSTED_COORDS = ' + JSON.stringify(adjustedCoords, null, 2) + ';\n\n';
+    json += '// Usage: merge this into AIRPORTS[apCode].runways[rwCode].threshold\n';
+
+    // JSON ファイルをダウンロード
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `adjusted_coords_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // airport/runway 変更時に座標を表示
@@ -1476,6 +1515,9 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     origUpdateAimRunwayOptions();
     updateCoordinateDisplay();
   };
+
+  // グローバルスコープで公開
+  window.exportCoordsAsJSON = exportCoordsAsJSON;
 
 })();
 
