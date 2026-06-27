@@ -789,9 +789,34 @@ function bindSlider(id, displayId, suffix) {
 
 // ===== オフラインキャッシュ =====
 function cacheTiles() {
-  const bounds = map.getBounds();
-  const zoom = map.getZoom();
-  alert(`ズームレベル ${zoom-2}〜${zoom} のタイルをキャッシュします。\n（サービスワーカーにより自動保存されます）`);
+  const btn = document.getElementById('cache-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ キャッシュ中...';
+
+  const tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
+  const labelUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile';
+
+  // すべての空港のタイルをプリフェッチ
+  let total = 0;
+  let completed = 0;
+  Object.values(AIRPORTS).forEach(airport => {
+    for (let z = 10; z <= 14; z++) {
+      const x = Math.floor((airport.center[1] + 180) / 360 * Math.pow(2, z));
+      const y = Math.floor((1 - Math.log(Math.tan(airport.center[0] * Math.PI / 180) + 1 / Math.cos(airport.center[0] * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+      total += 2;
+      fetch(`${tileUrl}/${z}/${y}/${x}`).finally(() => {
+        completed++;
+        btn.textContent = `⏳ ${completed}/${total}`;
+      }).catch(() => {});
+      fetch(`${labelUrl}/${z}/${y}/${x}`).catch(() => {});
+    }
+  });
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '✅ キャッシュ完了';
+    setTimeout(() => { btn.textContent = '📥 タイルキャッシュ'; }, 2000);
+  }, 3000);
 }
 
 // ===== 空港・滑走路変更 =====
