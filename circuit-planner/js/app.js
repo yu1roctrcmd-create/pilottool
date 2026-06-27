@@ -42,7 +42,16 @@ function initMap() {
 function drawRunway() {
   runwayLayer.clearLayers();
   const airport = AIRPORTS[currentAirport];
+  const drawnRunways = new Set();  // 既に描画した対の滑走路を記録
+
   Object.values(airport.runways).forEach(rwy => {
+    // 対になっている滑走路の場合、小さい方だけ描画
+    const opposite = rwy.opposite;
+    const pairKey = [rwy.name, opposite].sort().join('-');
+
+    if (drawnRunways.has(pairKey)) return;  // 既に描画済みならスキップ
+    drawnRunways.add(pairKey);
+
     const endPos = destinationPoint(
       rwy.threshold[0], rwy.threshold[1],
       rwy.drawHeading != null ? rwy.drawHeading : rwy.trueHeading,  // 描画は実滑走路方位

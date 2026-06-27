@@ -40,6 +40,7 @@
     } else if (which === 'aim') {
       if (aim) aim.style.display = 'flex';
       if (tabA) tabA.classList.add('active');
+      if (typeof window.updateAimRunwayOptions === 'function') window.updateAimRunwayOptions();
       if (typeof drawAimingPoint === 'function') drawAimingPoint();
     } else if (which === 'dev') {
       if (dev) dev.style.display = 'flex';
@@ -596,7 +597,7 @@
           ctx.beginPath(); ctx.moveTo(xTH - 6, yMehtPapi); ctx.lineTo(xTH + 16, yMehtPapi); ctx.stroke();
           ctx.fillStyle = '#c6ff00'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'left';
           ctx.fillText(
-            'MEHT(PAPI)  ' + mehtPapi + 'ft  (M=' + M_deg.toFixed(2) + '° = B' + B_deg.toFixed(2) + '°−2\')',
+            'MEHT(PAPI)  ' + mehtPapi + 'ft  (M=' + M_deg.toFixed(2) + '° = B' + B_deg.toFixed(2) + '°−2\'（0.033°）)',
             xTH + 18, yMehtPapi + 3
           );
         }
@@ -869,7 +870,7 @@
           '<span style="color:#c6ff00"><b>MEHT 計算（PAPI視覚追従）</b></span><br>' +
           'B = <b>' + B_deg.toFixed(4) + '°</b>　（= ' + angle.toFixed(2) + '° − spread×0.5）<br>' +
           'M = B − 2\' = <b>' + M_deg.toFixed(4) + '°</b><br>' +
-          'MEHT(PAPI) = ' + Math.round(papiFt) + ' × tan(' + M_deg.toFixed(2) + '°) = <b style="color:#c6ff00">' + mehtPapi + ' ft</b><br>' +
+          'MEHT(PAPI) = ' + Math.round(papiFt) + ' × tan(B' + B_deg.toFixed(2) + '° − 2\'（0.033°）) = <b style="color:#c6ff00">' + mehtPapi + ' ft</b><br>' +
           (mehtIls ? '<span style="color:#00bcd4">MEHT(ILS) = TCH(' + tch_info + ') + EAH(' + eyeHt + ') = <b>' + mehtIls + ' ft</b></span><br>' : '');
       })() +
       '<hr style="border-color:#1a4a7a;margin:4px 0">' +
@@ -1075,6 +1076,19 @@
   // ===== [5] 滑走路 基準点図（平面図） =====
   function drawRunwayDiagram() {
     const canvas = el('runway-canvas');
+
+    // 空港別 Aiming Point 方式の自動選択
+    const { apCode } = currentApRw();
+    const japanAps = ['RJAA', 'RJTT', 'RJGG', 'RJFR'];
+    const faaAps = ['PANC', 'KLAX'];
+    if (japanAps.includes(apCode)) {
+      standardMode = 'jp';
+    } else if (faaAps.includes(apCode)) {
+      standardMode = 'faa';
+    } else {
+      standardMode = 'icao';
+    }
+
     if (!canvas || el('papi-view').style.display === 'none') return;
 
     const angle   = parseFloat(el('papi-angle').value);
@@ -1112,6 +1126,57 @@
     // Aiming Point Marking（オレンジ帯）
     ctx.fillStyle = 'rgba(255,152,0,0.5)';
     ctx.fillRect(Xft(stdAimFt), rwyY - rwyH / 2, Xft(stripeEndFt) - Xft(stdAimFt), rwyH);
+    // Aiming Point Marking 補助線（各方式別）
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+
+    if (standardMode === 'jp') {
+      // 日本方式: 1312ft / 1509ft
+      ctx.beginPath();
+      ctx.moveTo(Xft(1312), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1312), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(Xft(1509), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1509), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+    } else if (standardMode === 'faa') {
+      // FAA方式: 1000ft / 1150ft / 1575ft
+      ctx.beginPath();
+      ctx.moveTo(Xft(1000), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1000), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(Xft(1150), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1150), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(Xft(1575), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1575), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+    } else if (standardMode === 'icao') {
+      // ICAO方式: 1312ft / 1460ft (1312 + 148stripe)
+      ctx.beginPath();
+      ctx.moveTo(Xft(1312), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1312), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(Xft(1460), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1460), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+    } else {
+      // PAPI のみ（ILS なし）: papiFt に補助線を表示
+      ctx.beginPath();
+      ctx.moveTo(Xft(papiFt), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(papiFt), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+    }
+
 
     // ── マーカー描画ヘルパー ──
     function marker(ft, color, label, sub, above) {
@@ -1304,7 +1369,8 @@
     }
 
     markOnCL(gsM,   '#69f0ae', 'GS Ant', -32);  // 左側ラベル
-    markOnCL(papiM, '#e040fb', 'PAPI',    32);  // 右側ラベル
+    markOnCL(papiM, '#e040fb', 'PAPI',    32);
+  // 右側ラベル
   }
 
   // ===== ILS データ自動反映 =====
@@ -1341,8 +1407,14 @@
 
       setSlider('papi-angle',  angle.toFixed(2));
       setSlider('papi-aim',    aimFt);
-      setSlider('papi-loc',    ils.papiFt);
+      setSlider('papi-loc',    ils.papiFt || 1312);
       setSlider('papi-gsant',  ils.gsAntFt);
+
+      // ILS あり をデフォルトに
+      const ilsBtn = el('papi-ils-btn');
+      const noilsBtn = el('papi-noils-btn');
+      if (ilsBtn) ilsBtn.classList.add('std-active');
+      if (noilsBtn) noilsBtn.classList.remove('std-active');
     } else {
       // ---- ILS なし場合（PAPI のみ）----
       // Pilot Eye Aiming = PAPI設置位置
@@ -1353,6 +1425,12 @@
       setSlider('papi-aim',    papiFt);  // ⭐ aimFt = papiFt
       setSlider('papi-loc',    papiFt);
       // gsAntFt はセット不要（ILSなしなので表示されない）
+
+      // ILS なし をデフォルトに
+      const ilsBtn = el('papi-ils-btn');
+      const noilsBtn = el('papi-noils-btn');
+      if (ilsBtn) ilsBtn.classList.remove('std-active');
+      if (noilsBtn) noilsBtn.classList.add('std-active');
     }
   }
 

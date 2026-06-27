@@ -296,7 +296,7 @@ const AIRPORTS = {
     runways: {
       "18": {
         name: "18",
-        threshold: [33.856797, 131.032856],   // 33°51'24.47"N 131°01'58.28"E
+        threshold: [33.856644, 131.032730],   // 33°51'23.92"N 131°01'57.83"E
         elevation: 20,
         trueHeading: 170.4,
         length_m: 2500,
@@ -308,14 +308,14 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 54,         // AIP RJFR ILS RWY18: HGT of ILS REF datum 16.5m(54ft)
           gsAntFt: 1033,   // AIP RJFR ILS RWY18: ILS-GP ANTENNA 315m(1033ft) from TH
-          papiFt: 1148,    // AIP: PAPI DIST FM THR 350m(1148ft)
+          papiFt: 1385,    // AIP: PAPI DIST FM THR 1385ft
           papiMeht: 60.0,  papiSide: 'L',   // ForeFlight AMM: PAPI-L 3.00°
           aimFt: 1433,     // G/S Follow Eye Aim: gsAntFt(1033) + 400ft
         }
       },
       "36": {
         name: "36",
-        threshold: [33.834556, 131.037325],   // 33°50'04.40"N 131°02'14.37"E
+        threshold: [33.834467, 131.037269],   // 33°50'04.08"N 131°02'14.17"E
         elevation: 23,
         trueHeading: 350.4,
         length_m: 2500,
@@ -323,7 +323,7 @@ const AIRPORTS = {
         opposite: "18",
         tdze: 23,
         trafficDir: 'right',  // 東側（海上）のみ可。西側（陸地）禁止
-        papi: { side: 'L', angle: 3.0 },  // ForeFlight AMM: PAPI-L 3.00°（ILSなし）
+        papi: { papiFt: 1550, side: 'L', angle: 3.0 },  // ForeFlight AMM: PAPI-L 3.00°（ILSなし）
       }
     }
   },
@@ -344,14 +344,7 @@ const AIRPORTS = {
         displaced_ft: 0,
         opposite: "15",
         tdze: 121,                 // FAA AIP AD2.12 TDZE: 120.8ft
-        ils: {
-          gpAngle: 3.0,
-          tch: 55,
-          gsAntFt: 1049,
-          papiFt: 1312,
-          papiMeht: 67.0,
-          papiSide: 'R',           // FAA AIP AD2.14: P4R
-        }
+        papi: { papiFt: 1312, papiMeht: 67.0, papiSide: 'R' }
       },
       "15": {
         name: "15",
@@ -383,7 +376,7 @@ const AIRPORTS = {
         name: "25L",
         threshold: [61.167869, -149.972700],   // 61°10'04.33"N 149°58'21.72"W
         elevation: 101, trueHeading: 269.9, length_m: 3780, displaced_ft: 0, opposite: "07R", tdze: 101,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 67.0 }
+        papi: { papiFt: 1312, papiMeht: 67.0, papiSide: 'R' }
       },
       // RW 7L/25R: 10,600ft=3231m
       "07L": {
@@ -396,7 +389,7 @@ const AIRPORTS = {
         name: "25R",
         threshold: [61.169808, -149.948364],   // 61°10'11.31"N 149°56'54.11"W
         elevation: 92, trueHeading: 269.9, length_m: 3231, displaced_ft: 0, opposite: "07L", tdze: 92,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 67.0 }
+        papi: { papiFt: 1312, papiMeht: 67.0, papiSide: 'R' }
       }
     }
   },
@@ -405,46 +398,47 @@ const AIRPORTS = {
     icao: "VTBS",
     elevation: 5,
     center: [13.685, 100.747],
+    aimingPoint: { stripeLength: 148 },
     // 滑走路はOurAirports実測 (真方位14.3/194.3=磁015°/195°), 公式AMM呼称
     runways: {
       "02L": {
         name: "02L",
         threshold: [13.665175, 100.729244],   // 13°39'54.63"N 100°43'45.28"E
         elevation: 5, trueHeading: 14.3, length_m: 4000, displaced_ft: 0, opposite: "20R", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1306, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
+        papi: { papiFt: 1312, papiMeht: 63.82, papiSide: 'L' }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "20R": {
         name: "20R",
         threshold: [13.700189, 100.738447],   // 13°42'00.68"N 100°44'18.41"E
         elevation: 5, trueHeading: 194.3, length_m: 4000, displaced_ft: 0, opposite: "02L", tdze: 5,
-        papi: { papiFt: 1306, papiMeht: 63.82, papiSide: 'L' }
+        papi: { papiFt: 1312, papiMeht: 63.82, papiSide: 'L' }
       },
       "02R": {
         name: "02R",
         threshold: [13.671278, 100.734664],   // 13°40'16.60"N 100°44'04.79"E
         elevation: 5, trueHeading: 14.3, length_m: 3700, displaced_ft: 0, opposite: "20L", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1306, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "20L": {
         name: "20L",
         threshold: [13.703947, 100.743178],   // 13°42'13.21"N 100°44'35.44"E
         elevation: 5, trueHeading: 194.3, length_m: 3700, displaced_ft: 0, opposite: "02R", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1306, papiMeht: 63.82, aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, aimFt: 1449 }
       },
       "01": {
         name: "01",
         threshold: [13.656697, 100.751831],   // 13°39'24.11"N 100°45'06.59"E
         elevation: 5, trueHeading: 14.3, length_m: 4000, displaced_ft: 0, opposite: "19", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1306, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "19": {
         name: "19",
         threshold: [13.691714, 100.761033],   // 13°41'30.17"N 100°45'39.72"E
         elevation: 5, trueHeading: 194.3, length_m: 4000, displaced_ft: 0, opposite: "01", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1306, papiMeht: 63.82, aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, aimFt: 1449 }
       }
     }
   },
@@ -647,6 +641,166 @@ const AIRPORTS = {
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
           aimFt: 1462
+        }
+      }
+    }
+  },
+  ZSPD: {
+    name: "上海浦東国際空港",
+    icao: "ZSPD",
+    elevation: 13,
+    center: [31.1446, 121.8050],
+    runways: {
+      "16L": {
+        name: "16L",
+        threshold: [31.160133, 121.816142],
+        elevation: 12,
+        trueHeading: 162,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "34R",
+        tdze: 12,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1027,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "34R": {
+        name: "34R",
+        threshold: [31.127658, 121.828411],
+        elevation: 13,
+        trueHeading: 342,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "16L",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1027,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "16R": {
+        name: "16R",
+        threshold: [31.158903, 121.811742],
+        elevation: 12,
+        trueHeading: 164,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "34L",
+        tdze: 12,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1024,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "34L": {
+        name: "34L",
+        threshold: [31.126439, 121.824020],
+        elevation: 13,
+        trueHeading: 342.02,
+        length_m: 3800,
+        displaced_ft: 0,
+        opposite: "16R",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1017,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "17L": {
+        name: "17L",
+        threshold: [31.161189, 121.785958],
+        elevation: 13,
+        trueHeading: 162,
+        length_m: 3400,
+        displaced_ft: 0,
+        opposite: "35R",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1030,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "35R": {
+        name: "35R",
+        threshold: [31.127000, 121.798855],
+        elevation: 13,
+        trueHeading: 342,
+        length_m: 4000,
+        displaced_ft: 0,
+        opposite: "17L",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1030,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
+        }
+      },
+      "17R": {
+        name: "17R",
+        threshold: [31.154753, 121.783323],
+        elevation: 13,
+        trueHeading: 162,
+        length_m: 3400,
+        displaced_ft: 0,
+        opposite: "35L",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1017,
+          papiFt: 1452,  // 442.8m
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1505,   // 458.7m (終端 518.7m)
+        }
+      },
+      "35L": {
+        name: "35L",
+        threshold: [31.125698, 121.794300],
+        elevation: 13,
+        trueHeading: 342,
+        length_m: 3400,
+        displaced_ft: 0,
+        opposite: "17R",
+        tdze: 13,
+        ils: {
+          gpAngle: 3.0,
+          tch: 53,
+          gsAntFt: 1017,
+          papiFt: 1312,
+          papiMeht: 65.0,
+          papiSide: 'L',
+          aimFt: 1712,
         }
       }
     }

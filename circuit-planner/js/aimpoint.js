@@ -16,6 +16,13 @@
     japan: { aimFt: 1312, stripeFt: 197, label: '日本標準（PAPI有無不問）' },
     icao:  { aimFt: 1312, stripeFt: 148, label: 'ICAO標準' },
     faa:   { aimFt: 1000, stripeFt: 150, label: 'FAA標準' },
+    china: {
+      aimFt: 1505,
+      stripeFt: 197,
+      label: 'CHINA標準',
+      supplementaryLinesM: [144.3, 293.5, 593.66, 893.18],
+      supplementaryStripes: [3, 3, 2, 1]
+    },
   };
 
   // Landing Threshold 座標（displaced threshold 考慮）
@@ -51,13 +58,41 @@
   function updateAimRunwayOptions() {
     const apSel = el('aim-airport-sel');
     const rwSel = el('aim-runway-sel');
-    if (!apSel || !rwSel || typeof AIRPORTS === 'undefined') return;
+
+    console.log('updateAimRunwayOptions called');
+    console.log('  apSel:', apSel?.value, 'rwSel:', rwSel?.value);
+    console.log('  AIRPORTS defined:', typeof AIRPORTS !== 'undefined');
+
+    if (!apSel || !rwSel || typeof AIRPORTS === 'undefined') {
+      console.log('updateAimRunwayOptions: ❌ missing elements or AIRPORTS');
+      return;
+    }
+
     const ap = AIRPORTS[apSel.value];
-    if (!ap) return;
+    console.log('  AIRPORTS[' + apSel.value + ']:', ap);
+
+    if (!ap) {
+      console.log('updateAimRunwayOptions: ❌ airport not found', apSel.value);
+      return;
+    }
+
+    if (!ap.runways) {
+      console.log('updateAimRunwayOptions: ❌ no runways property', ap);
+      return;
+    }
+
     const cur = rwSel.value;
-    rwSel.innerHTML = Object.keys(ap.runways)
+    const rwKeys = Object.keys(ap.runways);
+    console.log('  ✅ Updating runways. Current:', cur, 'Available:', rwKeys);
+
+    rwSel.innerHTML = rwKeys
       .map(r => `<option value="${r}"${r === cur ? ' selected' : ''}>${r}</option>`)
       .join('');
+
+    if (rwKeys.length > 0 && !rwKeys.includes(cur)) {
+      rwSel.value = rwKeys[0];
+      console.log('  ✅ Set default runway to', rwKeys[0]);
+    }
   }
 
   // ICAOコードのprefixでICAO/FAA標準を判別
@@ -68,7 +103,30 @@
 
   function loadAimIlsDefaults() {
     const rwy = currentAimRwy();
-    if (!rwy || !rwy.ils) return;
+    if (!rwy) return;
+
+    // ILS データ入力フィールドの有効/無効を切り替え
+    const ilsInputs = [el('aim-angle'), el('aim-gsant'), el('aim-papi')];
+    if (!rwy.ils) {
+      ilsInputs.forEach(inp => {
+        if (inp) {
+          inp.disabled = true;
+          inp.style.opacity = '0.5';
+          inp.style.backgroundColor = '#e0e0e0';
+          inp.style.cursor = 'not-allowed';
+        }
+      });
+      return;
+    } else {
+      ilsInputs.forEach(inp => {
+        if (inp) {
+          inp.disabled = false;
+          inp.style.opacity = '1';
+          inp.style.backgroundColor = '';
+          inp.style.cursor = 'auto';
+        }
+      });
+    }
     const ils = rwy.ils;
     const angle = ils.gpAngle || 3.0;
     const { apCode } = currentAimApRw();
@@ -257,8 +315,9 @@
       quad(0, 30, lf, rf, 'rgba(255,255,255,0.93)');
     }
 
-    // ---- FAA vs ICAO判定（KLAX=K、PANC=P → FAA方式）----
+    // ---- FAA vs ICAO vs CHINA判定（KLAX=K、PANC=P → FAA方式）----
     const isFAA = ((apCode || '')[0] === 'K' || (apCode || '')[0] === 'P');
+    const isCHINA = apCode === 'ZSPD';
 
     // ---- 標識: Aiming Pointマーキング ----
     // FAA: 1000ft(304.8m)固定 / ICAO: aimFt位置（既存動作を維持）
@@ -272,7 +331,27 @@
       return xM + 22 > apMarkNear && xM < apMarkFar;
     }
 
-    if (isFAA) {
+    if (isCHINA) {
+      // CHINA方式: 144.3m (3本), 293.5m (3本), 593.66m (2本), 893.18m (1本)
+      const chinaMarks = [
+        { dist: 144.3, count: 3 },
+        { dist: 293.5, count: 3 },
+        { dist: 593.66, count: 2 },
+        { dist: 893.18, count: 1 }
+      ];
+      for (const mark of chinaMarks) {
+        if (inAimZone(mark.dist)) continue;
+        const stripes = mark.count === 3
+          ? [[-0.25,-0.15],[-0.40,-0.30],[-0.55,-0.45], [ 0.15, 0.25],[ 0.30, 0.40],[ 0.45, 0.55]]
+          : mark.count === 2
+          ? [[-0.25,-0.15],[-0.40,-0.30], [ 0.15, 0.25],[ 0.30, 0.40]]
+          : [[-0.25,-0.15], [ 0.15, 0.25]];
+        const opacity = mark.count === 3 ? 0.82 : mark.count === 2 ? 0.75 : 0.75;
+        for (const [lf, rf] of stripes) {
+          quad(mark.dist, mark.dist + 22, lf, rf, `rgba(255,255,255,${opacity})`);
+        }
+      }
+    } else if (isFAA) {
       // FAA方式: 500ft/1500ft/2000ft/2500ft/3000ft（1000ft=Aiming Point位置のためスキップ）
       // 500ft (152.4m): 3本ずつ両側
       for (const [lf, rf] of [
@@ -366,7 +445,9 @@
     }
 
     // ---- TDZ / Aiming Point 補助線（白破線）----
-    const tdzAnnot = isFAA
+    const tdzAnnot = isCHINA
+      ? [[144.3, '144.3m'], [293.5, '293.5m'], [593.66, '593.66m'], [893.18, '893.18m']]
+      : isFAA
       ? [[152.4, '152m (500ft TDZ)'], [304.8, '305m (1000ft AP)']]
       : [[150, '150m (492ft)'], [300, '300m (984ft)']];
     for (const [distM, label] of tdzAnnot) {
@@ -644,7 +725,10 @@
 
   function updateAimMap() {
     if (!aimLeafletMap) return;
-    const rwy = currentAimRwy();
+    const { apCode, rwCode } = currentAimApRw();
+    const airport = AIRPORTS[apCode];
+    if (!airport) return;
+    const rwy = airport.runways[rwCode];
     if (!rwy) return;
 
     Object.values(aimMapLayers).forEach(l => { try { aimLeafletMap.removeLayer(l); } catch(e){} });
@@ -697,11 +781,17 @@
     const aimNearM = (aimFt * 0.3048) - 60; // Aiming Point近端(m)
     const { apCode: mapApCode } = currentAimApRw();
     const isFAA = /^[KP]/i.test(mapApCode);
+    const isCHINA = mapApCode === 'ZSPD';
 
     // 描画する距離リスト
     // FAA: 500/1000/1500/2000/2500/3000ft基準（実際のマーキング位置）
     // ICAO: 150/300/450/600/750/900m基準
-    const tdzMarkers = isFAA
+    // CHINA: 144.3/293.5/593.66/893.18m基準
+    const tdzMarkers = isCHINA
+      ? [144.3, 293.5, 593.66, 893.18].map(distM => ({
+          distM, label: `${distM}m`
+        }))
+      : isFAA
       ? [
           { distM:  500 * 0.3048, label:  '500ft Marker' },
           { distM: 1000 * 0.3048, label: '1000ft Marker', highlight: true },
@@ -710,7 +800,7 @@
           { distM: 2500 * 0.3048, label: '2500ft Marker' },
           { distM: 3000 * 0.3048, label: '3000ft Marker' },
         ]
-      : [150, 300, 450, 600, 750, 900].map(distM => ({
+      : [150, 300, 600, 750, 900, 922.5].map(distM => ({
           distM, label: `${distM}m (${Math.round(distM / 0.3048)}ft)`
         }));
 
@@ -746,6 +836,119 @@
           className: '', iconAnchor: [0, 10],
         })
       }).addTo(aimLeafletMap);
+    }
+
+    // Touch Down Zone（1000-2250ft の赤い枠）
+    const TDZ_START_FT = 1000;
+    const TDZ_END_FT = 2250;
+    const TDZ_HW = 40;  // TDZ幅（m）
+
+    aimMapLayers.tdzStart = L.polyline(
+      [rwyEdge(TDZ_START_FT, rwy, -1, HW), rwyEdge(TDZ_START_FT, rwy, +1, HW)],
+      { color: '#ff1744', weight: 2, dashArray: '2,2' }
+    ).addTo(aimLeafletMap);
+    aimMapLayers.tdzEnd = L.polyline(
+      [rwyEdge(TDZ_END_FT, rwy, -1, HW), rwyEdge(TDZ_END_FT, rwy, +1, HW)],
+      { color: '#ff1744', weight: 2, dashArray: '2,2' }
+    ).addTo(aimLeafletMap);
+
+    // TDZ 枠（4隅の線）
+    aimMapLayers.tdzBox = L.polygon([
+      rwyEdge(TDZ_START_FT, rwy, -1, HW),
+      rwyEdge(TDZ_START_FT, rwy, +1, HW),
+      rwyEdge(TDZ_END_FT, rwy, +1, HW),
+      rwyEdge(TDZ_END_FT, rwy, -1, HW),
+    ], { color: '#ff1744', weight: 2, fill: false, dashArray: '5,5' })
+      .addTo(aimLeafletMap);
+
+
+    // TDZ 終端補助線ラベル（922.5m）
+    aimMapLayers.tdzEndLbl = L.marker(posAt(TDZ_END_FT, rwy), {
+      icon: L.divIcon({
+        html: `<div style="background:rgba(255,23,68,.85);color:#fff;border:1px solid #ff1744;padding:3px 8px;font-size:10px;font-weight:700;border-radius:3px;white-space:nowrap">922.5m</div>`,
+        className: '', iconAnchor: [30, -15],
+      })
+    }).addTo(aimLeafletMap);
+
+    // Go Around Decision Point (Deep Landing)
+    const gaDpFt = 2791;  // 3026 - 235
+
+    // 235ft距離ラベル
+    aimMapLayers.gaDistanceLbl = L.marker(posAt((TDZ_END_FT + gaDpFt) / 2, rwy), {
+      icon: L.divIcon({
+        html: `<div style="background:rgba(255,152,0,.85);color:#fff;border:1px solid #ff9800;padding:2px 6px;font-size:9px;font-weight:700;border-radius:3px;white-space:nowrap">235ft</div>`,
+        className: '', iconAnchor: [20, -10],
+      })
+    }).addTo(aimLeafletMap);
+
+    // Go Around Decision Markerマーカー
+    aimMapLayers.gaDecisionMarker = L.marker(posAt(gaDpFt, rwy), {
+      icon: L.divIcon({
+        html: `<div style="color:#ff1744;font-size:24px;line-height:1;text-align:center">◆</div>`,
+        className: '', iconAnchor: [6, 12],
+      })
+    }).addTo(aimLeafletMap);
+    aimMapLayers.gaDecisionLbl = L.marker(posAt(gaDpFt, rwy), {
+      icon: L.divIcon({
+        html: `<div style="background:rgba(255,23,68,.85);color:#fff;border:1px solid #ff1744;padding:3px 8px;font-size:10px;font-weight:700;border-radius:3px;white-space:nowrap">Go Around Decision<br>(Deep Landing)</div>`,
+        className: '', iconAnchor: [50, -25],
+      })
+    }).addTo(aimLeafletMap);
+
+    // Aiming Point 補助線（各方式別：開始位置と終端）
+    const jpBtn = document.querySelector('.aim-std-btn[data-std="japan"]');
+    const icaoBtn = document.querySelector('.aim-std-btn[data-std="icao"]');
+    const faaBtn = document.querySelector('.aim-std-btn[data-std="faa"]');
+    const chinaBtn = document.querySelector('.aim-std-btn[data-std="china"]');
+    const isJp = jpBtn?.classList.contains('aim-std-active');
+    const isIcao = icaoBtn?.classList.contains('aim-std-active');
+    const isFaa = faaBtn?.classList.contains('aim-std-active');
+    const isChina = chinaBtn?.classList.contains('aim-std-active');
+
+    let aimPtFt = 0, aimEndFt = 0;
+    const stripeOverride = airport?.aimingPoint?.stripeLength;
+
+    if (isChina) {
+      aimPtFt = 1505;
+      aimEndFt = 1702;  // 1505 + 197
+    } else if (isJp) {
+      aimPtFt = 1312;
+      aimEndFt = 1509;  // 1312 + 197
+    } else if (isIcao) {
+      aimPtFt = 1312;
+      const stripeLen = stripeOverride || 197;  // 空港設定があれば使用、なければ197ft
+      aimEndFt = aimPtFt + stripeLen;
+    } else if (isFaa) {
+      aimPtFt = 1000;
+      aimEndFt = 1150;  // 1000 + 150
+    }
+
+    if (aimPtFt > 0) {
+      // Aiming Point 開始位置
+      aimMapLayers.aimingPointLine = L.polyline(
+        [rwyEdge(aimPtFt, rwy, -1, HW), rwyEdge(aimPtFt, rwy, +1, HW)],
+        { color: 'rgba(255,255,255,0.6)', weight: 1.5, dashArray: '4,4' }
+      ).addTo(aimLeafletMap);
+      aimMapLayers.aimingPointLbl = L.marker(rwyEdge(aimPtFt, rwy, -1, HW + 22), {
+        icon: L.divIcon({
+          html: `<div style="background:rgba(0,0,0,.75);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.4);padding:2px 6px;font-size:9px;border-radius:2px;white-space:nowrap">${aimPtFt}ft</div>`,
+          className: '', iconAnchor: [0, 8],
+        })
+      }).addTo(aimLeafletMap);
+
+      // Aiming Point 終端
+      if (aimEndFt > 0) {
+        aimMapLayers.aimingPointEndLine = L.polyline(
+          [rwyEdge(aimEndFt, rwy, -1, HW), rwyEdge(aimEndFt, rwy, +1, HW)],
+          { color: 'rgba(255,255,255,0.6)', weight: 1.5, dashArray: '4,4' }
+        ).addTo(aimLeafletMap);
+        aimMapLayers.aimingPointEndLbl = L.marker(rwyEdge(aimEndFt, rwy, +1, HW + 22), {
+          icon: L.divIcon({
+            html: `<div style="background:rgba(0,0,0,.75);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.4);padding:2px 6px;font-size:9px;border-radius:2px;white-space:nowrap">${aimEndFt}ft</div>`,
+            className: '', iconAnchor: [0, 8],
+          })
+        }).addTo(aimLeafletMap);
+      }
     }
 
     // PAPI（赤）
@@ -788,6 +991,14 @@
       icon: L.divIcon({
         html: `<div style="width:10px;height:10px;background:#eceff1;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(255,255,255,.7)"></div>`,
         className: '', iconSize: [10,10], iconAnchor: [5,5],
+      })
+    }).addTo(aimLeafletMap);
+
+    // Runway Name Marker（黄色）
+    aimMapLayers.rwyName = L.marker(posAt(0, rwy), {
+      icon: L.divIcon({
+        html: `<div style="color:#ffcc02;font-size:14px;font-weight:bold;text-shadow:1px 1px 3px rgba(0,0,0,.8)">${rwy.name}</div>`,
+        className: '', iconAnchor: [15, 0],
       })
     }).addTo(aimLeafletMap);
 
@@ -1010,6 +1221,56 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
       a.click();
     });
 
+    // Blind Zone modal
+    const bzBtn = el('aim-blind-zone-btn');
+    if (bzBtn) bzBtn.addEventListener('click', () => {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 90%;
+        max-height: 90%;
+        overflow: auto;
+        position: relative;
+      `;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = `
+        position: absolute;
+        top: 10px; right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #333;
+      `;
+      closeBtn.addEventListener('click', () => modal.remove());
+
+      const img = document.createElement('img');
+      img.src = './images/blind-zone.png';
+      img.style.cssText = 'width: 100%; height: auto;';
+
+      content.appendChild(closeBtn);
+      content.appendChild(img);
+      modal.appendChild(content);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      document.body.appendChild(modal);
+    });
+
     window.addEventListener('resize', () => {
       const view = el('aim-view');
       if (!view || view.style.display === 'none') return;
@@ -1056,6 +1317,7 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
 
   // papi.js の showView('aim') から呼び出せるようにグローバル公開
   window.drawAimingPoint = drawAimingPoint;
+  window.updateAimRunwayOptions = updateAimRunwayOptions;
 
   // Aiming Point 標準値選択機能（グローバル化）
   window.setupAimStdButtons = function() {
@@ -1098,6 +1360,9 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     if (rwCode) rwSel.value = rwCode;
     loadAimIlsDefaults();
   };
+
+  // ビュー切り替え関数をグローバル化
+  window.setAimView = setAimView;
 
 })();
 

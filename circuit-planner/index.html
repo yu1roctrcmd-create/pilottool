@@ -56,6 +56,7 @@
         <option value="RJGG">RJGG 中部(セントレア)</option>
         <option value="VTBS">VTBS スワンナプーム</option>
         <option value="KLAX">KLAX ロサンゼルス</option>
+        <option value="ZSPD">ZSPD 上海浦東</option>
       </select>
     </div>
     <div class="param-row">
@@ -358,6 +359,7 @@
         <option value="RJGG">RJGG 中部(セントレア)</option>
         <option value="VTBS">VTBS スワンナプーム</option>
         <option value="KLAX">KLAX ロサンゼルス</option>
+        <option value="ZSPD">ZSPD 上海浦東</option>
       </select>
     </div>
     <div class="param-row">
@@ -384,8 +386,9 @@
       <div style="display:flex;gap:6px;margin-top:3px">
         <button id="std-icao" class="std-btn std-active">ICAO</button>
         <button id="std-faa"  class="std-btn">FAA</button>
+        <button id="std-china" class="std-btn">CHINA</button>
       </div>
-      <div style="font-size:10px;color:#546e7a;margin-top:2px">ICAO ≥2400m→400m(1312ft) / FAA→1000ft</div>
+      <div style="font-size:10px;color:#546e7a;margin-top:2px">ICAO ≥2400m→400m(1312ft) / FAA→1000ft / CHINA→458.7m(1505ft)</div>
     </div>
     <div class="param-row">
       <label>降下角度</label>
@@ -478,9 +481,6 @@
       </select>
     </div>
     <div id="gs-corr-result" style="font-size:11px;color:#b0bec5;line-height:1.8;margin-top:4px;padding:6px 8px;background:rgba(0,0,0,0.25);border-radius:4px;min-height:64px"></div>
-    <div class="section-title" style="margin-top:8px">滑走路 基準点図</div>
-    <canvas id="runway-canvas" style="width:100%;height:110px;background:#0a1628;border-radius:4px;margin-top:4px"></canvas>
-
     <!-- Blind Zone情報 -->
     <div class="section-title" style="margin-top:8px">Blind Zone 情報</div>
     <div id="papi-blindzone" style="font-size:9px;line-height:1.8;background:#0d1b2a;padding:6px;border-radius:3px;margin-top:4px;border:1px solid #0f3460;color:#80cbc4"></div>
@@ -509,12 +509,16 @@
         <option value="RJGG">RJGG 中部(セントレア)</option>
         <option value="VTBS">VTBS スワンナプーム</option>
         <option value="KLAX">KLAX ロサンゼルス</option>
+        <option value="ZSPD">ZSPD 上海浦東</option>
       </select>
     </div>
     <div class="param-row">
       <label>滑走路</label>
       <select id="aim-runway-sel">
         <option value="16R">16R</option>
+        <option value="34L">34L</option>
+        <option value="16L">16L</option>
+        <option value="34R">34R</option>
       </select>
     </div>
     <div class="param-row">
@@ -544,6 +548,7 @@
       <button class="aim-std-btn aim-std-active" data-std="japan" style="flex:1;padding:5px 0;font-size:11px;background:#1565c0;color:#e3f2fd;border:1px solid #4fc3f7;border-radius:3px;cursor:pointer;font-weight:bold">日本 (1312ft)</button>
       <button class="aim-std-btn" data-std="icao" style="flex:1;padding:5px 0;font-size:11px;background:#0f3460;color:#aaa;border:1px solid #1a4a7a;border-radius:3px;cursor:pointer">ICAO (1312ft)</button>
       <button class="aim-std-btn" data-std="faa" style="flex:1;padding:5px 0;font-size:11px;background:#0f3460;color:#aaa;border:1px solid #1a4a7a;border-radius:3px;cursor:pointer">FAA (1000ft)</button>
+      <button class="aim-std-btn" data-std="china" style="flex:1;padding:5px 0;font-size:11px;background:#0f3460;color:#aaa;border:1px solid #1a4a7a;border-radius:3px;cursor:pointer">CHINA (1505ft)</button>
     </div>
 
     <div class="section-title" style="margin-top:6px">Aiming Point</div>
@@ -561,11 +566,12 @@
     <div id="aim-info" style="font-size:10px;color:#80cbc4;line-height:1.8;margin-top:6px"></div>
     <button id="aim-download-btn" style="margin-top:auto;padding:7px 0;background:#1565c0;border:1px solid #4fc3f7;color:#e3f2fd;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;width:100%">⬇ PNG 保存</button>
     <button id="aim-kml-btn" style="margin-top:4px;padding:7px 0;background:#1b5e20;border:1px solid #43a047;color:#c8e6c9;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;width:100%">🌍 KML 書き出し</button>
+    <button id="aim-blind-zone-btn" style="margin-top:4px;padding:7px 0;background:#c62828;border:1px solid #e53935;color:#ffebee;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;width:100%">🔍 Blind Zone</button>
   </div>
   <div id="aim-main">
     <div id="aim-view-toggle">
-      <button class="aim-view-btn aim-view-active" id="aim-btn-persp">進入視点</button>
-      <button class="aim-view-btn" id="aim-btn-sat">衛星画像</button>
+      <button class="aim-view-btn aim-view-active" id="aim-btn-sat">衛星画像</button>
+      <button class="aim-view-btn" id="aim-btn-persp">進入視点</button>
     </div>
     <canvas id="aim-canvas"></canvas>
     <div id="aim-map"></div>
