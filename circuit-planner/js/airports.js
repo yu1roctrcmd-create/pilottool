@@ -823,11 +823,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // FAA standard
+          papiFt: 1312,
           papiMeht: 65.3,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       },
       "25R": {
@@ -842,11 +842,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.1,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // FAA standard
+          papiFt: 1312,
           papiMeht: 65.3,
           papiSide: 'R',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       },
       "07C": {
@@ -861,11 +861,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // FAA standard
+          papiFt: 1312,
           papiMeht: 72.3,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       },
       "25C": {
@@ -880,11 +880,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // FAA standard
+          papiFt: 1312,
           papiMeht: 72.3,
           papiSide: 'R',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       },
       "07R": {
@@ -899,11 +899,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1033,  // FAA standard
+          papiFt: 1312,
           papiMeht: 71.2,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       },
       "25L": {
@@ -918,11 +918,11 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 53,
-          gsAntFt: 1312,
-          papiFt: 1312,  // ICAO standard
+          gsAntFt: 1013,  // FAA standard
+          papiFt: 1312,
           papiMeht: 77.4,
           papiSide: 'R',
-          aimFt: 1712,
+          aimFt: 1000,  // FAA standard
         }
       }
     }
