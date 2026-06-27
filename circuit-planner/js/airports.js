@@ -832,7 +832,7 @@ const AIRPORTS = {
       },
       "25R": {
         name: "25R",
-        threshold: [22.331236, 113.913955],
+        threshold: [22.33178611111111, 113.91391666666667],
         elevation: 23,
         trueHeading: 250.90,
         length_m: 3800,
@@ -851,7 +851,7 @@ const AIRPORTS = {
       },
       "07C": {
         name: "07C",
-        threshold: [22.311272, 113.898511],
+        threshold: [22.31128888888889, 113.89913055555556],
         elevation: 22,
         trueHeading: 70.90,
         length_m: 3800,
@@ -889,7 +889,7 @@ const AIRPORTS = {
       },
       "07R": {
         name: "07R",
-        threshold: [22.296675, 113.898886],
+        threshold: [22.296686111111114, 113.89950833333334],
         elevation: 27,
         trueHeading: 70.90,
         length_m: 3800,
@@ -908,7 +908,7 @@ const AIRPORTS = {
       },
       "25L": {
         name: "25L",
-        threshold: [22.307431, 113.932265],
+        threshold: [22.307422222222222, 113.93278333333333],
         elevation: 27,
         trueHeading: 250.90,
         length_m: 3800,
