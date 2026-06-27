@@ -1,0 +1,1278 @@
+{
+  "accounts": [
+    {
+      "id": 1,
+      "name": "息子口座（春斗/楽天）",
+      "color": "#22c55e",
+      "created_at": "2026-05-10T04:37:21.925Z"
+    },
+    {
+      "id": 2,
+      "name": "妻口座（楽天）",
+      "color": "#8b5cf6",
+      "created_at": "2026-05-10T04:37:21.935Z"
+    },
+    {
+      "id": 3,
+      "name": "夫口座（楽天）",
+      "color": "#3b82f6",
+      "created_at": "2026-05-10T04:37:21.939Z"
+    }
+  ],
+  "stocks": [
+    {
+      "id": 1,
+      "account_id": 1,
+      "ticker": "2914",
+      "name": "日本たばこ産業",
+      "sector": "食料品",
+      "category": "ディフェンシブ",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 5948,
+      "purchase_price": 5640,
+      "purchase_rate": 1,
+      "dividend_per_share": 194,
+      "shares": 200,
+      "ex_dividend_months": [
+        6,
+        12
+      ],
+      "payment_months": [
+        3,
+        9
+      ],
+      "created_at": "2026-05-10T04:37:21.991Z",
+      "previous_close": 5950,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 2,
+      "account_id": 1,
+      "ticker": "5020",
+      "name": "ENEOSホールディングス",
+      "sector": "石油・石炭製品",
+      "category": "景気敏感",
+      "account_type": "旧NISA",
+      "currency": "JPY",
+      "current_price": 1191,
+      "purchase_price": 468,
+      "purchase_rate": 1,
+      "dividend_per_share": 22,
+      "shares": 200,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.003Z",
+      "previous_close": 1207,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 3,
+      "account_id": 1,
+      "ticker": "8306",
+      "name": "三菱UFJフィナンシャルG",
+      "sector": "銀行業",
+      "category": "景気敏感",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 3233,
+      "purchase_price": 1620,
+      "purchase_rate": 1,
+      "dividend_per_share": 41,
+      "shares": 200,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.013Z",
+      "previous_close": 3205,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 4,
+      "account_id": 1,
+      "ticker": "8804",
+      "name": "東京建物",
+      "sector": "不動産業",
+      "category": "景気敏感",
+      "account_type": "旧NISA",
+      "currency": "JPY",
+      "current_price": 3291,
+      "purchase_price": 1570,
+      "purchase_rate": 1,
+      "dividend_per_share": 47,
+      "shares": 100,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.021Z",
+      "previous_close": 3242,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 5,
+      "account_id": 1,
+      "ticker": "5401",
+      "name": "日本製鉄",
+      "sector": "鉄鋼",
+      "category": "景気敏感",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 547,
+      "purchase_price": 638,
+      "purchase_rate": 1,
+      "dividend_per_share": 32,
+      "shares": 100,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.038Z",
+      "previous_close": 547.2,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 6,
+      "account_id": 1,
+      "ticker": "5411",
+      "name": "JFEホールディングス",
+      "sector": "鉄鋼",
+      "category": "景気敏感",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 1546,
+      "purchase_price": 1760,
+      "purchase_rate": 1,
+      "dividend_per_share": 60,
+      "shares": 100,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.056Z",
+      "previous_close": 1559
+    },
+    {
+      "id": 7,
+      "account_id": 1,
+      "ticker": "9434",
+      "name": "ソフトバンク",
+      "sector": "情報・通信業",
+      "category": "ディフェンシブ",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 203.3,
+      "purchase_price": 212,
+      "purchase_rate": 1,
+      "dividend_per_share": 8.6,
+      "shares": 300,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.081Z",
+      "previous_close": 205.3
+    },
+    {
+      "id": 8,
+      "account_id": 2,
+      "ticker": "2914",
+      "name": "日本たばこ産業",
+      "sector": "食料品",
+      "category": "ディフェンシブ",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 5948,
+      "purchase_price": 3851,
+      "purchase_rate": 1,
+      "dividend_per_share": 194,
+      "shares": 7,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.089Z",
+      "previous_close": 5950,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 9,
+      "account_id": 2,
+      "ticker": "5019",
+      "name": "出光興産",
+      "sector": "石油・石炭製品",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 1209.5,
+      "purchase_price": 1147,
+      "purchase_rate": 1,
+      "dividend_per_share": 120,
+      "shares": 3,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.101Z",
+      "previous_close": 1233,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 10,
+      "account_id": 2,
+      "ticker": "8001",
+      "name": "伊藤忠商事",
+      "sector": "卸売業",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 1814,
+      "purchase_price": 1210,
+      "purchase_rate": 1,
+      "dividend_per_share": 100,
+      "shares": 5,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.110Z",
+      "previous_close": 1819,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 11,
+      "account_id": 2,
+      "ticker": "8151",
+      "name": "東洋テクニカ",
+      "sector": "卸売業",
+      "category": "ディフェンシブ",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2000,
+      "purchase_price": 2067,
+      "purchase_rate": 1,
+      "dividend_per_share": 70,
+      "shares": 9,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.122Z",
+      "previous_close": 1980,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 12,
+      "account_id": 2,
+      "ticker": "9434",
+      "name": "ソフトバンク",
+      "sector": "情報・通信業",
+      "category": "ディフェンシブ",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 203.3,
+      "purchase_price": 200,
+      "purchase_rate": 1,
+      "dividend_per_share": 8.6,
+      "shares": 100,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.133Z",
+      "previous_close": 205.3,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 13,
+      "account_id": 2,
+      "ticker": "TSLA",
+      "name": "テスラ",
+      "sector": "自動車",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 375.192,
+      "purchase_price": 330.85,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 17,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.148Z",
+      "previous_close": 375.465,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 14,
+      "account_id": 2,
+      "ticker": "GOOG",
+      "name": "アルファベット クラスC",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 336.675,
+      "purchase_price": 315,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 1,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.161Z",
+      "previous_close": 345.025,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 16,
+      "account_id": 2,
+      "ticker": "SOFI",
+      "name": "ソーファイ・テクノロジーズ",
+      "sector": "金融業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 17.31,
+      "purchase_price": 27.56,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 36,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.168Z",
+      "previous_close": 17.29,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 17,
+      "account_id": 2,
+      "ticker": "IONQ",
+      "name": "IonQ INC",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 54.5,
+      "purchase_price": 49.64,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 147,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.169Z",
+      "previous_close": 53.62,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 18,
+      "account_id": 3,
+      "ticker": "GOOG",
+      "name": "アルファベット クラスC",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 336.675,
+      "purchase_price": 303.31,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 2,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.172Z",
+      "previous_close": 345.025,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 19,
+      "account_id": 3,
+      "ticker": "BTI",
+      "name": "ブリティッシュ・アメリカン・タバコ",
+      "sector": "タバコ",
+      "category": "ディフェンシブ",
+      "account_type": "旧NISA",
+      "currency": "USD",
+      "current_price": 61.39,
+      "purchase_price": 29.09,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 3.2964,
+      "shares": 39,
+      "ex_dividend_months": [
+        2,
+        5,
+        8,
+        11
+      ],
+      "payment_months": [
+        3,
+        6,
+        9,
+        12
+      ],
+      "created_at": "2026-05-10T04:37:22.177Z",
+      "previous_close": 60.74,
+      "exclude_from_yield": false
+    },
+    {
+      "id": 23,
+      "account_id": 3,
+      "ticker": "IONQ",
+      "name": "IonQ INC",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 54.5,
+      "purchase_price": 44.37,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 96,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.213Z",
+      "previous_close": 53.62,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 24,
+      "account_id": 3,
+      "ticker": "DEFT",
+      "name": "ディファイ・テクノロジーズ",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "特定口座",
+      "currency": "USD",
+      "current_price": 0.4998,
+      "purchase_price": 0.99,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 63,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.222Z",
+      "previous_close": 0.5238,
+      "exclude_from_yield": true
+    },
+    {
+      "id": 25,
+      "account_id": 3,
+      "ticker": "NVDA",
+      "name": "NVIDIA",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 19521,
+      "purchase_price": 5545,
+      "purchase_rate": 1,
+      "dividend_per_share": 0,
+      "shares": 0.541,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.228Z",
+      "exclude_from_yield": true
+    },
+    {
+      "id": 26,
+      "account_id": 3,
+      "ticker": "TSLA",
+      "name": "TESLA（PayPay）",
+      "sector": "自動車",
+      "category": "Tech",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 36560,
+      "purchase_price": 32340,
+      "purchase_rate": 1,
+      "dividend_per_share": 0,
+      "shares": 0.1855,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "created_at": "2026-05-10T04:37:22.238Z",
+      "exclude_from_yield": true
+    },
+    {
+      "id": 27,
+      "account_id": 1,
+      "ticker": "9432",
+      "name": "NTT",
+      "sector": "情報・通信業",
+      "category": "ディフェンシブ",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 143.8,
+      "purchase_price": 150,
+      "purchase_rate": 1,
+      "dividend_per_share": 5.1,
+      "shares": 100,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-05-21T22:35:28.891Z",
+      "previous_close": 145.1
+    },
+    {
+      "id": 28,
+      "account_id": 2,
+      "ticker": "7164",
+      "name": "全国保証",
+      "sector": "銀行業",
+      "category": "ディフェンシブ",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2951,
+      "purchase_price": 2860,
+      "purchase_rate": 1,
+      "dividend_per_share": 135,
+      "shares": 13,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-05-21T22:35:29.185Z",
+      "previous_close": 2924
+    },
+    {
+      "id": 29,
+      "account_id": 2,
+      "ticker": "8593",
+      "name": "三菱HCキャピタル",
+      "sector": "その他金融業",
+      "category": "ディフェンシブ",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 1302.5,
+      "purchase_price": 1349,
+      "purchase_rate": 1,
+      "dividend_per_share": 40,
+      "shares": 30,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-05-21T22:35:29.382Z",
+      "previous_close": 1294.5
+    },
+    {
+      "id": 30,
+      "account_id": 3,
+      "ticker": "AAPL",
+      "name": "アップル（PayPay）",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "特定口座",
+      "currency": "JPY",
+      "current_price": 293.08,
+      "purchase_price": 25197,
+      "purchase_rate": 1,
+      "dividend_per_share": 0,
+      "shares": 0.06,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "exclude_from_yield": true,
+      "created_at": "2026-05-21T22:35:29.560Z",
+      "previous_close": 294.3
+    },
+    {
+      "id": 31,
+      "account_id": 2,
+      "ticker": "7011",
+      "name": "三菱重工業",
+      "sector": "機械",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 3618,
+      "purchase_price": 3903,
+      "purchase_rate": 1,
+      "dividend_per_share": 60,
+      "shares": 4,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-05-26T07:00:02.693Z",
+      "previous_close": 3743
+    },
+    {
+      "id": 32,
+      "account_id": 2,
+      "ticker": "8316",
+      "name": "三井住友フィナンシャルG",
+      "sector": "銀行業",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 6340,
+      "purchase_price": 6000,
+      "purchase_rate": 1,
+      "dividend_per_share": 330,
+      "shares": 2,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-05-26T07:00:02.855Z",
+      "previous_close": 6356
+    },
+    {
+      "id": 33,
+      "account_id": 3,
+      "ticker": "9984",
+      "name": "ソフトバンクグループ",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 7118,
+      "purchase_price": 7460,
+      "purchase_rate": 1,
+      "dividend_per_share": 44,
+      "shares": 26,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-06-02T23:53:22.309Z",
+      "previous_close": 6597
+    },
+    {
+      "id": 34,
+      "account_id": 2,
+      "ticker": "6965",
+      "name": "浜松ホトニクス",
+      "sector": "電気機器",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2739.5,
+      "purchase_price": 2757,
+      "purchase_rate": 1,
+      "dividend_per_share": 40,
+      "shares": 44,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-06-02T23:53:22.502Z",
+      "previous_close": 2670
+    },
+    {
+      "id": 35,
+      "account_id": 2,
+      "ticker": "7203",
+      "name": "トヨタ自動車",
+      "sector": "輸送用機器",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2700.5,
+      "purchase_price": 2928,
+      "purchase_rate": 1,
+      "dividend_per_share": 90,
+      "shares": 2,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-06-02T23:53:22.722Z",
+      "previous_close": 2686
+    },
+    {
+      "id": 36,
+      "account_id": 3,
+      "ticker": "IONQ",
+      "name": "IonQ INC",
+      "sector": "情報・通信業",
+      "category": "Tech",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "USD",
+      "current_price": 54.5,
+      "purchase_price": 56,
+      "purchase_rate": 156.67,
+      "dividend_per_share": 0,
+      "shares": 10,
+      "ex_dividend_months": [],
+      "payment_months": [],
+      "exclude_from_yield": true,
+      "created_at": "2026-06-02T23:53:22.909Z",
+      "previous_close": 53.62
+    },
+    {
+      "id": 37,
+      "account_id": 3,
+      "ticker": "6965",
+      "name": "浜松ホトニクス",
+      "sector": "電気機器",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2739.5,
+      "purchase_price": 2377,
+      "purchase_rate": 1,
+      "dividend_per_share": 40,
+      "shares": 3,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-06-18T07:23:26.192Z",
+      "previous_close": 2670
+    },
+    {
+      "id": 38,
+      "account_id": 3,
+      "ticker": "6965",
+      "name": "浜松ホトニクス",
+      "sector": "電気機器",
+      "category": "景気敏感",
+      "account_type": "新NISA（成長投資枠）",
+      "currency": "JPY",
+      "current_price": 2739.5,
+      "purchase_price": 2580,
+      "purchase_rate": 1,
+      "dividend_per_share": 40,
+      "shares": 2,
+      "ex_dividend_months": [
+        3,
+        9
+      ],
+      "payment_months": [
+        6,
+        12
+      ],
+      "exclude_from_yield": false,
+      "created_at": "2026-06-18T07:23:26.343Z",
+      "previous_close": 2670
+    }
+  ],
+  "exchange_rates": [
+    {
+      "currency": "USD",
+      "rate": 161.85,
+      "updated_at": "2026-06-25 21:00"
+    }
+  ],
+  "_seq": {
+    "account": 6,
+    "stock": 39
+  },
+  "last_price_update": "2026-06-25 13:30",
+  "history": [
+    {
+      "date": "2026-05-11",
+      "dividend_total": 101217,
+      "asset_total": 6557379,
+      "by_account": {
+        "1": {
+          "dividend": 78680,
+          "asset": 2697540
+        },
+        "2": {
+          "dividend": 3218,
+          "asset": 2445593
+        },
+        "3": {
+          "dividend": 19319,
+          "asset": 1414246
+        }
+      }
+    },
+    {
+      "date": "2026-05-12",
+      "dividend_total": 90519,
+      "asset_total": 6852060,
+      "by_account": {
+        "1": {
+          "dividend": 67880,
+          "asset": 2704930
+        },
+        "2": {
+          "dividend": 3218,
+          "asset": 2601519
+        },
+        "3": {
+          "dividend": 19421,
+          "asset": 1545611
+        }
+      }
+    },
+    {
+      "date": "2026-05-19",
+      "dividend_total": 91509,
+      "asset_total": 6728253,
+      "by_account": {
+        "1": {
+          "dividend": 67880,
+          "asset": 2791140
+        },
+        "2": {
+          "dividend": 3218,
+          "asset": 2443283
+        },
+        "3": {
+          "dividend": 20411,
+          "asset": 1493830
+        }
+      }
+    },
+    {
+      "date": "2026-05-20",
+      "dividend_total": 91553,
+      "asset_total": 6668327,
+      "by_account": {
+        "1": {
+          "dividend": 67880,
+          "asset": 2735940
+        },
+        "2": {
+          "dividend": 3218,
+          "asset": 2407303
+        },
+        "3": {
+          "dividend": 20455,
+          "asset": 1525084
+        }
+      }
+    },
+    {
+      "date": "2026-05-21",
+      "dividend_total": 93202,
+      "asset_total": 6816341,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2742920
+        },
+        "2": {
+          "dividend": 4353,
+          "asset": 2619345
+        },
+        "3": {
+          "dividend": 20459,
+          "asset": 1454076
+        }
+      }
+    },
+    {
+      "date": "2026-05-22",
+      "dividend_total": 93202,
+      "asset_total": 6806349,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2733770
+        },
+        "2": {
+          "dividend": 4353,
+          "asset": 2618503
+        },
+        "3": {
+          "dividend": 20459,
+          "asset": 1454076
+        }
+      }
+    },
+    {
+      "date": "2026-05-27",
+      "dividend_total": 94721,
+      "asset_total": 7032240,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2704590
+        },
+        "2": {
+          "dividend": 5863,
+          "asset": 2805328
+        },
+        "3": {
+          "dividend": 20468,
+          "asset": 1522322
+        }
+      }
+    },
+    {
+      "date": "2026-05-29",
+      "dividend_total": 94753,
+      "asset_total": 7275197,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2690240
+        },
+        "2": {
+          "dividend": 5863,
+          "asset": 2972794
+        },
+        "3": {
+          "dividend": 20500,
+          "asset": 1612163
+        }
+      }
+    },
+    {
+      "date": "2026-06-01",
+      "dividend_total": 94757,
+      "asset_total": 7228300,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2690490
+        },
+        "2": {
+          "dividend": 5863,
+          "asset": 2929036
+        },
+        "3": {
+          "dividend": 20504,
+          "asset": 1608774
+        }
+      }
+    },
+    {
+      "date": "2026-06-02",
+      "dividend_total": 94790,
+      "asset_total": 7247555,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2706930
+        },
+        "2": {
+          "dividend": 5863,
+          "asset": 2936182
+        },
+        "3": {
+          "dividend": 20537,
+          "asset": 1604443
+        }
+      }
+    },
+    {
+      "date": "2026-06-03",
+      "dividend_total": 99396,
+      "asset_total": 7774391,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2719870
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 3232857
+        },
+        "3": {
+          "dividend": 21593,
+          "asset": 1821664
+        }
+      }
+    },
+    {
+      "date": "2026-06-08",
+      "dividend_total": 99425,
+      "asset_total": 7345191,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2722950
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2974279
+        },
+        "3": {
+          "dividend": 21622,
+          "asset": 1647962
+        }
+      }
+    },
+    {
+      "date": "2026-06-09",
+      "dividend_total": 99425,
+      "asset_total": 7358480,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2716460
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2989605
+        },
+        "3": {
+          "dividend": 21622,
+          "asset": 1652415
+        }
+      }
+    },
+    {
+      "date": "2026-06-11",
+      "dividend_total": 99498,
+      "asset_total": 7177852,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2749870
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2844656
+        },
+        "3": {
+          "dividend": 21695,
+          "asset": 1583326
+        }
+      }
+    },
+    {
+      "date": "2026-06-12",
+      "dividend_total": 99498,
+      "asset_total": 7196667,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2755410
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2859077
+        },
+        "3": {
+          "dividend": 21695,
+          "asset": 1582180
+        }
+      }
+    },
+    {
+      "date": "2026-06-15",
+      "dividend_total": 99454,
+      "asset_total": 7227306,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2752260
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2877083
+        },
+        "3": {
+          "dividend": 21651,
+          "asset": 1597963
+        }
+      }
+    },
+    {
+      "date": "2026-06-17",
+      "dividend_total": 99468,
+      "asset_total": 7152745,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2748570
+        },
+        "2": {
+          "dividend": 9413,
+          "asset": 2848363
+        },
+        "3": {
+          "dividend": 21665,
+          "asset": 1555812
+        }
+      }
+    },
+    {
+      "date": "2026-06-18",
+      "dividend_total": 99926,
+      "asset_total": 7287494,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2768710
+        },
+        "2": {
+          "dividend": 9503,
+          "asset": 2870667
+        },
+        "3": {
+          "dividend": 22033,
+          "asset": 1648117
+        }
+      }
+    },
+    {
+      "date": "2026-06-19",
+      "dividend_total": 99965,
+      "asset_total": 7361155,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2754000
+        },
+        "2": {
+          "dividend": 9503,
+          "asset": 2929866
+        },
+        "3": {
+          "dividend": 22072,
+          "asset": 1677289
+        }
+      }
+    },
+    {
+      "date": "2026-06-22",
+      "dividend_total": 99965,
+      "asset_total": 7361155,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2754000
+        },
+        "2": {
+          "dividend": 9503,
+          "asset": 2929866
+        },
+        "3": {
+          "dividend": 22072,
+          "asset": 1677289
+        }
+      }
+    },
+    {
+      "date": "2026-06-23",
+      "dividend_total": 100035,
+      "asset_total": 7400470,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2698650
+        },
+        "2": {
+          "dividend": 9503,
+          "asset": 2971684
+        },
+        "3": {
+          "dividend": 22142,
+          "asset": 1730136
+        }
+      }
+    },
+    {
+      "date": "2026-06-25",
+      "dividend_total": 100023,
+      "asset_total": 7144295,
+      "by_account": {
+        "1": {
+          "dividend": 68390,
+          "asset": 2688170
+        },
+        "2": {
+          "dividend": 9503,
+          "asset": 2804918
+        },
+        "3": {
+          "dividend": 22130,
+          "asset": 1651207
+        }
+      }
+    }
+  ],
+  "goals": {
+    "dividend": 220000,
+    "asset": 10000000
+  }
+}

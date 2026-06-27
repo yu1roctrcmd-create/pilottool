@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nca-tools",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/yuichiromori/Desktop/Claude Project/server.js"],
+      "port": 8080
+    },
+    {
+      "name": "circuit-planner",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/yuichiromori/Desktop/Claude Project/circuit-planner/server.js"],
+      "port": 8765,
+      "autoPort": true
+    },
+    {
+      "name": "visual-circling",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "streamlit", "run", "visual_circling/visual_circling_tool.py", "--server.port", "8502"],
+      "port": 8502,
+      "autoPort": false
+    }
+  ]
+}

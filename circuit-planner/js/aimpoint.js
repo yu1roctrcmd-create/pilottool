@@ -1194,6 +1194,11 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
         const chinaBtn = document.querySelector('.aim-std-btn[data-std="china"]');
         if (chinaBtn) chinaBtn.click();
       }
+      // KORD は自動的に FAA 方式を選択
+      if (apSel.value === 'KORD') {
+        const faaBtn = document.querySelector('.aim-std-btn[data-std="faa"]');
+        if (faaBtn) faaBtn.click();
+      }
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
       if (typeof window.syncPapiTo === 'function')
         window.syncPapiTo(apSel.value, el('aim-runway-sel') ? el('aim-runway-sel').value : null);
