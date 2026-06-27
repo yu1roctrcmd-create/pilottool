@@ -731,6 +731,10 @@
     const rwy = airport.runways[rwCode];
     if (!rwy) return;
 
+    // 調整済み座標を適用
+    const { lat, lon } = getAdjustedCoords();
+    const adjustedRwy = Object.assign({}, rwy, { threshold: [lat, lon] });
+
     Object.values(aimMapLayers).forEach(l => { try { aimLeafletMap.removeLayer(l); } catch(e){} });
     aimMapLayers = {};
 
@@ -745,16 +749,16 @@
     // 滑走路アスファルト（ランディングエリア: piano keys〜奥）
     const rwyFarFt = 1800 / 0.3048;
     aimMapLayers.rwy = L.polygon([
-      rwyEdge(0,        rwy, -1, HW), rwyEdge(rwyFarFt, rwy, -1, HW),
-      rwyEdge(rwyFarFt, rwy, +1, HW), rwyEdge(0,        rwy, +1, HW),
+      rwyEdge(0,        adjustedRwy, -1, HW), rwyEdge(rwyFarFt, adjustedRwy, -1, HW),
+      rwyEdge(rwyFarFt, adjustedRwy, +1, HW), rwyEdge(0,        adjustedRwy, +1, HW),
     ], { color: '#546e7a', weight: 1.5, fillColor: '#2a2a2a', fillOpacity: 0.55 })
       .addTo(aimLeafletMap);
 
     // Displaced Threshold エリア（物理的滑走路端〜piano keys）
     if (dispFt > 0) {
       aimMapLayers.dispRwy = L.polygon([
-        rwyEdge(-dispFt, rwy, -1, HW), rwyEdge(0, rwy, -1, HW),
-        rwyEdge(0, rwy, +1, HW),       rwyEdge(-dispFt, rwy, +1, HW),
+        rwyEdge(-dispFt, adjustedRwy, -1, HW), rwyEdge(0, adjustedRwy, -1, HW),
+        rwyEdge(0, adjustedRwy, +1, HW),       rwyEdge(-dispFt, adjustedRwy, +1, HW),
       ], { color: '#78909c', weight: 1.5, fillColor: '#141414', fillOpacity: 0.55, dashArray: '5,4' })
         .addTo(aimLeafletMap);
       // 物理的滑走路端ライン（白）
@@ -1191,10 +1195,25 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     });
     if (rwSel) rwSel.addEventListener('change', () => {
       loadAimIlsDefaults();
+      updateCoordinateDisplay();
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
       if (typeof window.syncPapiTo === 'function')
         window.syncPapiTo(null, rwSel.value);
     });
+
+    // 座標調整ボタン
+    const latDecBtn = document.getElementById('aim-lat-dec');
+    const lonDecBtn = document.getElementById('aim-lon-dec');
+    const coordCancel = document.getElementById('coord-cancel');
+    const coordSave = document.getElementById('coord-save');
+
+    if (latDecBtn) latDecBtn.addEventListener('click', showCoordModal);
+    if (lonDecBtn) lonDecBtn.addEventListener('click', showCoordModal);
+    if (coordCancel) coordCancel.addEventListener('click', closeCoordModal);
+    if (coordSave) coordSave.addEventListener('click', saveCoords);
+
+    // 初期座標表示
+    updateCoordinateDisplay();
 
     ['aim-angle','aim-gsant','aim-papi','aim-aim','aim-stripe','aim-aircraft']
       .forEach(id => {
@@ -1387,15 +1406,68 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     return decimal;
   }
 
-  function updateCoordinateDisplay() {
+  function getAdjustedCoords() {
+    const { apCode, rwCode } = currentAimApRw();
+    const key = `coords_${apCode}_${rwCode}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const [lat, lon] = JSON.parse(stored);
+      return { lat, lon, isAdjusted: true };
+    }
     const rwy = currentAimRwy();
-    if (!rwy) return;
-    const lat = rwy.threshold[0];
-    const lon = rwy.threshold[1];
+    if (!rwy) return { lat: 0, lon: 0, isAdjusted: false };
+    return { lat: rwy.threshold[0], lon: rwy.threshold[1], isAdjusted: false };
+  }
+
+  function updateCoordinateDisplay() {
+    const { lat, lon, isAdjusted } = getAdjustedCoords();
     document.getElementById('aim-lat-dms').value = decimalToDMS(lat, true);
     document.getElementById('aim-lon-dms').value = decimalToDMS(lon, false);
     document.getElementById('aim-lat-dec-val').textContent = lat.toFixed(5);
     document.getElementById('aim-lon-dec-val').textContent = lon.toFixed(5);
+    if (isAdjusted) {
+      document.getElementById('aim-lat-dms').style.background = '#1a5c1a';
+      document.getElementById('aim-lon-dms').style.background = '#1a5c1a';
+    } else {
+      document.getElementById('aim-lat-dms').style.background = '#0d1f2d';
+      document.getElementById('aim-lon-dms').style.background = '#0d1f2d';
+    }
+  }
+
+  function showCoordModal() {
+    const { lat, lon } = getAdjustedCoords();
+    document.getElementById('coord-lat-input').value = decimalToDMS(lat, true);
+    document.getElementById('coord-lon-input').value = decimalToDMS(lon, false);
+    document.getElementById('coord-modal').style.display = 'flex';
+  }
+
+  function closeCoordModal() {
+    document.getElementById('coord-modal').style.display = 'none';
+  }
+
+  function saveCoords() {
+    const latDMS = document.getElementById('coord-lat-input').value;
+    const lonDMS = document.getElementById('coord-lon-input').value;
+    const lat = DMSToDecimal(latDMS);
+    const lon = DMSToDecimal(lonDMS);
+    if (lat === null || lon === null) {
+      alert('座標形式が正しくありません。例: 22°19\'17.72"N');
+      return;
+    }
+    const { apCode, rwCode } = currentAimApRw();
+    const key = `coords_${apCode}_${rwCode}`;
+    localStorage.setItem(key, JSON.stringify([lat, lon]));
+    updateCoordinateDisplay();
+    if (aimViewMode === 'sat') updateAimMap();
+    closeCoordModal();
+    alert('座標を保存しました。');
+  }
+
+  function exportCoords() {
+    const { apCode, rwCode } = currentAimApRw();
+    const { lat, lon } = getAdjustedCoords();
+    const json = `  "${rwCode}": { threshold: [${lat.toFixed(6)}, ${lon.toFixed(6)}], ... }`;
+    alert('airports.js に以下を貼り付けてください：\n\n' + json);
   }
 
   // airport/runway 変更時に座標を表示
