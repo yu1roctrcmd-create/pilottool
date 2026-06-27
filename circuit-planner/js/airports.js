@@ -949,7 +949,7 @@ const AIRPORTS = {
       },
       "22R": {
         name: "22R",
-        threshold: [41.99753222, -87.89637122],  // 41-59-51.1336N 87-53-46.9364W
+        threshold: [41.9975, -87.89643055555557],
         elevation: 648,
         trueHeading: 219,
         length_m: 2286,
@@ -969,7 +969,7 @@ const AIRPORTS = {
       // ============ RW 04R/22L (8075 ft) ============
       "04R": {
         name: "04R",
-        threshold: [41.95332717, -87.89941295],  // 41-57-11.9778N 87-53-57.9066W
+        threshold: [41.953375, -87.89937777777779],
         elevation: 661,
         trueHeading: 42,
         length_m: 2461,
@@ -988,7 +988,7 @@ const AIRPORTS = {
       },
       "22L": {
         name: "22L",
-        threshold: [41.96992167, -87.88640441],  // 41-58-11.718N 87-52-47.0759W
+        threshold: [41.969886111111116, -87.87980277777777],
         elevation: 654,
         trueHeading: 222,
         length_m: 2461,
@@ -1008,7 +1008,7 @@ const AIRPORTS = {
       // ============ RW 09C/27C (11245 ft) ============
       "09C": {
         name: "09C",
-        threshold: [41.98830322, -87.93129623],  // 41-59-17.8916N 87-55-53.6564W
+        threshold: [41.988305555555556, -87.9315],
         elevation: 673,
         trueHeading: 90,
         length_m: 3427,
@@ -1027,7 +1027,7 @@ const AIRPORTS = {
       },
       "27C": {
         name: "27C",
-        threshold: [41.98831589, -87.88965450],  // 41-59-17.9172N 87-53-24.7562W
+        threshold: [41.98390277777778, -87.89024166666667],
         elevation: 652,
         trueHeading: 270,
         length_m: 3427,
@@ -1066,7 +1066,7 @@ const AIRPORTS = {
       },
       "28C": {
         name: "28C",
-        threshold: [41.96576578, -87.89180475],  // 41-57-56.7568N 87-53-30.5171W
+        threshold: [41.96576944444445, -87.89189166666668],
         elevation: 650,
         trueHeading: 270,
         length_m: 3292,
@@ -1105,7 +1105,7 @@ const AIRPORTS = {
       },
       "28R": {
         name: "28R",
-        threshold: [41.96907303, -87.88372845],  // 41-58-08.6529N 87-53-01.4244W
+        threshold: [41.969075000000004, -87.88380833333333],
         elevation: 651,
         trueHeading: 270,
         length_m: 3962,
