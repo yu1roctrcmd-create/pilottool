@@ -52,15 +52,21 @@ function drawRunway() {
     if (drawnRunways.has(pairKey)) return;  // 既に描画済みならスキップ
     drawnRunways.add(pairKey);
 
+    // Visual Circuit 用の座標上書き（ZSPD 34L のみ）
+    let threshold = rwy.threshold;
+    if (currentAirport === 'ZSPD' && rwy.name === '34L') {
+      threshold = [31.12643889, 121.82402500];  // Visual Circuit 用座標
+    }
+
     const endPos = destinationPoint(
-      rwy.threshold[0], rwy.threshold[1],
+      threshold[0], threshold[1],
       rwy.drawHeading != null ? rwy.drawHeading : rwy.trueHeading,  // 描画は実滑走路方位
       rwy.length_m / 1852
     );
-    L.polyline([rwy.threshold, endPos], {
+    L.polyline([threshold, endPos], {
       color: '#ffcc02', weight: 4, opacity: 0.9
     }).addTo(runwayLayer);
-    L.marker(rwy.threshold, {
+    L.marker(threshold, {
       icon: L.divIcon({
         className: '',
         html: `<div style="color:#ffcc02;font-size:11px;font-weight:bold;text-shadow:1px 1px 2px #000">${rwy.name}</div>`,
