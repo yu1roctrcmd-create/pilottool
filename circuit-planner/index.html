@@ -15,6 +15,17 @@
 </head>
 <body>
 
+<!-- ===== パスワード認証（iframe内では表示しない） ===== -->
+<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:#1a3c6e;padding:40px;border-radius:8px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.5)">
+    <h2 style="color:#fff;margin:0 0 20px 0">🔐 Circuit Planner</h2>
+    <p style="color:#aaa;margin:0 0 20px 0">パスワードを入力してください</p>
+    <input type="password" id="auth-password" placeholder="Password" style="width:200px;padding:10px;font-size:14px;border:1px solid #4fc3f7;border-radius:4px;background:#0d1f2d;color:#fff" autofocus>
+    <button id="auth-btn" style="display:block;width:200px;margin:15px auto 0;padding:10px;background:#4fc3f7;color:#000;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:14px">ログイン</button>
+    <p id="auth-error" style="color:#ff6b6b;margin:10px 0 0 0;font-size:12px;display:none"></p>
+  </div>
+</div>
+
 <!-- ===== トップバー ===== -->
 <div id="topbar">
   <h1>✈ Circuit Planner</h1>
@@ -28,6 +39,44 @@
   <button id="clear-cache-btn" style="background:#b71c1c;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer">🔄 アップデート</button>
 </div>
 <script>
+  // ===== パスワード認証（iframe内では無効化） =====
+  const isInIframe = window.self !== window.top;
+  const AUTH_PASSWORD = '7700';
+  const AUTH_KEY = 'circuit-planner-auth';
+  const AUTH_DURATION = 12 * 60 * 60 * 1000; // 12時間
+
+  function checkAuth() {
+    if (isInIframe) return true;  // iframe内なら認証スキップ
+    const authData = localStorage.getItem(AUTH_KEY);
+    if (!authData) return false;
+    const authTime = parseInt(authData);
+    return Date.now() - authTime < AUTH_DURATION;
+  }
+
+  function setAuth() {
+    localStorage.setItem(AUTH_KEY, Date.now().toString());
+    document.getElementById('auth-overlay').style.display = 'none';
+  }
+
+  if (!checkAuth()) {
+    document.getElementById('auth-overlay').style.display = 'flex';
+  }
+
+  document.getElementById('auth-btn').addEventListener('click', function() {
+    const pass = document.getElementById('auth-password').value;
+    if (pass === AUTH_PASSWORD) {
+      setAuth();
+    } else {
+      document.getElementById('auth-error').textContent = 'パスワードが正しくありません';
+      document.getElementById('auth-error').style.display = 'block';
+      document.getElementById('auth-password').value = '';
+    }
+  });
+
+  document.getElementById('auth-password').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') document.getElementById('auth-btn').click();
+  });
+
   document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('clear-cache-btn').addEventListener('click', function() {
       if (confirm('キャッシュをクリアして最新データを読み込みますか？')) {
