@@ -454,7 +454,7 @@ const AIRPORTS = {
     runways: {
       "18": {
         name: "18",
-        threshold: [34.873911, 136.801756],   // 34°52'26.08"N 136°48'06.32"E
+        threshold: [34.87385, 136.80171666666666],   // 34°52'26.08"N 136°48'06.32"E
         elevation: 15, trueHeading: 169.5, length_m: 3500, displaced_ft: 0, opposite: "36", tdze: 15,
         ils: {
           gpAngle: 3.0,
