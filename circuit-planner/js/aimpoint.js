@@ -1369,6 +1369,42 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
   // ビュー切り替え関数をグローバル化
   window.setAimView = setAimView;
 
+  // 座標調整機能
+  function decimalToDMS(decimal, isLat) {
+    const sign = decimal < 0 ? (isLat ? 'S' : 'W') : (isLat ? 'N' : 'E');
+    decimal = Math.abs(decimal);
+    const deg = Math.floor(decimal);
+    const min = Math.floor((decimal - deg) * 60);
+    const sec = ((decimal - deg) * 60 - min) * 60;
+    return `${deg}°${min}'${sec.toFixed(2)}"${sign}`;
+  }
+
+  function DMSToDecimal(dmsStr) {
+    const match = dmsStr.match(/(\d+)°(\d+)'([\d.]+)"([NSEW])/);
+    if (!match) return null;
+    let decimal = parseFloat(match[1]) + parseFloat(match[2])/60 + parseFloat(match[3])/3600;
+    if (match[4] === 'S' || match[4] === 'W') decimal = -decimal;
+    return decimal;
+  }
+
+  function updateCoordinateDisplay() {
+    const rwy = currentAimRwy();
+    if (!rwy) return;
+    const lat = rwy.threshold[0];
+    const lon = rwy.threshold[1];
+    document.getElementById('aim-lat-dms').value = decimalToDMS(lat, true);
+    document.getElementById('aim-lon-dms').value = decimalToDMS(lon, false);
+    document.getElementById('aim-lat-dec-val').textContent = lat.toFixed(5);
+    document.getElementById('aim-lon-dec-val').textContent = lon.toFixed(5);
+  }
+
+  // airport/runway 変更時に座標を表示
+  const origUpdateAimRunwayOptions = updateAimRunwayOptions;
+  window.updateAimRunwayOptionsWithCoords = function() {
+    origUpdateAimRunwayOptions();
+    updateCoordinateDisplay();
+  };
+
 })();
 
 // aimpoint.js のIIFE外で、ページロード後に標準値ボタンのイベントを設定
