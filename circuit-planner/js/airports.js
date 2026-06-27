@@ -824,7 +824,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 65.3,
           papiSide: 'L',
           aimFt: 1712,
@@ -843,7 +843,7 @@ const AIRPORTS = {
           gpAngle: 3.1,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 65.3,
           papiSide: 'R',
           aimFt: 1712,
@@ -862,7 +862,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 72.3,
           papiSide: 'L',
           aimFt: 1712,
@@ -881,7 +881,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 72.3,
           papiSide: 'R',
           aimFt: 1712,
@@ -900,7 +900,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 71.2,
           papiSide: 'L',
           aimFt: 1712,
@@ -919,7 +919,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1312,
-          papiFt: 2953,  // 900m
+          papiFt: 1312,  // ICAO standard
           papiMeht: 77.4,
           papiSide: 'R',
           aimFt: 1712,
