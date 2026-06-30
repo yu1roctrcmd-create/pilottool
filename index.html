@@ -926,13 +926,14 @@
   <button class="tab-btn"        onclick="switchTab('clb',this)">CLB</button>
   <button class="tab-btn"        onclick="switchTab('crz',this)">CRZ</button>
   <button class="tab-btn"        onclick="switchTab('des',this)">DES</button>
-  <button class="tab-btn"        onclick="switchTab('circuit',this)">CIRCUIT</button>
+  <button class="tab-btn"        onclick="switchTab('circuit',this);circuitReset()">CIRCUIT</button>
   <button class="tab-btn"        onclick="switchTab('crew',this)">CREW</button>
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
+  <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
   <span id="save-status" style="font-size:0.6rem;color:var(--muted);white-space:nowrap;padding:0 4px;align-self:center"></span>
 </div>
 
@@ -7465,7 +7466,7 @@ crzDisaChanged();  // initialize SAT from default FL350 / ΔT=0
 /* ══════════════════════════════════════════
    STATE PERSISTENCE (6h)
 ══════════════════════════════════════════ */
-const _STATE_TTL = 12 * 3600 * 1000;
+const _STATE_TTL = 6 * 3600 * 1000;
 const _STATE_KEY = 'nca_state_v1';
 
 const _INPUT_IDS = [
@@ -7604,6 +7605,53 @@ function resetAllState() {
   if (!confirm('入力データをすべてリセットします。よろしいですか？')) return;
   localStorage.removeItem(_STATE_KEY);
   location.reload();
+}
+
+function ncaForceCache() {
+  const btn = document.getElementById('cache-btn');
+  if (!btn) return;
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  if (!navigator.serviceWorker?.controller) {
+    navigator.serviceWorker.register('./sw.js').then(() => {
+      btn.textContent = '✅'; btn.disabled = false;
+      setTimeout(() => { btn.textContent = '📥'; }, 2000);
+    }).catch(() => { btn.textContent = '❌'; btn.disabled = false; });
+    return;
+  }
+  const ch = new MessageChannel();
+  ch.port1.onmessage = () => {
+    btn.textContent = '✅'; btn.disabled = false;
+    setTimeout(() => { btn.textContent = '📥'; }, 2000);
+  };
+  navigator.serviceWorker.controller.postMessage('FORCE_CACHE', [ch.port2]);
+  setTimeout(() => { if (btn.disabled) { btn.textContent = '📥'; btn.disabled = false; } }, 10000);
+}
+
+function circuitReset() {
+  const auth = parseInt(localStorage.getItem('circuit_auth') || '0');
+  const valid = Date.now() - auth < 12 * 60 * 60 * 1000;
+  const lock = document.getElementById('circuit-lock');
+  const err  = document.getElementById('circuit-pw-err');
+  const inp  = document.getElementById('circuit-pw');
+  if (valid) { if (lock) lock.style.display = 'none'; return; }
+  if (lock) lock.style.display = 'flex';
+  if (err)  err.style.display  = 'none';
+  if (inp)  { inp.value = ''; setTimeout(() => inp.focus(), 150); }
+}
+function circuitUnlock() {
+  const inp = document.getElementById('circuit-pw');
+  const err = document.getElementById('circuit-pw-err');
+  if (!inp) return;
+  if (inp.value === '7700') {
+    localStorage.setItem('circuit_auth', Date.now());
+    document.getElementById('circuit-lock').style.display = 'none';
+    inp.value = '';
+  } else {
+    err.style.display = 'block';
+    inp.value = '';
+    inp.focus();
+  }
 }
 
 function toggleTheme() {
@@ -9039,8 +9087,18 @@ restoreState();
 </div>
 
 <div class="tab-panel" id="tab-circuit">
-<div class="tab-content" style="padding:0; border:none; height:calc(100vh - 120px);">
+<div class="tab-content" style="padding:0; border:none; height:calc(100vh - 120px); position:relative;">
   <iframe src="./circuit-planner/index.html" style="width:100%; height:100%; border:none; display:block;"></iframe>
+  <div id="circuit-lock" style="position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:10;">
+    <div style="font-size:1.4rem;font-weight:700;color:var(--accent);letter-spacing:3px">CIRCUIT</div>
+    <div style="font-size:0.8rem;color:var(--muted);letter-spacing:1px">パスワードを入力</div>
+    <input type="password" id="circuit-pw" maxlength="8"
+           style="background:var(--card);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:12px 16px;font-size:1.4rem;text-align:center;width:150px;letter-spacing:6px"
+           onkeydown="if(event.key==='Enter')circuitUnlock()">
+    <button onclick="circuitUnlock()"
+            style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 36px;font-size:0.9rem;font-weight:700;cursor:pointer;letter-spacing:1px">開く</button>
+    <div id="circuit-pw-err" style="color:#f44336;font-size:0.8rem;display:none">パスワードが違います</div>
+  </div>
 </div>
 </div>
 
