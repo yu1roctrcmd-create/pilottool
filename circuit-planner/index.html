@@ -101,7 +101,10 @@
     document.getElementById('auth-overlay').style.display = 'none';
   }
 
-  if (!checkAuth()) {
+  // iframeとして読み込まれた場合（NCA Tools内）は認証をスキップ
+  if (window.self !== window.top || checkAuth()) {
+    document.getElementById('auth-overlay').style.display = 'none';
+  } else {
     document.getElementById('auth-overlay').style.display = 'flex';
   }
 
