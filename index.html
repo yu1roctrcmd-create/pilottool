@@ -7644,7 +7644,9 @@ function circuitUnlock() {
   const err = document.getElementById('circuit-pw-err');
   if (!inp) return;
   if (inp.value === '7700') {
-    localStorage.setItem('circuit_auth', Date.now());
+    const _now = Date.now();
+    localStorage.setItem('circuit_auth', _now);
+    localStorage.setItem('circuit-planner-auth', _now);
     document.getElementById('circuit-lock').style.display = 'none';
     inp.value = '';
   } else {
