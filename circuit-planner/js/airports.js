@@ -507,7 +507,7 @@ const AIRPORTS = {
           papiFt: 1371,   // gsAntFt + 350 (approx)
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
-          aimFt: 1421     // gsAntFt(1021) + 400
+          aimFt: 1000     // FAA standard
         }
       },
       "06L": {

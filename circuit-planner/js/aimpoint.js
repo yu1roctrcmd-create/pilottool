@@ -1194,9 +1194,9 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
         const chinaBtn = document.querySelector('.aim-std-btn[data-std="china"]');
         if (chinaBtn) chinaBtn.click();
       }
-      // KORD は自動的に FAA 方式を選択
-      if (apSel.value === 'KORD') {
-        console.log('🔧 KORD selected - auto-selecting FAA standard');
+      // KORD と KLAX は自動的に FAA 方式を選択
+      if (apSel.value === 'KORD' || apSel.value === 'KLAX') {
+        console.log('🔧 ' + apSel.value + ' selected - auto-selecting FAA standard');
         const faaBtn = document.querySelector('.aim-std-btn[data-std="faa"]');
         console.log('FAA button found:', !!faaBtn);
         if (faaBtn) {
