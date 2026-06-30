@@ -5804,6 +5804,9 @@ function _buildRwyOpts(selId, icao) {
 
 function onAirportSelect(tab) {
   const icao = ($(`${tab==='to'?'to':'ldg'}Airport`) || {}).value || '';
+  // WIND IMPORT に自動反映
+  const atisAp = $(`atis-ap-${tab}`);
+  if (atisAp && icao) atisAp.value = icao;
   if (tab === 'to') {
     _buildRwyOpts('rwyNum', icao);
     onRwySelect();
