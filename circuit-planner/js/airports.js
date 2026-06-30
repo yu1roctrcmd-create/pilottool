@@ -503,7 +503,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 73,        // Jeppesen 10-9A ❻
-          gsAntFt: 1021,  // FAA AD2.19 GS 33-57-02.4082N/118-24-18.522W → TH投影距離 1021ft
+          gsAntFt: 1026,  // FAA AD2.19 GS 33-57-02.4082N/118-24-18.522W → TH投影距離 1026ft
           papiFt: 1371,   // gsAntFt + 350 (approx)
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
@@ -522,7 +522,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 77,        // Jeppesen 10-9A
-          gsAntFt: 996,   // FAA AD2.19 GS 33-56-54.5859N/118-25-39.8249W → TH投影距離 996ft
+          gsAntFt: 1005,  // FAA AD2.19 GS 33-56-54.5859N/118-25-39.8249W → TH投影距離 1005ft
           papiFt: 1346,
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
@@ -541,7 +541,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 73,        // GS 309m=1012ft×tan(3°)+20ft ≈ 73ft
-          gsAntFt: 1012,  // FAA AD2.19 GS 33-57-02.31N/118-24-18.51W → TH投影距離 309m=1012ft
+          gsAntFt: 1026,  // FAA AD2.19 GS 33-57-02.31N/118-24-18.51W → TH投影距離 1026ft
           papiFt: 1362,
           papiMeht: 68.0,
           papiSide: 'R',  // FAA AD2.14: P4R
@@ -560,7 +560,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 72,        // GS 300m=984ft×tan(3°)+20ft ≈ 72ft
-          gsAntFt: 984,   // FAA AD2.19 GS 33-56-53.3646N/118-25-47.3623W → TH投影距離 300m=984ft
+          gsAntFt: 1017,  // FAA AD2.19 GS 33-56-53.3646N/118-25-47.3623W → TH投影距離 1017ft
           papiFt: 1334,
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
@@ -579,7 +579,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 70,        // Jeppesen 10-9A
-          gsAntFt: 998,   // FAA AD2.19 GS 33-56-17.7739N/118-23-10.2139W → TH投影距離 998ft
+          gsAntFt: 1000,  // FAA AD2.19 GS 33-56-17.7739N/118-23-10.2139W → TH投影距離 1000ft
           papiFt: 1348,
           papiMeht: 68.0,
           papiSide: 'R',  // FAA AD2.14: P4R
@@ -598,7 +598,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 57,        // Jeppesen 10-9A
-          gsAntFt: 1104,  // FAA AD2.19 GS 33-55-59.9253N/118-24-55.0492W → TH投影距離 1104ft
+          gsAntFt: 1107,  // FAA AD2.19 GS 33-55-59.9253N/118-24-55.0492W → TH投影距離 1107ft
           papiFt: 1454,
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
@@ -617,7 +617,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 74,        // GS 312m=1022ft×tan(3°)+20ft ≈ 74ft
-          gsAntFt: 1022,  // FAA AD2.19 GS 33-56-17.8773N/118-23-10.1796W → TH投影距離 312m=1022ft
+          gsAntFt: 1064,  // FAA AD2.19 GS 33-56-17.8773N/118-23-10.1796W → TH投影距離 1064ft
           papiFt: 1372,
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
@@ -636,7 +636,7 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.0,
           tch: 76,        // GS 324m=1062ft×tan(3°)+20ft ≈ 76ft
-          gsAntFt: 1062,  // FAA AD2.19 GS 33-56-07.743N/118-24-56.7237W → TH投影距離 324m=1062ft
+          gsAntFt: 1064,  // FAA AD2.19 GS 33-56-07.743N/118-24-56.7237W → TH投影距離 1064ft
           papiFt: 1412,
           papiMeht: 68.0,
           papiSide: 'L',  // FAA AD2.14: P4L
