@@ -932,6 +932,7 @@
   <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
+  <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
   <span id="save-status" style="font-size:0.6rem;color:var(--muted);white-space:nowrap;padding:0 4px;align-self:center"></span>
 </div>
@@ -10906,6 +10907,25 @@ function _wxrTable(altFt, tilts, rangeNm) {
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+function ncaForceCache() {
+  const btn = document.getElementById('cache-btn');
+  if (!btn) return;
+  if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+    btn.textContent = '⚠️';
+    setTimeout(() => { btn.textContent = '📥'; }, 2000);
+    return;
+  }
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  const ch = new MessageChannel();
+  ch.port1.onmessage = e => {
+    btn.textContent = e.data === 'done' ? '✅' : '❌';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = '📥'; }, 2500);
+  };
+  navigator.serviceWorker.controller.postMessage('FORCE_CACHE', [ch.port2]);
 }
 </script>
 </body>
