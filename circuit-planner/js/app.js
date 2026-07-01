@@ -107,6 +107,7 @@ function getParams() {
     crosswindTurnBankDeg: parseFloat(document.getElementById('cw-turn-bank').value),
     downwindTurnBankDeg: parseFloat(document.getElementById('dw-turn-bank').value),
     timeCheckSec: parseFloat(document.getElementById('timecheck').value),
+    leadTimeSec: parseFloat(document.getElementById('lead-time').value) || 0,
     upwindSec: parseFloat(document.getElementById('upwind-sec').value),
     baseTimeSec: parseFloat(document.getElementById('base-time').value),
     downwindWCA: parseFloat(document.getElementById('dw-wca').value),
@@ -384,6 +385,23 @@ function updateCircuit() {
   }
   if (params.baseTimeSec > 0 && result.baseLegPath && result.baseLegPath.length) {
     mapLabel(midOf(result.baseLegPath[0], result.baseLegPath[result.baseLegPath.length-1]), `Base ${params.baseTimeSec}s`, '#ef9a9a');
+  }
+
+  // ===== ターンリードマーカー =====
+  if (params.leadTimeSec > 0) {
+    const leadMarker = (pos, label) => {
+      if (!pos) return;
+      L.marker(pos, {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="transform:translate(-50%,-50%);background:#ff6d00;color:#fff;font-size:11px;font-weight:bold;padding:2px 5px;border-radius:3px;white-space:nowrap;box-shadow:0 0 4px #000;pointer-events:none;user-select:none;-webkit-user-select:none">▶ ${label}</div>`,
+          iconSize: [0, 0]
+        })
+      }).bindTooltip(`${label}<br>ここでターン入力 (MCP+AP ${params.leadTimeSec}s lead)`, { direction: 'right' })
+        .addTo(circuitLayer);
+    };
+    leadMarker(result.baseTurnLeadPos,  `Base Turn開始 -${params.leadTimeSec}s`);
+    leadMarker(result.finalTurnLeadPos, `Final Turn開始 -${params.leadTimeSec}s`);
   }
 
   // ===== 各レグの HDG/TRK ラベル（磁方位, トグルON時のみ）=====
@@ -932,6 +950,7 @@ window.addEventListener('load', () => {
   bindSlider('dw-turn-bank', 'dw-turn-bank-val', '°');
   bindSlider('base-time', 'base-time-val', 's');
   bindSlider('timecheck', 'timecheck-val', 's');
+  bindSlider('lead-time', 'lead-time-val', 's');
   bindSlider('upwind-sec', 'upwind-sec-val', 's');
   document.getElementById('wind-dir').addEventListener('input', updateCircuit);
   document.getElementById('wind-speed').addEventListener('input', updateCircuit);

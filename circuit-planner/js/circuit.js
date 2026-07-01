@@ -450,6 +450,21 @@ function calculateCircuit(params) {
     finalPath,
     extendedFinalPath,
     abeamPos,
+    // ターンリード位置（MCP入力+AP反応ラグ分だけターン開始点より手前）
+    baseTurnLeadPos: (() => {
+      if (!params.leadTimeSec || params.leadTimeSec <= 0) return null;
+      if (entryType === 'directBase' || entryType === 'ldaW22' || entryType === 'ldaW23') return null;
+      const leadNM = gsDownwind * params.leadTimeSec / 3600;
+      return toLatLon(Math.max(0, L_dwext - leadNM), W);
+    })(),
+    finalTurnLeadPos: (() => {
+      if (!params.leadTimeSec || params.leadTimeSec <= 0) return null;
+      if (entryType === 'ldaW22' || entryType === 'ldaW23') return null;
+      const leadNM = gsBase * params.leadTimeSec / 3600;
+      const [ax, ay] = baseLegEnd;
+      // ベースレグはcross方向(ay軸)を増加方向(ダウンウィンド側)へ戻る
+      return toLatLon(ax, Math.min(W - R_base, ay + leadNM));
+    })(),
     fafPos,
     vdpOnFinal,
     vdpOnCircuit,
