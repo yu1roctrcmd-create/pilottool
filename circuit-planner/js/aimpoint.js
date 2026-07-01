@@ -136,7 +136,12 @@
     const angle = ils.gpAngle || 3.0;
     const { apCode } = currentAimApRw();
     const aimFtDefault = ils.aimFt || defaultAimFt(apCode);
-    const setN = (id, v) => { const e = el(id); if (e && v !== undefined) e.value = v; };
+    const setN = (id, v) => {
+      const e = el(id); if (!e || v === undefined) return;
+      e.value = v;
+      const badge = document.getElementById(id + '-val');
+      if (badge) badge.textContent = Math.round(v) + 'ft';
+    };
     setN('aim-angle', angle.toFixed(2));
     setN('aim-gsant', ils.gsAntFt);
     setN('aim-papi',  ils.papiFt);

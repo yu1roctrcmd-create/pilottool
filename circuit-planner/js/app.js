@@ -808,6 +808,7 @@ function adjustSlider(id, delta) {
   const v = Math.round(parseFloat(el.value) + delta);
   el.value = Math.max(parseFloat(el.min), Math.min(parseFloat(el.max), v));
   el.dispatchEvent(new Event('input'));
+  el.dispatchEvent(new Event('change'));
 }
 
 function bindSlider(id, displayId, suffix) {

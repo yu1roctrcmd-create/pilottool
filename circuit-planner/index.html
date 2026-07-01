@@ -646,11 +646,13 @@
     </div>
     <div class="param-row">
       <label>GS アンテナ（ft from TH）</label>
-      <input type="number" id="aim-gsant" value="1115" step="1" min="100" max="3000">
+      <div class="param-values"><span>100ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-gsant',-1)">−1</button><span id="aim-gsant-val" class="value-badge">1115ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-gsant',1)">+1</button></span><span>3000ft</span></div>
+      <input type="range" id="aim-gsant" value="1115" step="1" min="100" max="3000" oninput="document.getElementById('aim-gsant-val').textContent=this.value+'ft'">
     </div>
     <div class="param-row">
       <label>PAPI 位置（ft from TH）</label>
-      <input type="number" id="aim-papi" value="1414" step="1" min="100" max="3000">
+      <div class="param-values"><span>100ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',-1)">−1</button><span id="aim-papi-val" class="value-badge">1414ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',1)">+1</button></span><span>3000ft</span></div>
+      <input type="range" id="aim-papi" value="1414" step="1" min="100" max="3000" oninput="document.getElementById('aim-papi-val').textContent=this.value+'ft'">
     </div>
     <div class="section-title" style="margin-top:6px">Aiming Point 標準</div>
     <div class="param-row" style="display:flex;gap:3px;flex-wrap:wrap">
@@ -663,11 +665,13 @@
     <div class="section-title" style="margin-top:6px">Aiming Point</div>
     <div class="param-row">
       <label>Aiming Point（ft from TH）</label>
-      <input type="number" id="aim-aim" value="1312" step="1" min="100" max="5000">
+      <div class="param-values"><span>100ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-aim',-1)">−1</button><span id="aim-aim-val" class="value-badge">1312ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-aim',1)">+1</button></span><span>5000ft</span></div>
+      <input type="range" id="aim-aim" value="1312" step="1" min="100" max="5000" oninput="document.getElementById('aim-aim-val').textContent=this.value+'ft'">
     </div>
     <div class="param-row">
       <label>ストライプ長（ft）</label>
-      <input type="number" id="aim-stripe" value="197" step="1" min="50" max="500">
+      <div class="param-values"><span>50ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-stripe',-1)">−1</button><span id="aim-stripe-val" class="value-badge">197ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-stripe',1)">+1</button></span><span>500ft</span></div>
+      <input type="range" id="aim-stripe" value="197" step="1" min="50" max="500" oninput="document.getElementById('aim-stripe-val').textContent=this.value+'ft'">
     </div>
 
     <div class="section-title" style="margin-top:6px">座標調整</div>
