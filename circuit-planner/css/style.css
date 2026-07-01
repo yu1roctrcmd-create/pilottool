@@ -256,6 +256,19 @@ input[type="number"] {
 }
 .std-btn:hover { background: #1a5090; color: #fff; }
 .std-btn.std-active { background: #1565c0; color: #fff; border-color: #4fc3f7; }
+.fine-adj-btn {
+  padding: 1px 5px;
+  background: #0f3460;
+  border: 1px solid #1a4a7a;
+  color: #80cbc4;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.fine-adj-btn:hover { background: #1565c0; color: #fff; }
 
 /* ===== Aiming Point ビュー ===== */
 #aim-view {

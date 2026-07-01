@@ -802,6 +802,14 @@ function drawProfile(params, result) {
 }
 
 // ===== スライダーのラベル更新 =====
+function adjustSlider(id, delta) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = Math.round(parseFloat(el.value) + delta);
+  el.value = Math.max(parseFloat(el.min), Math.min(parseFloat(el.max), v));
+  el.dispatchEvent(new Event('input'));
+}
+
 function bindSlider(id, displayId, suffix) {
   const el = document.getElementById(id);
   const disp = document.getElementById(displayId);

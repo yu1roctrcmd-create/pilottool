@@ -504,13 +504,13 @@
     </div>
     <div class="param-row">
       <label>GP Aiming Point（ILS接地点, 末端から）</label>
-      <div class="param-values"><span>500ft</span><span id="papi-aim-val" class="value-badge">1127ft</span><span>3000ft</span></div>
-      <input type="range" id="papi-aim" min="500" max="3000" step="5" value="1127">
+      <div class="param-values"><span>500ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('papi-aim',-1)">−1</button><span id="papi-aim-val" class="value-badge">1127ft</span><button class="fine-adj-btn" onclick="adjustSlider('papi-aim',1)">+1</button></span><span>3000ft</span></div>
+      <input type="range" id="papi-aim" min="500" max="3000" step="1" value="1127">
     </div>
     <div class="param-row">
       <label>PAPI 設置位置（滑走路末端から）</label>
-      <div class="param-values"><span>500ft</span><span id="papi-loc-val" class="value-badge">1414ft</span><span>2500ft</span></div>
-      <input type="range" id="papi-loc" min="500" max="2500" step="5" value="1414">
+      <div class="param-values"><span>500ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('papi-loc',-1)">−1</button><span id="papi-loc-val" class="value-badge">1414ft</span><button class="fine-adj-btn" onclick="adjustSlider('papi-loc',1)">+1</button></span><span>2500ft</span></div>
+      <input type="range" id="papi-loc" min="500" max="2500" step="1" value="1414">
     </div>
     <div class="param-row">
       <label>PAPI 角度間隔（±）</label>
@@ -526,8 +526,8 @@
     </div>
     <div class="param-row">
       <label>GS アンテナ位置（末端から）</label>
-      <div class="param-values"><span>300ft</span><span id="papi-gsant-val" class="value-badge">1115ft</span><span>2000ft</span></div>
-      <input type="range" id="papi-gsant" min="300" max="2000" step="5" value="1115">
+      <div class="param-values"><span>300ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('papi-gsant',-1)">−1</button><span id="papi-gsant-val" class="value-badge">1115ft</span><button class="fine-adj-btn" onclick="adjustSlider('papi-gsant',1)">+1</button></span><span>2000ft</span></div>
+      <input type="range" id="papi-gsant" min="300" max="2000" step="1" value="1115">
     </div>
     <div class="param-row">
       <label>滑走路勾配（%、上り正）</label>
