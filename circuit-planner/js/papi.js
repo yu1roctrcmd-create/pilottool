@@ -1564,12 +1564,17 @@
     el('papi-airport-sel').addEventListener('change', () => {
       updatePapiRunwayOptions();
       autoDetectIls();
-      // PANC, KLAX, KORD は自動的に FAA 方式を選択
+      // 空港別デフォルト standard auto-select
       const apCode = el('papi-airport-sel').value;
-      if (apCode === 'PANC' || apCode === 'KLAX' || apCode === 'KORD') {
-        const faaBtn = el('std-faa');
-        if (faaBtn) faaBtn.click();
+      let btnToClick = null;
+      if (apCode === 'ZSPD') {
+        btnToClick = el('std-china');  // CHINA
+      } else if (apCode === 'PANC' || apCode === 'KLAX' || apCode === 'KORD') {
+        btnToClick = el('std-faa');    // FAA
+      } else {
+        btnToClick = el('std-icao');   // ICAO (default)
       }
+      if (btnToClick) btnToClick.click();
       updatePapiRwyLabel(); loadIlsDefaults(); updateSatelliteImage(); drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
       if (typeof window.syncAimTo === 'function')
         window.syncAimTo(el('papi-airport-sel').value, el('papi-runway-sel').value);
