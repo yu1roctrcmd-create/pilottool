@@ -1564,6 +1564,12 @@
     el('papi-airport-sel').addEventListener('change', () => {
       updatePapiRunwayOptions();
       autoDetectIls();
+      // PANC, KLAX, KORD は自動的に FAA 方式を選択
+      const apCode = el('papi-airport-sel').value;
+      if (apCode === 'PANC' || apCode === 'KLAX' || apCode === 'KORD') {
+        const faaBtn = el('std-faa');
+        if (faaBtn) faaBtn.click();
+      }
       updatePapiRwyLabel(); loadIlsDefaults(); updateSatelliteImage(); drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
       if (typeof window.syncAimTo === 'function')
         window.syncAimTo(el('papi-airport-sel').value, el('papi-runway-sel').value);
