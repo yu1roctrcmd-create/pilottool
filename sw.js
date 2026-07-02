@@ -32,13 +32,14 @@ self.addEventListener('activate', e => {
 });
 
 // cache-first: キャッシュを優先して返し、バックグラウンドで再取得
+// opaque response（no-cors imgタイルなど）も保存する
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
     caches.open(CACHE).then(cache =>
       cache.match(e.request).then(cached => {
         const net = fetch(e.request).then(res => {
-          if (res.ok) cache.put(e.request, res.clone());
+          if (res.ok || res.type === 'opaque') cache.put(e.request, res.clone());
           return res;
         }).catch(() => cached);
         return cached || net;

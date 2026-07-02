@@ -24,7 +24,7 @@ function initMap() {
   // ラベルオーバーレイ
   L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    { opacity: 0.6, maxZoom: 19 }
+    { opacity: 0.6, maxZoom: 19, crossOrigin: true }
   ).addTo(map);
 
   circuitLayer = L.layerGroup().addTo(map);
@@ -826,30 +826,60 @@ function cacheTiles() {
   btn.disabled = true;
   btn.textContent = '⏳ キャッシュ中...';
 
-  const tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
+  const tileUrl  = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
   const labelUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile';
 
-  // すべての空港のタイルをプリフェッチ
-  let total = 0;
-  let completed = 0;
+  // ズームレベルと取得半径（タイル数）
+  const zoomRanges = [
+    { z: 12, r: 1 },  // 3×3  = 9
+    { z: 13, r: 2 },  // 5×5  = 25
+    { z: 14, r: 3 },  // 7×7  = 49
+    { z: 15, r: 4 },  // 9×9  = 81
+    { z: 16, r: 3 },  // 7×7  = 49 (詳細)
+  ];
+
+  const toTileXY = (lat, lon, z) => {
+    const n = Math.pow(2, z);
+    const x = Math.floor((lon + 180) / 360 * n);
+    const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    return { x, y };
+  };
+
+  const urls = [];
   Object.values(AIRPORTS).forEach(airport => {
-    for (let z = 10; z <= 14; z++) {
-      const x = Math.floor((airport.center[1] + 180) / 360 * Math.pow(2, z));
-      const y = Math.floor((1 - Math.log(Math.tan(airport.center[0] * Math.PI / 180) + 1 / Math.cos(airport.center[0] * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
-      total += 2;
-      fetch(`${tileUrl}/${z}/${y}/${x}`).finally(() => {
-        completed++;
-        btn.textContent = `⏳ ${completed}/${total}`;
-      }).catch(() => {});
-      fetch(`${labelUrl}/${z}/${y}/${x}`).catch(() => {});
-    }
+    zoomRanges.forEach(({ z, r }) => {
+      const { x: cx, y: cy } = toTileXY(airport.center[0], airport.center[1], z);
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dy = -r; dy <= r; dy++) {
+          urls.push(`${tileUrl}/${z}/${cy + dy}/${cx + dx}`);
+          urls.push(`${labelUrl}/${z}/${cy + dy}/${cx + dx}`);
+        }
+      }
+    });
   });
 
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = '✅ キャッシュ完了';
-    setTimeout(() => { btn.textContent = '📥 タイルキャッシュ'; }, 2000);
-  }, 3000);
+  let completed = 0;
+  const total = urls.length;
+  const concurrency = 6;
+  let idx = 0;
+
+  const next = () => {
+    if (idx >= urls.length) return;
+    const url = urls[idx++];
+    fetch(url, { cache: 'reload' }).finally(() => {
+      completed++;
+      btn.textContent = `⏳ ${completed}/${total}`;
+      if (completed === total) {
+        btn.disabled = false;
+        btn.textContent = '✅ キャッシュ完了';
+        setTimeout(() => { btn.textContent = '📥 タイルキャッシュ'; }, 2500);
+      } else {
+        next();
+      }
+    });
+  };
+
+  for (let i = 0; i < concurrency; i++) next();
 }
 
 // ===== 空港・滑走路変更 =====

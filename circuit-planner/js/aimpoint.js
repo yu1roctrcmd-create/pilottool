@@ -728,7 +728,7 @@
     aimLeafletMap.on('click', function(e) { window._clickedLatLng = e.latlng; console.log('CLICK:', e.latlng.lat.toFixed(7), e.latlng.lng.toFixed(7)); });
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 20 }
+      { maxZoom: 20, crossOrigin: true }
     ).addTo(aimLeafletMap);
     updateAimMap();
   }
