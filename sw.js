@@ -33,8 +33,20 @@ self.addEventListener('activate', e => {
 
 // cache-first: キャッシュを優先して返し、バックグラウンドで再取得
 // opaque response（no-cors imgタイルなど）も保存する
+// cache:'reload' の場合はSWキャッシュをバイパスしてネットワークから強制取得
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (e.request.cache === 'reload') {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok || res.type === 'opaque') {
+          caches.open(CACHE).then(c => c.put(e.request.url, res.clone()));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
   e.respondWith(
     caches.open(CACHE).then(cache =>
       cache.match(e.request).then(cached => {

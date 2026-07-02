@@ -134,6 +134,17 @@
   });
 </script>
 
+<!-- ===== キャッシュ進捗オーバーレイ ===== -->
+<div id="cache-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9990;align-items:center;justify-content:center;flex-direction:column;gap:18px">
+  <div style="color:#4fc3f7;font-size:1.1rem;font-weight:700;letter-spacing:2px">📥 衛星画像キャッシュ中</div>
+  <div style="width:280px;background:#0d1f2d;border-radius:8px;overflow:hidden;border:1px solid #1a4a7a">
+    <div id="cache-bar" style="height:10px;background:#4fc3f7;width:0%;transition:width 0.2s"></div>
+  </div>
+  <div id="cache-count" style="color:#e0f7fa;font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums">0 / 0</div>
+  <div id="cache-pct" style="color:#80cbc4;font-size:1rem">0%</div>
+  <div style="color:#546e7a;font-size:0.75rem;margin-top:4px">完了するまでお待ちください</div>
+</div>
+
 <!-- ===== メインエリア ===== -->
 <div id="main">
 

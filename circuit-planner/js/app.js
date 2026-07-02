@@ -867,26 +867,42 @@ function cacheTiles() {
   });
 
   const urls = [...urlSet];
-  let completed = 0;
   const total = urls.length;
+  let completed = 0;
   let idx = 0;
-  btn.textContent = `⏳ 0/${total}`;
+
+  // オーバーレイ表示
+  const overlay = document.getElementById('cache-overlay');
+  const bar     = document.getElementById('cache-bar');
+  const countEl = document.getElementById('cache-count');
+  const pctEl   = document.getElementById('cache-pct');
+  if (overlay) overlay.style.display = 'flex';
+  const updateUI = () => {
+    const pct = total ? Math.round(completed / total * 100) : 100;
+    if (bar)     bar.style.width = pct + '%';
+    if (countEl) countEl.textContent = `${completed} / ${total}`;
+    if (pctEl)   pctEl.textContent   = pct + '%';
+    btn.textContent = `⏳ ${pct}%`;
+  };
+  updateUI();
+
+  const done = () => {
+    if (overlay) overlay.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '✅ 完了';
+    setTimeout(() => { btn.textContent = '📥 タイルキャッシュ'; }, 3000);
+  };
+
+  if (total === 0) { done(); return; }
 
   const next = () => {
-    if (idx >= urls.length) return;
+    if (idx >= total) return;
     const url = urls[idx++];
     fetch(url, { cache: 'reload' }).finally(() => {
       completed++;
-      if (completed % 10 === 0 || completed === total) {
-        btn.textContent = `⏳ ${completed}/${total}`;
-      }
-      if (completed === total) {
-        btn.disabled = false;
-        btn.textContent = '✅ キャッシュ完了';
-        setTimeout(() => { btn.textContent = '📥 タイルキャッシュ'; }, 2500);
-      } else {
-        next();
-      }
+      updateUI();
+      if (completed === total) done();
+      else next();
     });
   };
 
