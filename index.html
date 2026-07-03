@@ -933,6 +933,7 @@
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
+  <button class="theme-btn" id="update-btn" onclick="ncaUpdate()" title="キャッシュをクリアして最新バージョンに更新">🔄</button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
   <span id="save-status" style="font-size:0.6rem;color:var(--muted);white-space:nowrap;padding:0 4px;align-self:center"></span>
 </div>
@@ -10926,6 +10927,21 @@ function ncaForceCache() {
     setTimeout(() => { btn.textContent = '📥'; }, 2500);
   };
   navigator.serviceWorker.controller.postMessage('FORCE_CACHE', [ch.port2]);
+}
+
+async function ncaUpdate() {
+  if (!confirm('キャッシュをクリアして最新バージョンを読み込みますか？\n（オフライン用データは再度 📥 で取得してください）')) return;
+  const btn = document.getElementById('update-btn');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) {}
+  location.reload();
 }
 </script>
 </body>
