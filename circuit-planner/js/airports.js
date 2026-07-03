@@ -195,7 +195,7 @@ const AIRPORTS = {
         name: "16R",
         threshold: [35.774383, 140.368292],   // 接地閾値(LDG TH): 35°46'27.78"N 140°22'05.85"E
         elevation: 130,
-        trueHeading: 149.0,    // 実滑走路真方位 (磁方位 約158°, 偏差8°W)
+        trueHeading: 149.60,   // 両閾値座標から算出した精密値（旧149.0は0.6°ズレ→5NMで約95m横ズレ）
         length_m: 4000,
         displaced_ft: 0,
         opposite: "34L",
@@ -214,7 +214,7 @@ const AIRPORTS = {
         name: "34L",
         threshold: [35.743317, 140.390747],   // 接地閾値(LDG TH): 35°44'35.94"N 140°23'26.69"E
         elevation: 139,
-        trueHeading: 329.0,    // 実滑走路真方位 (16Rの逆方位)
+        trueHeading: 329.61,   // 両閾値座標から算出した精密値（16Rの逆方位）
         length_m: 4000,
         displaced_ft: 0,
         opposite: "16R",
@@ -233,7 +233,7 @@ const AIRPORTS = {
         name: "16L",
         threshold: [35.805194, 140.378106],   // 接地閾値(LDG TH): 35°48'18.70"N 140°22'41.18"E
         elevation: 135,
-        trueHeading: 150.1,
+        trueHeading: 149.60,   // 両閾値座標から算出した精密値（旧150.1は0.5°ズレ）
         length_m: 2500,
         displaced_ft: 0,
         opposite: "34R",
@@ -252,7 +252,7 @@ const AIRPORTS = {
         name: "34R",
         threshold: [35.785778, 140.392150],   // 接地閾値(LDG TH): 35°47'08.80"N 140°23'31.74"E
         elevation: 141,
-        trueHeading: 330.1,
+        trueHeading: 329.60,   // 両閾値座標から算出した精密値（旧330.1は0.5°ズレ）
         length_m: 2500,
         displaced_ft: 0,
         opposite: "16L",
