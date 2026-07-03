@@ -179,6 +179,12 @@
     // PAPI照準点（センターライン上・滑走路データ由来）
     markers.push({ x: papiM, u: 0, label: `AIM ${papiFt}ft (PAPI)`, color: '#ffe082' });
 
+    // リファレンスVOR（サイドバー入力値を優先、なければ空港データ）
+    const apVor = AIRPORTS[currentAirport]?.vor;
+    const vorLat = (params.vorLat != null && !isNaN(params.vorLat)) ? params.vorLat : (apVor ? apVor.lat : null);
+    const vorLon = (params.vorLon != null && !isNaN(params.vorLon)) ? params.vorLon : (apVor ? apVor.lon : null);
+    const vorIdent = (document.getElementById('vor-ident')?.value || (apVor ? apVor.ident : 'VOR')).trim() || 'VOR';
+
     return {
       v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, patternAltFt, events, markers,
       total: v[v.length - 1].s,
@@ -186,6 +192,7 @@
       rwLenM: rwy.length_m || 3500,
       magVar: params.magVar || 0,
       trueHeading: params.trueHeading,
+      vorLat, vorLon, vorIdent,
       apCode: currentAirport, rwCode: currentRunway,
     };
   }
@@ -527,17 +534,27 @@
     const trkTrue = ((psi * 180 / Math.PI) + P.trueHeading + 360) % 360;
     const trkMag = ((trkTrue - P.magVar) + 360) % 360;
     const bankDeg = rollDisp * 180 / Math.PI;
-    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, 8, 190, 92);
-    ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 1; ctx.strokeRect(8, 8, 190, 92);
+    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, 8, 190, 110);
+    ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 1; ctx.strokeRect(8, 8, 190, 110);
     ctx.fillStyle = '#76ff03'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
     ctx.fillText(`ALT  ${Math.round(st.hFt)} ft AGL`, 16, 26);
     ctx.fillText(`GS   ${Math.round(st.gs)} kt   ×${speed}`, 16, 44);
     ctx.fillText(`TRK  ${String(Math.round(trkMag)).padStart(3, '0')}°M`, 16, 62);
     ctx.fillText(`BANK ${Math.abs(bankDeg) < 1 ? '—' : Math.abs(Math.round(bankDeg)) + '° ' + (bankDeg < 0 ? 'L' : 'R')}`, 16, 80);
+    // リファレンスVOR: 現在位置の RADIAL / DME を常時表示
+    if (P.vorLat != null && P.vorLon != null) {
+      const acLat = P.thLat + (st.x * P.cosH - st.u * P.sinH) / 111320;
+      const acLon = P.thLon + (st.x * P.sinH + st.u * P.cosH) / (111320 * P.cosLat);
+      const radialMag = Math.round(normalizeBearing(
+        bearingDeg(P.vorLat, P.vorLon, acLat, acLon) - P.magVar));
+      const dme = distanceNM(P.vorLat, P.vorLon, acLat, acLon);
+      ctx.fillStyle = '#00e5ff'; ctx.font = 'bold 12px monospace';
+      ctx.fillText(`${P.vorIdent}  R-${String(radialMag).padStart(3, '0')} / ${dme.toFixed(1)} DME`, 16, 98);
+    }
     ctx.fillStyle = '#80cbc4'; ctx.font = '9px monospace';
     const remToTD = Math.max(0, P.sTD - sTrack);
     const raHud = Math.max(0, Math.round(st.hFt - EYE_GEAR_FT));
-    ctx.fillText(`THRまで ${(remToTD / 1852).toFixed(1)}NM   RA ${raHud}ft`, 16, 94);
+    ctx.fillText(`THRまで ${(remToTD / 1852).toFixed(1)}NM   RA ${raHud}ft`, 16, 112);
 
     // 右上: レグ + 次イベント
     ctx.font = 'bold 12px monospace';
