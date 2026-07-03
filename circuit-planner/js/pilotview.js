@@ -67,6 +67,24 @@
     });
     if (v.length < 2) return null;
 
+    // 頂点ごとの進行方位（前後セグメントの単位ベクトル平均）
+    // 旋回弧はチャード分割のため、セグメント固定方位だとヨーが階段状に変化して
+    // カクつく。頂点方位を持たせて stateAt で角度補間することで滑らかにする。
+    for (let i = 0; i < v.length; i++) {
+      let sx = 0, su = 0;
+      if (i > 0) {
+        const dx = v[i].x - v[i - 1].x, du = v[i].u - v[i - 1].u;
+        const d = Math.hypot(dx, du) || 1;
+        sx += dx / d; su += du / d;
+      }
+      if (i < v.length - 1) {
+        const dx = v[i + 1].x - v[i].x, du = v[i + 1].u - v[i].u;
+        const d = Math.hypot(dx, du) || 1;
+        sx += dx / d; su += du / d;
+      }
+      v[i].psi = Math.atan2(su, sx);
+    }
+
     // 接地点(x=0)通過の走行距離 s_TD（FINAL上で x が 0 を横切る点）
     let sTD = v[v.length - 1].s;
     for (let i = v.length - 2; i >= 0; i--) {
@@ -120,9 +138,9 @@
     evAt(result.baseTurnLeadPos,  'BASE TURN LEAD');
     evAt(result.finalTurnLeadPos, 'FINAL TURN LEAD');
     evAt(result.vdpOnCircuit,     'VDP — DESCENT 3°');
-    // レグ切替イベント
+    // レグ切替イベント（境界頂点そのものの s で発火）
     for (let i = 1; i < v.length; i++) {
-      if (v[i].leg !== v[i - 1].leg) events.push({ s: v[i - 1].s, text: v[i].leg });
+      if (v[i].leg !== v[i - 1].leg) events.push({ s: v[i].s, text: v[i].leg });
     }
     events.sort((a, b) => a.s - b.s);
 
@@ -161,7 +179,11 @@
     const a = v[i], b = v[i + 1];
     const f = (s - a.s) / Math.max(1e-6, b.s - a.s);
     const x = a.x + (b.x - a.x) * f, u = a.u + (b.u - a.u) * f;
-    const psi = Math.atan2(b.u - a.u, b.x - a.x);           // 進行方位（滑走路基準）
+    // 進行方位: 頂点方位を最短角で補間（旋回中も連続的に変化）
+    let dpsi = b.psi - a.psi;
+    while (dpsi > Math.PI) dpsi -= 2 * Math.PI;
+    while (dpsi < -Math.PI) dpsi += 2 * Math.PI;
+    const psi = a.psi + dpsi * f;
     // 高度 (ft AGL over THR): Pattern Alt を維持し、
     // PAPI照準点(sAIM, 滑走路データ由来)へ向かう 3° パスと交わったら降下
     const remNM = Math.max(0, (P.sAIM - s)) / 1852;
