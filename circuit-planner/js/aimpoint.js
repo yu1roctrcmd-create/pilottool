@@ -724,6 +724,115 @@
     };
   }
 
+  // ---- 衛星地面テクスチャ（Mode-7 方式で透視描画） ----
+  // ESRI World Imagery タイルを滑走路ローカル座標系（x=TH基準の進行方向距離, u=横距離）に
+  // 貼り合わせた1枚のテクスチャを作り、フレームごとに走査線ストリップで透視投影する。
+  // タイルはSW経由なのでキャッシュ済みならオフラインでも動作する。
+  let animUseSat = true;
+  let groundTex = null;          // { canvas, key, x0, uHalf, mpp, w, h, ready }
+  let groundTexBuilding = false;
+
+  const TEX_X0 = -2600, TEX_X1 = 3600, TEX_UH = 1200, TEX_MPP = 1.4;
+
+  function buildGroundTexture() {
+    const rwy = currentAimRwy();
+    if (!rwy || groundTexBuilding) return;
+    const { apCode, rwCode } = currentAimApRw();
+    const key = apCode + '_' + rwCode;
+    if (groundTex && groundTex.key === key && groundTex.ready) return;
+    groundTexBuilding = true;
+
+    const adj = getAdjustedCoords();
+    const hdg = (rwy.trueHeading || 0) * Math.PI / 180;
+    const cosH = Math.cos(hdg), sinH = Math.sin(hdg);
+    const cosLat = Math.cos(adj.lat * Math.PI / 180);
+    // Displaced Threshold を加味した Landing TH をテクスチャ原点 (x=0) にする
+    const dispM = (rwy.displaced_ft || 0) * 0.3048;
+    const thLat = adj.lat + dispM * cosH / 111320;
+    const thLon = adj.lon + dispM * sinH / (111320 * cosLat);
+
+    const w = Math.round(TEX_UH * 2 / TEX_MPP), h = Math.round((TEX_X1 - TEX_X0) / TEX_MPP);
+    const cvs = document.createElement('canvas');
+    cvs.width = w; cvs.height = h;
+    const g = cvs.getContext('2d');
+    g.fillStyle = '#20291b'; g.fillRect(0, 0, w, h);
+
+    const tex = { canvas: cvs, key, x0: TEX_X0, uHalf: TEX_UH, mpp: TEX_MPP, w, h, ready: false };
+
+    // ローカル (x,u) → lat/lon
+    const toLL = (x, u) => {
+      const dN = x * cosH - u * sinH;
+      const dE = x * sinH + u * cosH;
+      return [thLat + dN / 111320, thLon + dE / (111320 * cosLat)];
+    };
+    // lat/lon → テクスチャpx
+    const toPx = (lat, lon) => {
+      const dN = (lat - thLat) * 111320;
+      const dE = (lon - thLon) * 111320 * cosLat;
+      const x = dN * cosH + dE * sinH;
+      const u = -dN * sinH + dE * cosH;
+      return [(u + TEX_UH) / TEX_MPP, (x - TEX_X0) / TEX_MPP];
+    };
+    const tileXY = (lat, lon, z) => {
+      const n = Math.pow(2, z);
+      return [
+        Math.floor((lon + 180) / 360 * n),
+        Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n),
+      ];
+    };
+    const tileNW = (tx, ty, z) => {
+      const n = Math.pow(2, z);
+      return [
+        Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI,
+        tx / n * 360 - 180,
+      ];
+    };
+
+    const tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile';
+
+    // 指定範囲を zoom z のタイルで描画
+    function drawZoom(z, xA, xB, uH) {
+      const corners = [toLL(xA, -uH), toLL(xA, uH), toLL(xB, -uH), toLL(xB, uH)];
+      const txs = [], tys = [];
+      corners.forEach(([la, lo]) => { const [tx, ty] = tileXY(la, lo, z); txs.push(tx); tys.push(ty); });
+      const jobs = [];
+      for (let tx = Math.min(...txs); tx <= Math.max(...txs); tx++)
+        for (let ty = Math.min(...tys); ty <= Math.max(...tys); ty++)
+          jobs.push([tx, ty]);
+      if (jobs.length > 600) return Promise.resolve();   // 安全弁
+      return Promise.allSettled(jobs.map(([tx, ty]) => new Promise(res => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const nw = tileNW(tx, ty, z), ne = tileNW(tx + 1, ty, z), sw = tileNW(tx, ty + 1, z);
+            const p0 = toPx(nw[0], nw[1]), p1 = toPx(ne[0], ne[1]), p2 = toPx(sw[0], sw[1]);
+            g.setTransform(
+              (p1[0] - p0[0]) / 256, (p1[1] - p0[1]) / 256,
+              (p2[0] - p0[0]) / 256, (p2[1] - p0[1]) / 256,
+              p0[0], p0[1]
+            );
+            g.drawImage(img, 0, 0);
+          } catch (e) {}
+          res();
+        };
+        img.onerror = () => res();
+        img.src = `${tileUrl}/${z}/${ty}/${tx}`;
+      })));
+    }
+
+    // z16で全域 → z17でTH周辺を高解像度上書き
+    drawZoom(16, TEX_X0, TEX_X1, TEX_UH)
+      .then(() => drawZoom(17, -900, 1800, 450))
+      .then(() => {
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        tex.ready = true;
+        groundTex = tex;
+        groundTexBuilding = false;
+      })
+      .catch(() => { groundTexBuilding = false; });
+  }
+
   // 1フレーム描画。戻り値 = RA(ft) / 描画不能時 null
   function renderAnimFrame() {
     const canvas = el('aim-canvas');
@@ -757,14 +866,57 @@
     }
     const horY = cy - fl * Math.tan(P.th);       // 水平線（Aim Point の 3° 上）
 
-    // ---- 空・地面 ----
+    // ---- 衛星テクスチャ使用可否 ----
+    const useSat = animUseSat && groundTex && groundTex.ready &&
+                   groundTex.key === apCode + '_' + rwCode;
+
+    // ---- 空 ----
     const skyG = ctx.createLinearGradient(0, 0, 0, horY);
-    skyG.addColorStop(0, '#060d16'); skyG.addColorStop(0.7, '#0d1e30'); skyG.addColorStop(1, '#2a4a6a');
+    if (useSat) {
+      skyG.addColorStop(0, '#5a86b8'); skyG.addColorStop(0.7, '#8fb4dc'); skyG.addColorStop(1, '#c3d9ee');
+    } else {
+      skyG.addColorStop(0, '#060d16'); skyG.addColorStop(0.7, '#0d1e30'); skyG.addColorStop(1, '#2a4a6a');
+    }
     ctx.fillStyle = skyG; ctx.fillRect(0, 0, W, Math.max(horY, 0));
-    const gndG = ctx.createLinearGradient(0, horY, 0, H);
-    gndG.addColorStop(0, '#152012'); gndG.addColorStop(1, '#0a1208');
-    ctx.fillStyle = gndG; ctx.fillRect(0, horY, W, H - horY);
-    ctx.fillStyle = 'rgba(120,170,220,0.10)'; ctx.fillRect(0, horY - 2, W, 6);
+
+    // ---- 地面 ----
+    if (useSat) {
+      // Mode-7: 走査線ごとにテクスチャの帯を透視スケールで転写
+      const t = groundTex;
+      ctx.fillStyle = '#4a5a40';                 // テクスチャ範囲外の遠景色
+      ctx.fillRect(0, Math.max(horY, 0), W, H - Math.max(horY, 0));
+      const yStart = Math.max(0, Math.floor(horY) + 2);
+      let prevTy = null;
+      for (let y = yStart; y < H; y++) {
+        const a = (cy - y) / fl;
+        const denom = sinT - a * cosT;
+        if (denom <= 1e-6) continue;
+        const dx = hM * (cosT + a * sinT) / denom;
+        const depth = dx * cosT + hM * sinT;
+        const xw = s + dx;
+        const ty = (xw - t.x0) / t.mpp;
+        if (ty < 0 || ty >= t.h) { prevTy = ty; continue; }
+        let sh = prevTy !== null ? Math.abs(prevTy - ty) : 1;
+        prevTy = ty;
+        sh = Math.min(Math.max(sh, 0.5), t.h - ty);
+        const uL = (0 - cx) * depth / fl, uR = (W - cx) * depth / fl;
+        const sxL = (uL + t.uHalf) / t.mpp, sxR = (uR + t.uHalf) / t.mpp;
+        const scale = W / (sxR - sxL);
+        const cx0 = Math.max(sxL, 0), cx1 = Math.min(sxR, t.w);
+        if (cx1 <= cx0) continue;
+        ctx.drawImage(t.canvas, cx0, ty, cx1 - cx0, sh,
+                      (cx0 - sxL) * scale, y, (cx1 - cx0) * scale, 1.05);
+      }
+      // 遠方の霞
+      const hazeG = ctx.createLinearGradient(0, horY, 0, horY + H * 0.12);
+      hazeG.addColorStop(0, 'rgba(195,217,238,0.85)'); hazeG.addColorStop(1, 'rgba(195,217,238,0)');
+      ctx.fillStyle = hazeG; ctx.fillRect(0, Math.max(horY, 0), W, H * 0.12);
+    } else {
+      const gndG = ctx.createLinearGradient(0, horY, 0, H);
+      gndG.addColorStop(0, '#152012'); gndG.addColorStop(1, '#0a1208');
+      ctx.fillStyle = gndG; ctx.fillRect(0, horY, W, H - horY);
+      ctx.fillStyle = 'rgba(120,170,220,0.10)'; ctx.fillRect(0, horY - 2, W, 6);
+    }
 
     // ---- ヘルパー ----
     const HW = 30;                               // 滑走路半幅 (m)
@@ -792,6 +944,8 @@
     const rwLen = P.rwy.length_m || 3500;
     const xNear = Math.max(Math.min(0, s + 6), s + 6);
 
+    // ---- 合成シーン要素（衛星画像使用時は実画像に写っているため描かない） ----
+    if (!useSat) {
     // ---- 進入灯（センターライン灯 + 300mクロスバー） ----
     for (let x = -30; x >= -720; x -= 30) dot(x, 0, 'rgba(255,250,230,0.9)', 0.55, true);
     for (let u = -12; u <= 12; u += 3) if (u !== 0) dot(-300, u, 'rgba(255,250,230,0.85)', 0.5, true);
@@ -850,6 +1004,7 @@
       stripes(150, 3, 0.82); stripes(300, 3, 0.82); stripes(450, 3, 0.82);
       stripes(600, 2, 0.75); stripes(750, 1, 0.75); stripes(900, 1, 0.75);
     }
+    }  // end if (!useSat)
 
     // ---- G/S アンテナ位置（緑ライン、ILSのみ） ----
     if (P.rwy.ils) {
@@ -961,6 +1116,12 @@
       ctx.restore();
     }
 
+    // ---- 衛星テクスチャ読込中表示 ----
+    if (animUseSat && !useSat) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(groundTexBuilding ? '🛰 衛星画像 読込中…（完了後に自動切替）' : '', cx, 78);
+    }
+
     // ---- コールアウト ----
     if (animCallout && performance.now() < animCallout.until) {
       ctx.save();
@@ -1026,6 +1187,7 @@
     const angle = parseFloat(el('aim-angle').value) || 3.0;
     animDGround = (500 * 0.3048) / Math.tan(angle * Math.PI / 180);  // Eye 500ft AGL から開始
     animPrevRA = 99999; animCallout = null; animPaused = false;
+    if (animUseSat) buildGroundTexture();   // 衛星地面テクスチャを非同期生成（完了までCG描画）
     animRunning = true; animLastT = performance.now();
     const ctrl = el('aim-anim-ctrl'); if (ctrl) ctrl.style.display = 'flex';
     const btn = el('aim-btn-anim');
@@ -1481,6 +1643,12 @@
     });
     const animStopBtn = el('aim-anim-stop');
     if (animStopBtn) animStopBtn.addEventListener('click', () => stopAnim(true));
+    const animSatBtn = el('aim-anim-sat');
+    if (animSatBtn) animSatBtn.addEventListener('click', () => {
+      animUseSat = !animUseSat;
+      animSatBtn.classList.toggle('aim-view-active', animUseSat);
+      if (animUseSat) buildGroundTexture();
+    });
     document.querySelectorAll('.aim-anim-sp').forEach(b => b.addEventListener('click', () => {
       animSpeed = parseFloat(b.dataset.sp) || 1;
       document.querySelectorAll('.aim-anim-sp').forEach(x => x.classList.toggle('aim-view-active', x === b));
