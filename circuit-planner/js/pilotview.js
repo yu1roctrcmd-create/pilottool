@@ -193,6 +193,7 @@
       magVar: params.magVar || 0,
       trueHeading: params.trueHeading,
       vorLat, vorLon, vorIdent,
+      tdze: params.thr_elev || 0,
       apCode: currentAirport, rwCode: currentRunway,
     };
   }
@@ -546,7 +547,7 @@
     ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, 8, 190, 110);
     ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 1; ctx.strokeRect(8, 8, 190, 110);
     ctx.fillStyle = '#76ff03'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
-    ctx.fillText(`ALT  ${Math.round(st.hFt)} ft AGL`, 16, 26);
+    ctx.fillText(`ALT  ${Math.round(st.hFt + P.tdze)} MSL / ${Math.round(st.hFt)} AGL`, 16, 26);
     ctx.fillText(`GS   ${Math.round(st.gs)} kt   ×${speed}`, 16, 44);
     ctx.fillText(`TRK  ${String(Math.round(trkMag)).padStart(3, '0')}°M`, 16, 62);
     ctx.fillText(`BANK ${Math.abs(bankDeg) < 1 ? '—' : Math.abs(Math.round(bankDeg)) + '° ' + (bankDeg < 0 ? 'L' : 'R')}`, 16, 80);
