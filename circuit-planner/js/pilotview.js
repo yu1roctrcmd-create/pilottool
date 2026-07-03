@@ -119,7 +119,7 @@
     // イベント点（走行距離）
     const events = [];
     const evAt = (latlon, text) => {
-      if (!latlon) return;
+      if (!latlon) return null;
       const [ex, eu] = toLocal(latlon);
       // 経路セグメントへ射影して走行距離 s を求める
       let bestS = null, bd = 1e12;
@@ -133,8 +133,11 @@
         const d = (ax + dx * t - ex) ** 2 + (au + du * t - eu) ** 2;
         if (d < bd) { bd = d; bestS = v[i].s + Math.sqrt(len2) * t; }
       }
-      if (bestS !== null && bd < 600 ** 2) events.push({ s: bestS, text });
+      if (bestS === null || bd >= 600 ** 2) return null;
+      if (text) events.push({ s: bestS, text });
+      return bestS;
     };
+    const sAbeam = evAt(result.abeamPos, 'ABEAM — TIME CHECK');
     evAt(result.baseTurnLeadPos,  'BASE TURN LEAD');
     evAt(result.finalTurnLeadPos, 'FINAL TURN LEAD');
     evAt(result.vdpOnCircuit,     'VDP — DESCENT 3°');
@@ -142,6 +145,9 @@
     for (let i = 1; i < v.length; i++) {
       if (v[i].leg !== v[i - 1].leg) events.push({ s: v[i].s, text: v[i].leg });
     }
+    // Time Check カウントダウンの終点 = ベースターン開始
+    const btEv = events.find(e => e.text === 'BASE TURN');
+    const sBaseTurn = btEv ? btEv.s : null;
     events.sort((a, b) => a.s - b.s);
 
     // マーカー（地面上に描く注釈）
@@ -151,6 +157,7 @@
       const [mx, mu] = toLocal(latlon);
       markers.push({ x: mx, u: mu, label, color });
     };
+    mk(result.abeamPos,         'ABEAM', '#00e5ff');
     mk(result.vdpOnCircuit,     'VDP',   '#ff9800');
     mk(result.baseTurnLeadPos,  'LEAD',  '#ffe082');
     mk(result.finalTurnLeadPos, 'LEAD',  '#ffe082');
@@ -160,7 +167,7 @@
     markers.push({ x: papiM, u: 0, label: `AIM ${papiFt}ft (PAPI)`, color: '#ffe082' });
 
     return {
-      v, sTD, sAIM, papiFt, papiM, papiSide, patternAltFt, events, markers,
+      v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, patternAltFt, events, markers,
       total: v[v.length - 1].s,
       thLat: th[0], thLon: th[1], hdgRad, cosH, sinH, cosLat,
       rwLenM: rwy.length_m || 3500,
@@ -532,10 +539,24 @@
     ctx.fillStyle = '#ffe082'; ctx.fillText(t2txt, W - tw + 2, 42);
     ctx.fillStyle = '#e040fb'; ctx.fillText(t3txt, W - tw + 2, 58);
 
+    // ---- TIME CHECK カウントダウン（Abeam → Base Turn） ----
+    if (P.sAbeam !== null && P.sBaseTurn !== null &&
+        sTrack >= P.sAbeam - 1 && sTrack < P.sBaseTurn) {
+      const remSec = Math.max(0, (P.sBaseTurn - sTrack) / Math.max(1, vMs));
+      const boxW = 200, boxX = cx - boxW / 2;
+      ctx.fillStyle = 'rgba(0,10,20,0.80)'; ctx.fillRect(boxX, 8, boxW, 48);
+      ctx.strokeStyle = '#ffe082'; ctx.lineWidth = 1.5; ctx.strokeRect(boxX, 8, boxW, 48);
+      ctx.fillStyle = '#80cbc4'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('TIME CHECK → BASE TURN', cx, 22);
+      ctx.fillStyle = remSec <= 5 ? '#ff5252' : '#ffe082';
+      ctx.font = 'bold 24px monospace';
+      ctx.fillText(Math.ceil(remSec) + ' s', cx, 48);
+    }
+
     // 衛星読込中
     if (useSat && !sat) {
       ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(texBuilding ? '🛰 衛星画像 読込中…（完了後に自動切替）' : '', cx, 40);
+      ctx.fillText(texBuilding ? '🛰 衛星画像 読込中…（完了後に自動切替）' : '', cx, 70);
     }
 
     // コールアウト
