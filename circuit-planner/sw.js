@@ -1,4 +1,4 @@
-const CACHE_NAME = 'circuit-planner-v198';
+const CACHE_NAME = 'circuit-planner-v199';
 const TILE_CACHE = 'map-tiles-v1';
 const OFFLINE_URL = './index.html';
 
@@ -16,6 +16,7 @@ self.addEventListener('install', event => {
       './js/papi.js',
       './js/aimpoint.js',
       './js/dev.js',
+      './js/pilotview.js',
       './manifest.json',
       'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
       'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'

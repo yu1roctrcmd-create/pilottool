@@ -330,6 +330,7 @@
   <!-- 地図 + プロファイル -->
   <div id="map-container">
     <div id="map"></div>
+    <button id="pv-open" style="position:absolute;bottom:194px;left:12px;z-index:900;background:#1565c0;border:1px solid #4fc3f7;color:#e3f2fd;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)">🧑‍✈️ Pilot View</button>
     <div id="profile-panel">
       <h3>3° グライドパス プロファイル</h3>
       <canvas id="profile-canvas"></canvas>
@@ -818,8 +819,23 @@
 <script src="js/circuit.js"></script>
 <script src="js/app.js"></script>
 <script src="js/papi.js"></script>
+<!-- ===== Pilot Eye View オーバーレイ ===== -->
+<div id="pv-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:9500;flex-direction:column">
+  <canvas id="pv-canvas" style="flex:1;width:100%;height:100%;display:block"></canvas>
+  <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:5px;background:rgba(6,16,28,0.88);border:1px solid #1a4a7a;border-radius:6px;padding:5px 8px;align-items:center">
+    <button class="aim-view-btn" id="pv-pause" style="padding:4px 12px">⏸</button>
+    <button class="aim-view-btn pv-sp" data-sp="1" style="padding:4px 9px">×1</button>
+    <button class="aim-view-btn pv-sp aim-view-active" data-sp="2" style="padding:4px 9px">×2</button>
+    <button class="aim-view-btn pv-sp" data-sp="4" style="padding:4px 9px">×4</button>
+    <button class="aim-view-btn pv-sp" data-sp="8" style="padding:4px 9px">×8</button>
+    <button class="aim-view-btn aim-view-active" id="pv-sat" style="padding:4px 10px">🛰 衛星</button>
+    <button class="aim-view-btn" id="pv-close" style="padding:4px 12px">✕ 閉じる</button>
+  </div>
+</div>
+
 <script src="js/aimpoint.js"></script>
 <script src="js/dev.js"></script>
+<script src="js/pilotview.js"></script>
 <script>
   // Service Worker 登録
   if ('serviceWorker' in navigator) {

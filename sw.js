@@ -1,4 +1,4 @@
-const CACHE = 'nca-tools-v4';
+const CACHE = 'nca-tools-v5';
 const ASSETS = [
   './',
   './manifest.json',
@@ -14,6 +14,7 @@ const ASSETS = [
   './circuit-planner/js/papi.js',
   './circuit-planner/js/aimpoint.js',
   './circuit-planner/js/dev.js',
+  './circuit-planner/js/pilotview.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
