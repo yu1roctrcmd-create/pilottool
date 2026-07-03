@@ -186,6 +186,7 @@
 
   // ===== パイロット視点 描画 =====
   function drawAimingPoint() {
+    if (animRunning) return;  // アニメーション中は静止画を描かない
     const canvas = el('aim-canvas');
     const view   = el('aim-view');
     if (!canvas || !view || view.style.display === 'none') return;
@@ -691,6 +692,347 @@
     ctx.fillText('黄: Aiming Point  |  緑●: Touchdown Zone Marker', offsetX, H - 4);
   }
 
+  // ===== 3° Path アニメーション（Pilot Eye 視点） =====
+  // GS Follow: Eye は G/S Follow Eye Aim Point（GS Ant + 400ft）に向かって
+  // 3° パス上を降下する。カメラは飛行経路方向を向くため Aim Point は画面中央に固定。
+  let animRunning = false;
+  let animPaused  = false;
+  let animSpeed   = 1;
+  let animRaf     = 0;
+  let animLastT   = 0;
+  let animDGround = 0;      // Eye 地上投影点 → Eye Aim Point の水平距離 (m)
+  let animPrevRA  = 99999;
+  let animCallout = null;   // { text, until }
+
+  function animParams() {
+    const rwy     = currentAimRwy();
+    const angle   = parseFloat(el('aim-angle').value) || 3.0;
+    const gsAntFt = parseFloat(el('aim-gsant').value) || 1115;
+    const papiFt  = parseFloat(el('aim-papi').value)  || 1414;
+    const aimFt   = parseFloat(el('aim-aim').value)   || 1312;
+    const stripeFt= parseFloat(el('aim-stripe').value)|| 197;
+    const acType  = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
+    const eyeHt   = (AC[acType] || AC['B747-8F']).eyeHt;
+    const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    return {
+      rwy, angle, th: angle * Math.PI / 180,
+      gsAntFt, papiFt, aimFt, stripeFt, acType, eyeHt,
+      gsfEyeFt,
+      gsAntM: gsAntFt * 0.3048, papiM: papiFt * 0.3048,
+      aimM: aimFt * 0.3048, stripeM: stripeFt * 0.3048,
+      gsfEyeM: gsfEyeFt * 0.3048,
+    };
+  }
+
+  // 1フレーム描画。戻り値 = RA(ft) / 描画不能時 null
+  function renderAnimFrame() {
+    const canvas = el('aim-canvas');
+    if (!canvas) return null;
+    const P = animParams();
+    if (!P.rwy) return null;
+    const { apCode, rwCode } = currentAimApRw();
+
+    const W = canvas.clientWidth || 800, H = canvas.clientHeight || 540;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const d = Math.max(animDGround, 1);          // Eye→Aim Point 水平距離 (m)
+    const hM = d * Math.tan(P.th);               // Eye 高さ (m)
+    const s  = P.gsfEyeM - d;                    // Eye の TH 基準位置 (m, 負=進入側)
+    const eyeFt = hM / 0.3048;
+    const ra    = eyeFt - P.eyeHt;               // 主脚基準の概算 RA
+
+    // ---- 透視投影（カメラは飛行経路方向 = 3°下向き） ----
+    const fl = H * 1.45, cx = W / 2, cy = H * 0.52;
+    const cosT = Math.cos(P.th), sinT = Math.sin(P.th);
+    function pt(xM, uM) {
+      const dx = xM - s;
+      const depth = dx * cosT + hM * sinT;
+      if (depth < 5) return null;
+      return { x: cx + fl * uM / depth, y: cy - fl * (dx * sinT - hM * cosT) / depth, d: depth };
+    }
+    const horY = cy - fl * Math.tan(P.th);       // 水平線（Aim Point の 3° 上）
+
+    // ---- 空・地面 ----
+    const skyG = ctx.createLinearGradient(0, 0, 0, horY);
+    skyG.addColorStop(0, '#060d16'); skyG.addColorStop(0.7, '#0d1e30'); skyG.addColorStop(1, '#2a4a6a');
+    ctx.fillStyle = skyG; ctx.fillRect(0, 0, W, Math.max(horY, 0));
+    const gndG = ctx.createLinearGradient(0, horY, 0, H);
+    gndG.addColorStop(0, '#152012'); gndG.addColorStop(1, '#0a1208');
+    ctx.fillStyle = gndG; ctx.fillRect(0, horY, W, H - horY);
+    ctx.fillStyle = 'rgba(120,170,220,0.10)'; ctx.fillRect(0, horY - 2, W, 6);
+
+    // ---- ヘルパー ----
+    const HW = 30;                               // 滑走路半幅 (m)
+    function poly(pts, fill) {
+      const q = pts.map(p => pt(p[0], p[1]));
+      if (q.some(v => !v)) return;
+      ctx.beginPath(); ctx.moveTo(q[0].x, q[0].y);
+      for (let i = 1; i < q.length; i++) ctx.lineTo(q[i].x, q[i].y);
+      ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    }
+    function quad(x0, x1, lf, rf, color) {
+      poly([[x0, lf * HW], [x0, rf * HW], [x1, rf * HW], [x1, lf * HW]], color);
+    }
+    function dot(xM, uM, color, sizeM, glow) {
+      const q = pt(xM, uM); if (!q) return;
+      const r = Math.min(12, Math.max(1.1, fl * sizeM / q.d));
+      ctx.save();
+      if (glow) { ctx.shadowColor = color; ctx.shadowBlur = r * 2.5; }
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      return q;
+    }
+
+    const rwLen = P.rwy.length_m || 3500;
+    const xNear = Math.max(Math.min(0, s + 6), s + 6);
+
+    // ---- 進入灯（センターライン灯 + 300mクロスバー） ----
+    for (let x = -30; x >= -720; x -= 30) dot(x, 0, 'rgba(255,250,230,0.9)', 0.55, true);
+    for (let u = -12; u <= 12; u += 3) if (u !== 0) dot(-300, u, 'rgba(255,250,230,0.85)', 0.5, true);
+
+    // ---- 滑走路アスファルト ----
+    if (xNear < rwLen) {
+      quad(Math.max(0, xNear), rwLen, -1, 1, '#2e2e2e');
+      // エッジライン（白）
+      quad(Math.max(0, xNear), rwLen, -1.02, -0.96, 'rgba(255,255,255,0.45)');
+      quad(Math.max(0, xNear), rwLen,  0.96,  1.02, 'rgba(255,255,255,0.45)');
+    }
+
+    // ---- センターライン（白破線 30m/60m周期） ----
+    for (let x = Math.max(12, Math.ceil(Math.max(0, xNear) / 60) * 60); x < rwLen - 30; x += 60) {
+      quad(x, x + 30, -0.015, 0.015, 'rgba(255,255,255,0.7)');
+    }
+
+    // ---- THバー（12本） ----
+    for (const [lf, rf] of [
+      [-0.21,-0.15],[-0.33,-0.27],[-0.45,-0.39],[-0.57,-0.51],[-0.69,-0.63],[-0.81,-0.75],
+      [ 0.15, 0.21],[ 0.27, 0.33],[ 0.39, 0.45],[ 0.51, 0.57],[ 0.63, 0.69],[ 0.75, 0.81],
+    ]) quad(0, 30, lf, rf, 'rgba(255,255,255,0.92)');
+
+    // ---- スレッショルド灯（緑） ----
+    for (let u = -HW; u <= HW; u += 5) dot(-2, u, '#43d95e', 0.5, true);
+    // ---- 滑走路エッジ灯（白） ----
+    for (let x = 60; x < rwLen; x += 60) {
+      dot(x, -HW - 1.5, 'rgba(255,250,220,0.85)', 0.45, true);
+      dot(x,  HW + 1.5, 'rgba(255,250,220,0.85)', 0.45, true);
+    }
+
+    // ---- Aiming Point マーキング ----
+    const isFAA = ((apCode || '')[0] === 'K' || (apCode || '')[0] === 'P');
+    const isCHINA = apCode === 'ZSPD';
+    const apNear = P.aimM, apFar = P.aimM + P.stripeM;
+    quad(apNear, apFar, -0.60, -0.20, 'rgba(255,255,255,0.90)');
+    quad(apNear, apFar,  0.20,  0.60, 'rgba(255,255,255,0.90)');
+    function inAimZone(xM) { return xM + 22 > apNear && xM < apFar; }
+
+    // ---- TDZストライプ ----
+    function stripes(xM, count, op) {
+      if (inAimZone(xM)) return;
+      const fr = count === 3
+        ? [[-0.25,-0.15],[-0.40,-0.30],[-0.55,-0.45],[0.15,0.25],[0.30,0.40],[0.45,0.55]]
+        : count === 2
+        ? [[-0.25,-0.15],[-0.40,-0.30],[0.15,0.25],[0.30,0.40]]
+        : [[-0.25,-0.15],[0.15,0.25]];
+      for (const [lf, rf] of fr) quad(xM, xM + 22, lf, rf, `rgba(255,255,255,${op})`);
+    }
+    if (isCHINA) {
+      stripes(144.3, 3, 0.82); stripes(293.5, 3, 0.82); stripes(593.66, 2, 0.75); stripes(893.18, 1, 0.75);
+    } else if (isFAA) {
+      stripes(152.4, 3, 0.82); stripes(457.2, 3, 0.82); stripes(609.6, 2, 0.75);
+      stripes(762.0, 1, 0.75); stripes(914.4, 1, 0.75);
+    } else {
+      stripes(150, 3, 0.82); stripes(300, 3, 0.82); stripes(450, 3, 0.82);
+      stripes(600, 2, 0.75); stripes(750, 1, 0.75); stripes(900, 1, 0.75);
+    }
+
+    // ---- G/S アンテナ位置（緑ライン、ILSのみ） ----
+    if (P.rwy.ils) {
+      quad(P.gsAntM - 1.5, P.gsAntM + 1.5, -1, 1, 'rgba(105,240,174,0.55)');
+      const q = pt(P.gsAntM, HW + 4);
+      if (q) {
+        ctx.fillStyle = '#69f0ae'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('G/S Ant', q.x + 4, q.y);
+      }
+    }
+
+    // ---- PAPI（4灯、実際の見え方: Eye の PAPI に対する角度で White/Red） ----
+    const papiSide = P.rwy?.papi?.side || P.rwy?.ils?.papiSide || 'L';
+    const sideSign = papiSide === 'L' ? -1 : 1;
+    const papiDist = P.papiM - s;                // Eye → PAPI 水平距離
+    let aEyeDeg = 90;
+    if (papiDist > 5) aEyeDeg = Math.atan(hM / papiDist) * 180 / Math.PI;
+    const nWhite = aEyeDeg >= 3.5 ? 4 : aEyeDeg >= 3.17 ? 3 : aEyeDeg >= 2.83 ? 2 : aEyeDeg >= 2.5 ? 1 : 0;
+    for (let i = 0; i < 4; i++) {
+      const u = sideSign * (HW + 15 + i * 9);    // i=0 が滑走路寄り（内側）
+      dot(P.papiM, u, i < nWhite ? '#ffffff' : '#ff1744', 1.3, true);
+    }
+    {
+      const q = pt(P.papiM, sideSign * (HW + 15 + 3 * 9) + sideSign * 6);
+      if (q) {
+        ctx.fillStyle = '#ef5350'; ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = sideSign < 0 ? 'right' : 'left';
+        ctx.fillText('PAPI', q.x + sideSign * 4, q.y - 8);
+      }
+    }
+
+    // ---- G/S Follow Eye Aim Point（黄ダイヤ = 画面中央に固定） ----
+    {
+      const q = pt(P.gsfEyeM, 0);
+      if (q) {
+        const r = Math.min(26, Math.max(7, fl * 3 / q.d));
+        ctx.save();
+        ctx.shadowColor = '#ffe082'; ctx.shadowBlur = 10;
+        ctx.fillStyle = 'rgba(255,224,130,0.92)';
+        ctx.beginPath();
+        ctx.moveTo(q.x, q.y - r); ctx.lineTo(q.x + r, q.y);
+        ctx.lineTo(q.x, q.y + r); ctx.lineTo(q.x - r, q.y);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    }
+
+    // ---- FPV（Flight Path Vector、HUDグリーン、画面中央固定） ----
+    ctx.save();
+    ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 2;
+    ctx.shadowColor = '#76ff03'; ctx.shadowBlur = 4;
+    ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, cy);  ctx.lineTo(cx - 24, cy);
+    ctx.moveTo(cx + 9, cy);  ctx.lineTo(cx + 24, cy);
+    ctx.moveTo(cx, cy - 9);  ctx.lineTo(cx, cy - 18);
+    ctx.stroke();
+    ctx.restore();
+
+    // ---- 水平線基準マーク（-3°の確認用に水平線に目盛り） ----
+    ctx.strokeStyle = 'rgba(118,255,3,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 70, horY); ctx.lineTo(cx - 25, horY);
+    ctx.moveTo(cx + 25, horY); ctx.lineTo(cx + 70, horY);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(118,255,3,0.6)'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('HORIZON', cx + 74, horY + 3);
+    ctx.fillText(`-${P.angle.toFixed(1)}°`, cx + 28, cy + 3);
+
+    // ---- HUD 左上: 飛行データ ----
+    const distTH = -s;                            // TH まで (m, 負=通過後)
+    const spdKt = (() => { const e = document.getElementById('papi-aspd'); return e ? (parseFloat(e.value) || 145) : 145; })();
+    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, 8, 178, 92);
+    ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 1; ctx.strokeRect(8, 8, 178, 92);
+    ctx.fillStyle = '#76ff03'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(distTH > 0
+      ? `DIST THR ${(distTH / 1852).toFixed(2)}NM ${Math.round(distTH)}m`
+      : `OVER RWY +${Math.round(-distTH)}m`, 16, 26);
+    ctx.fillText(`EYE  ${Math.round(eyeFt)} ft`, 16, 44);
+    ctx.fillText(`RA   ${Math.max(0, Math.round(ra))} ft`, 16, 62);
+    ctx.fillText(`GS   ${Math.round(spdKt)} kt   ×${animSpeed}`, 16, 80);
+    ctx.fillStyle = '#80cbc4'; ctx.font = '9px monospace';
+    ctx.fillText(`${P.acType}  EYE-GEAR ${P.eyeHt}ft`, 16, 94);
+
+    // ---- HUD 右上: 空港情報 ----
+    ctx.font = 'bold 12px monospace';
+    const t1 = `${apCode} RWY ${rwCode}`;
+    const t2 = `GP ${P.angle}°  ${P.rwy.ils ? 'G/S FOLLOW' : 'PAPI'}`;
+    const t3 = `EYE AIM ${P.gsfEyeFt}ft (${Math.round(P.gsfEyeM)}m)`;
+    const tw = Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width, ctx.measureText(t3).width) + 20;
+    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(W - tw - 8, 8, tw, 58);
+    ctx.strokeStyle = '#ffe082'; ctx.strokeRect(W - tw - 8, 8, tw, 58);
+    ctx.fillStyle = '#4fc3f7'; ctx.textAlign = 'left';
+    ctx.fillText(t1, W - tw + 2, 26);
+    ctx.fillStyle = '#90a4ae'; ctx.fillText(t2, W - tw + 2, 42);
+    ctx.fillStyle = '#ffe082'; ctx.fillText(t3, W - tw + 2, 58);
+
+    // ---- HUD 左下: PAPI リピーター ----
+    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, H - 46, 150, 38);
+    ctx.strokeStyle = '#ef5350'; ctx.strokeRect(8, H - 46, 150, 38);
+    ctx.fillStyle = '#ef5350'; ctx.font = 'bold 10px monospace';
+    ctx.fillText(`PAPI  ${aEyeDeg < 89 ? aEyeDeg.toFixed(2) + '°' : '--'}`, 16, H - 33);
+    for (let i = 0; i < 4; i++) {
+      ctx.save();
+      const color = i < nWhite ? '#ffffff' : '#ff1744';
+      ctx.shadowColor = color; ctx.shadowBlur = 6; ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(24 + i * 22, H - 19, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // ---- コールアウト ----
+    if (animCallout && performance.now() < animCallout.until) {
+      ctx.save();
+      ctx.fillStyle = '#76ff03'; ctx.font = 'bold 44px monospace'; ctx.textAlign = 'center';
+      ctx.shadowColor = '#000'; ctx.shadowBlur = 8;
+      ctx.fillText(animCallout.text, cx, H * 0.30);
+      ctx.restore();
+    }
+    if (animPaused) {
+      ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('⏸ PAUSE', cx, H - 20);
+    }
+
+    return ra;
+  }
+
+  function animFrame(t) {
+    if (!animRunning) return;
+    const dt = Math.min((t - animLastT) / 1000, 0.1);
+    animLastT = t;
+    if (!animPaused) {
+      const e = document.getElementById('papi-aspd');
+      const spdKt = e ? (parseFloat(e.value) || 145) : 145;
+      animDGround -= spdKt * 0.51444 * animSpeed * dt;
+    }
+    const ra = renderAnimFrame();
+    if (ra !== null) {
+      for (const c of [500, 400, 300, 200, 100, 50, 40]) {
+        if (animPrevRA > c && ra <= c) animCallout = { text: String(c), until: performance.now() + 1400 };
+      }
+      if (ra <= 30) {
+        animCallout = { text: 'FLARE', until: performance.now() + 1e9 };
+        renderAnimFrame();
+        stopAnim(false);   // 最終フレームを残して終了
+        return;
+      }
+      animPrevRA = ra;
+    }
+    animRaf = requestAnimationFrame(animFrame);
+  }
+
+  function stopAnim(restore) {
+    if (animRaf) cancelAnimationFrame(animRaf);
+    animRaf = 0; animRunning = false; animPaused = false;
+    const ctrl = el('aim-anim-ctrl'); if (ctrl) ctrl.style.display = 'none';
+    const btn = el('aim-btn-anim');
+    if (btn) { btn.textContent = '▶ 3° Path'; btn.classList.remove('aim-view-active'); }
+    const pauseBtn = el('aim-anim-pause'); if (pauseBtn) pauseBtn.textContent = '⏸';
+    if (restore) drawAimingPoint();
+  }
+
+  // デバッグ用: アニメーション距離を直接設定（コンソールから）
+  window._aimAnimSet = function (dGroundM) {
+    animDGround = dGroundM;
+    if (!animRunning) renderAnimFrame();
+  };
+
+  function startAnim() {
+    if (animRunning) { stopAnim(true); return; }
+    const rwy = currentAimRwy();
+    if (!rwy) return;
+    if (aimViewMode !== 'persp') setAimView('persp');
+    const angle = parseFloat(el('aim-angle').value) || 3.0;
+    animDGround = (500 * 0.3048) / Math.tan(angle * Math.PI / 180);  // Eye 500ft AGL から開始
+    animPrevRA = 99999; animCallout = null; animPaused = false;
+    animRunning = true; animLastT = performance.now();
+    const ctrl = el('aim-anim-ctrl'); if (ctrl) ctrl.style.display = 'flex';
+    const btn = el('aim-btn-anim');
+    if (btn) { btn.textContent = '⏹ 停止'; btn.classList.add('aim-view-active'); }
+    animRaf = requestAnimationFrame(animFrame);
+  }
+
   // ===== 衛星マップ =====
   let aimViewMode  = 'persp';
   let aimLeafletMap = null;
@@ -1154,6 +1496,7 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
   }
 
   function setAimView(mode) {
+    if (animRunning) stopAnim(false);
     aimViewMode = mode;
     const canvas = el('aim-canvas');
     const mapDiv = el('aim-map');
@@ -1255,6 +1598,21 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
 
     const kmlBtn = el('aim-kml-btn');
     if (kmlBtn) kmlBtn.addEventListener('click', generateKML);
+
+    // 3° Path アニメーション コントロール
+    const animBtn = el('aim-btn-anim');
+    if (animBtn) animBtn.addEventListener('click', startAnim);
+    const animPauseBtn = el('aim-anim-pause');
+    if (animPauseBtn) animPauseBtn.addEventListener('click', () => {
+      animPaused = !animPaused;
+      animPauseBtn.textContent = animPaused ? '▶' : '⏸';
+    });
+    const animStopBtn = el('aim-anim-stop');
+    if (animStopBtn) animStopBtn.addEventListener('click', () => stopAnim(true));
+    document.querySelectorAll('.aim-anim-sp').forEach(b => b.addEventListener('click', () => {
+      animSpeed = parseFloat(b.dataset.sp) || 1;
+      document.querySelectorAll('.aim-anim-sp').forEach(x => x.classList.toggle('aim-view-active', x === b));
+    }));
 
     const dlBtn = el('aim-download-btn');
     if (dlBtn) dlBtn.addEventListener('click', () => {
