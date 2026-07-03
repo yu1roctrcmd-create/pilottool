@@ -36,7 +36,18 @@
     const gsl = result.windInfo.legs;
     const legsSrc = [];
     const add = (pts, name, gs) => { if (pts && pts.length >= 2) legsSrc.push({ pts, name, gs: Math.max(gs, 60) }); };
-    add(result.radialLegPath,  'RADIAL',     gsl.downwind.gs);
+    // RADIAL レグ: VOR B/A は FAF/IAF フィックス（例: FF274）→ 会合旋回開始点 の飛行順で構築
+    // （result.radialLegPath は地図表示用で VOR→外側 の順のため、そのままだと逆走になる）
+    let startFix = null;
+    if ((params.entryType === 'vorB' || params.entryType === 'vorA') && result.vorBTurnStartPos) {
+      const appr = AIRPORTS[currentAirport]?.approaches?.[params.entryType];
+      startFix = appr?.fixes?.find(f => f.role === 'FAF' || f.role === 'IAF') || null;
+      const startPos = startFix ? [startFix.lat, startFix.lon]
+                     : (result.radialLegPath && result.radialLegPath[1]) || null;
+      if (startPos) add([startPos, result.vorBTurnStartPos], 'RADIAL', gsl.downwind.gs);
+    } else {
+      add(result.radialLegPath, 'RADIAL', gsl.downwind.gs);
+    }
     add(result.entryTurnArc,   'ENTRY TURN', gsl.downwind.gs);
     add(result.downwindPath,   'DOWNWIND',   gsl.downwind.gs);
     add(result.baseTurnArc,    'BASE TURN',  (gsl.downwind.gs + gsl.base.gs) / 2);
@@ -157,6 +168,8 @@
       const [mx, mu] = toLocal(latlon);
       markers.push({ x: mx, u: mu, label, color });
     };
+    if (startFix) mk([startFix.lat, startFix.lon], startFix.ident, '#00e5ff');
+    mk(result.vorBTurnStartPos, '会合旋回', '#00e5ff');
     mk(result.abeamPos,         'ABEAM', '#00e5ff');
     mk(result.vdpOnCircuit,     'VDP',   '#ff9800');
     mk(result.baseTurnLeadPos,  'LEAD',  '#ffe082');
