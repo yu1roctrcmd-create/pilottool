@@ -169,7 +169,7 @@
       markers.push({ x: mx, u: mu, label, color });
     };
     if (startFix) mk([startFix.lat, startFix.lon], startFix.ident, '#00e5ff');
-    mk(result.vorBTurnStartPos, '会合旋回', '#00e5ff');
+    mk(result.vorBTurnStartPos, 'Entry Turn', '#00e5ff');
     mk(result.abeamPos,         'ABEAM', '#00e5ff');
     mk(result.vdpOnCircuit,     'VDP',   '#ff9800');
     mk(result.baseTurnLeadPos,  'LEAD',  '#ffe082');
@@ -230,9 +230,14 @@
   }
 
   // ---------- 衛星地面テクスチャ ----------
-  function buildTexture(P) {
+  let texDoneCb = null;                    // 読込完了時に呼ぶコールバック（最新のみ保持）
+  let texProg = { done: 0, total: 0 };     // タイル読込進捗
+
+  function buildTexture(P, cb) {
+    if (cb) texDoneCb = cb;
     if (texBuilding) return;
     texBuilding = true;
+    texProg = { done: 0, total: 0 };
     // 経路のバウンディングボックス + マージン
     let x0 = 0, x1 = P.rwLenM, u0 = 0, u1 = 0;
     P.v.forEach(p => {
@@ -277,9 +282,11 @@
       for (let a = Math.min(...txs); a <= Math.max(...txs); a++)
         for (let b = Math.min(...tys); b <= Math.max(...tys); b++) jobs.push([a, b]);
       if (jobs.length > 700) return Promise.resolve();
+      texProg.total += jobs.length;
       return Promise.allSettled(jobs.map(([a, b]) => new Promise(res => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
+        const done = () => { texProg.done++; res(); };
         img.onload = () => {
           try {
             const nw = tileNW(a, b, z), ne = tileNW(a + 1, b, z), sw = tileNW(a, b + 1, z);
@@ -288,20 +295,22 @@
                            (p2[0] - p0[0]) / 256, (p2[1] - p0[1]) / 256, p0[0], p0[1]);
             g.drawImage(img, 0, 0);
           } catch (e) {}
-          res();
+          done();
         };
-        img.onerror = () => res();
+        img.onerror = done;
         img.src = `${tileUrl}/${z}/${b}/${a}`;
       })));
     }
 
+    const fire = () => { const f = texDoneCb; texDoneCb = null; if (f) f(); };
     drawZoom(14, x0, x1, u0, u1)
       .then(() => drawZoom(16, -1500, P.rwLenM + 500, -650, 650))
       .then(() => {
         g.setTransform(1, 0, 0, 1, 0, 0);
         t.ready = true; tex = t; texBuilding = false;
+        fire();
       })
-      .catch(() => { texBuilding = false; });
+      .catch(() => { texBuilding = false; fire(); });
   }
 
   // カメラ方位整列の中間キャンバス（近距離: 高解像度 / 遠距離: 低解像度）
@@ -636,6 +645,7 @@
   }
 
   function stop(hide) {
+    pvSession++;   // 読込待ちの開始コールバックを無効化
     if (raf) cancelAnimationFrame(raf);
     raf = 0; running = false; paused = false;
     const pb = el('pv-pause'); if (pb) pb.textContent = '⏸';
@@ -651,19 +661,59 @@
     st: stateAt(path, sTrack),
   } : null;
 
+  // ---------- 読込画面 & 開始 ----------
+  let pvSession = 0;   // stop() で無効化するための世代トークン
+
+  function drawLoadingFrame() {
+    const canvas = el('pv-canvas');
+    if (!canvas) return;
+    const W = canvas.clientWidth || 800, H = canvas.clientHeight || 600;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(W * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#06101c'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#4fc3f7'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🛰 衛星画像を取り込み中…', W / 2, H / 2 - 34);
+    const bw = Math.min(320, W * 0.6);
+    ctx.fillStyle = '#0d1f2d'; ctx.fillRect(W / 2 - bw / 2, H / 2 - 10, bw, 12);
+    const pct = texProg.total ? texProg.done / texProg.total : 0;
+    ctx.fillStyle = '#4fc3f7'; ctx.fillRect(W / 2 - bw / 2, H / 2 - 10, bw * pct, 12);
+    ctx.fillStyle = '#80cbc4'; ctx.font = '12px monospace';
+    ctx.fillText(`${texProg.done} / ${texProg.total} タイル (${Math.round(pct * 100)}%)`, W / 2, H / 2 + 24);
+    ctx.fillStyle = '#546e7a'; ctx.font = '10px sans-serif';
+    ctx.fillText('完了後にフライトを開始します', W / 2, H / 2 + 46);
+  }
+
+  function beginFlight() {
+    running = true; paused = false; lastT = performance.now();
+    const pb = el('pv-pause'); if (pb) pb.textContent = '⏸';
+    raf = requestAnimationFrame(frame);
+  }
+
   function start() {
     path = buildPath();
     if (!path) { alert('サーキット経路を生成できません'); return; }
     sTrack = 0; pitchDisp = 0; rollDisp = 0; callout = null;
     prevRA = 99999;
     firedEvents = new Set();
-    if (useSat && (!tex || tex.key !== path.apCode + '_' + path.rwCode || !tex.ready)) {
-      tex = null;
-      buildTexture(path);
-    }
     const ov = el('pv-overlay'); if (ov) ov.style.display = 'flex';
-    running = true; paused = false; lastT = performance.now();
-    raf = requestAnimationFrame(frame);
+
+    const needTex = useSat && (!tex || tex.key !== path.apCode + '_' + path.rwCode || !tex.ready);
+    if (needTex) {
+      // 衛星画像を取り込んでからフライト開始（読込画面+進捗バー表示）
+      tex = null;
+      const session = ++pvSession;
+      const loadTick = () => {
+        if (pvSession !== session || running) return;
+        drawLoadingFrame();
+        requestAnimationFrame(loadTick);
+      };
+      loadTick();
+      buildTexture(path, () => { if (pvSession === session) beginFlight(); });
+    } else {
+      beginFlight();
+    }
   }
 
   // ---------- 初期化 ----------
@@ -676,7 +726,7 @@
     if (pauseBtn) pauseBtn.addEventListener('click', () => {
       paused = !paused;
       pauseBtn.textContent = paused ? '▶' : '⏸';
-      if (!running && path) {            // 終了後の再生 → 最初から
+      if (!running && !texBuilding && path) {   // 終了後の再生 → 最初から（読込中は無視）
         start();
       }
     });

@@ -339,7 +339,7 @@ const AIRPORTS = {
         name: "33",
         threshold: [61.17180555555555, -149.99987777777775],   // Google Earth: 61°10'18.50"N 149°59'56.09"W
         elevation: 122,
-        trueHeading: 345,          // FAA AIP AD2.12 True Bearing: 345°
+        trueHeading: 345.81,       // 両閾値座標から算出した精密値（旧345は0.8°ズレ）
         length_m: 3312,
         displaced_ft: 0,
         opposite: "15",
@@ -350,7 +350,7 @@ const AIRPORTS = {
         name: "15",
         threshold: [61.199731, -150.014531],   // FAA AIP PANC AD2.12: 61°11'59.03"N 150°00'52.31"W
         elevation: 151,            // FAA AIP AD2.12: 151.3ft
-        trueHeading: 165,          // FAA AIP AD2.12 True Bearing: 165°
+        trueHeading: 165.80,       // 両閾値座標から算出した精密値（旧165は0.8°ズレ）
         length_m: 3312,
         displaced_ft: 0,
         opposite: "33",
@@ -455,7 +455,7 @@ const AIRPORTS = {
       "18": {
         name: "18",
         threshold: [34.87385, 136.80171666666666],   // 34°52'26.08"N 136°48'06.32"E
-        elevation: 15, trueHeading: 169.5, length_m: 3500, displaced_ft: 0, opposite: "36", tdze: 15,
+        elevation: 15, trueHeading: 168.90, length_m: 3500, displaced_ft: 0, opposite: "36", tdze: 15,   // trueHeading: 両閾値座標から算出
         ils: {
           gpAngle: 3.0,
           tch: 55,         // AIP RJGG AD 2.20: ILS REF datum 16.8m(55ft)
@@ -467,7 +467,7 @@ const AIRPORTS = {
       "36": {
         name: "36",
         threshold: [34.842939, 136.809106],   // 34°50'34.58"N 136°48'32.78"E
-        elevation: 15, trueHeading: 349.5, length_m: 3500, displaced_ft: 0, opposite: "18", tdze: 15,
+        elevation: 15, trueHeading: 348.90, length_m: 3500, displaced_ft: 0, opposite: "18", tdze: 15,   // trueHeading: 両閾値座標から算出
         ils: {
           gpAngle: 3.0,
           tch: 55,
@@ -693,7 +693,7 @@ const AIRPORTS = {
         name: "16R",
         threshold: [31.158903, 121.811742],
         elevation: 12,
-        trueHeading: 164,
+        trueHeading: 162.06,   // 両閾値座標から算出（旧164は1.9°ズレ）
         length_m: 3800,
         displaced_ft: 0,
         opposite: "34L",
@@ -940,7 +940,7 @@ const AIRPORTS = {
         name: "04L",
         threshold: [41.98165559, -87.91392333],  // 41-58-53.9601N 87-54-50.1039W
         elevation: 656,
-        trueHeading: 39,
+        trueHeading: 39.37,   // 両閾値座標から算出
         length_m: 2286,
         displaced_ft: 0,
         opposite: "22R",
@@ -951,7 +951,7 @@ const AIRPORTS = {
         name: "22R",
         threshold: [41.9975, -87.89643055555557],
         elevation: 648,
-        trueHeading: 219,
+        trueHeading: 219.38,   // 両閾値座標から算出
         length_m: 2286,
         displaced_ft: 0,
         opposite: "04L",
@@ -971,7 +971,7 @@ const AIRPORTS = {
         name: "04R",
         threshold: [41.953375, -87.89937777777779],
         elevation: 661,
-        trueHeading: 42,
+        trueHeading: 41.39,   // 両閾値座標から算出
         length_m: 2461,
         displaced_ft: 0,
         opposite: "22L",
@@ -990,7 +990,7 @@ const AIRPORTS = {
         name: "22L",
         threshold: [41.969886111111116, -87.87980277777777],
         elevation: 654,
-        trueHeading: 222,
+        trueHeading: 221.41,   // 両閾値座標から算出
         length_m: 2461,
         displaced_ft: 0,
         opposite: "04R",
@@ -1027,7 +1027,7 @@ const AIRPORTS = {
       },
       "27C": {
         name: "27C",
-        threshold: [41.98390277777778, -87.89024166666667],
+        threshold: [41.988305555555556, -87.89024166666667],   // 緯度修正: 旧値は27L列の緯度（8°ズレの原因）
         elevation: 652,
         trueHeading: 270,
         length_m: 3427,
@@ -1049,7 +1049,7 @@ const AIRPORTS = {
         name: "10C",
         threshold: [41.96568197, -87.93152161],  // 41-57-56.5251N 87-55-53.4778W
         elevation: 669,
-        trueHeading: 90,
+        trueHeading: 89.82,   // 両閾値座標から算出
         length_m: 3292,
         displaced_ft: 0,
         opposite: "28C",
@@ -1068,7 +1068,7 @@ const AIRPORTS = {
         name: "28C",
         threshold: [41.96576944444445, -87.89189166666668],
         elevation: 650,
-        trueHeading: 270,
+        trueHeading: 269.84,   // 両閾値座標から算出
         length_m: 3292,
         displaced_ft: 0,
         opposite: "10C",
