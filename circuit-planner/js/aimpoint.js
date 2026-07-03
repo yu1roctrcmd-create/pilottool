@@ -1370,131 +1370,6 @@
     aimLeafletMap.fitBounds(L.latLngBounds(pts), { padding: [40, 40] });
   }
 
-  // ===== KML 書き出し =====
-  function generateKML() {
-    const rwy = currentAimRwy();
-    if (!rwy) { alert('滑走路が選択されていません'); return; }
-    const { apCode, rwCode } = currentAimApRw();
-
-    const gpDeg  = parseFloat(el('aim-angle').value) || 3.0;
-    const papiFt = parseFloat(el('aim-papi').value) || 1414;
-    const ils    = rwy.ils || {};
-    const tch    = ils.tch || 50;
-    const tdzeM  = (rwy.tdze || 0) * 0.3048;
-
-    const th      = landingTH(rwy);
-    const heading = rwy.trueHeading || 0;
-    const hdgRad  = heading * Math.PI / 180;
-    const gpRad   = gpDeg * Math.PI / 180;
-    const cosLat  = th.cosLat;
-
-    // 開始点: TH逆方向に3NM
-    const dist3NM    = 5556;
-    const backHdgRad = ((heading + 180) % 360) * Math.PI / 180;
-    const startLat   = th.lat + dist3NM * Math.cos(backHdgRad) / 111000;
-    const startLon   = th.lon + dist3NM * Math.sin(backHdgRad) / (111000 * cosLat);
-    const startAltM  = tdzeM + dist3NM * Math.tan(gpRad);
-
-    // 終了点: TH + TCH
-    const endAltM = tdzeM + tch * 0.3048;
-
-    // 飛行時間: PAPIタブの速度入力を優先
-    const aspdEl = document.getElementById('papi-aspd');
-    const approachSpeed = aspdEl ? (parseFloat(aspdEl.value) || 145) : 145;
-    const duration = dist3NM / (approachSpeed * 0.51444);
-
-    // PAPI位置: papiFtのセンターライン + 左側オフセット
-    const papiDistM  = papiFt * 0.3048;
-    const papiCLat   = th.lat + papiDistM * Math.cos(hdgRad) / 111000;
-    const papiCLon   = th.lon + papiDistM * Math.sin(hdgRad) / (111000 * cosLat);
-    const leftHdgRad = ((heading - 90 + 360) % 360) * Math.PI / 180;
-
-    function papiCoord(i) {
-      const lateralM = 15 + i * 9;
-      return {
-        lat: papiCLat + lateralM * Math.cos(leftHdgRad) / 111000,
-        lon: papiCLon + lateralM * Math.sin(leftHdgRad) / (111000 * cosLat),
-      };
-    }
-
-    const p = [0, 1, 2, 3].map(papiCoord);
-    const papiColors = ['FF0000FF', 'FF0000FF', 'FFFFFFFF', 'FFFFFFFF'];
-    const papiNames  = ['PAPI_FarRight', 'PAPI_SecondRight', 'PAPI_SecondLeft', 'PAPI_FarLeft'];
-    const f = (n, d = 10) => n.toFixed(d);
-
-    const kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-<Document>
-  <name>${apCode} RWY${rwCode} ${gpDeg}deg Approach</name>
-  <open>1</open>
-${[0, 1, 2, 3].map(i => `  <Style id="style${i + 1}">
-    <IconStyle id="${papiNames[i]}">
-      <color>${papiColors[i]}</color>
-      <scale>2</scale>
-      <Icon><href>http://maps.google.com/mapfiles/kml/shapes/road_shield3.png</href></Icon>
-    </IconStyle>
-    <LabelStyle><scale>0</scale></LabelStyle>
-  </Style>`).join('\n')}
-  <Style id="sn_ylw-pushpin">
-    <LineStyle><color>ff00aa55</color><width>3.4</width></LineStyle>
-  </Style>
-  <Placemark>
-    <name>FlightPath</name>
-    <styleUrl>#sn_ylw-pushpin</styleUrl>
-    <LineString>
-      <tessellate>1</tessellate>
-      <altitudeMode>absolute</altitudeMode>
-      <coordinates>${f(startLon)},${f(startLat)},${f(startAltM)} ${f(th.lon)},${f(th.lat)},${f(endAltM)}</coordinates>
-    </LineString>
-  </Placemark>
-  <gx:Tour>
-    <name>FlightMovie</name>
-    <gx:Playlist>
-      <gx:FlyTo>
-        <name>StartPoint</name>
-        <Camera>
-          <longitude>${f(startLon)}</longitude>
-          <latitude>${f(startLat)}</latitude>
-          <altitude>${f(startAltM)}</altitude>
-          <heading>${f(heading, 4)}</heading>
-          <tilt>90</tilt>
-          <roll>0</roll>
-          <gx:altitudeMode>absolute</gx:altitudeMode>
-        </Camera>
-      </gx:FlyTo>
-      <gx:Wait><gx:duration>1</gx:duration></gx:Wait>
-      <gx:FlyTo>
-        <name>TouchdownPoint</name>
-        <gx:duration>${f(duration, 4)}</gx:duration>
-        <gx:flyToMode>smooth</gx:flyToMode>
-        <Camera>
-          <longitude>${f(th.lon)}</longitude>
-          <latitude>${f(th.lat)}</latitude>
-          <altitude>${f(endAltM)}</altitude>
-          <heading>${f(heading, 4)}</heading>
-          <tilt>90</tilt>
-          <roll>0</roll>
-          <gx:altitudeMode>absolute</gx:altitudeMode>
-        </Camera>
-      </gx:FlyTo>
-    </gx:Playlist>
-  </gx:Tour>
-${[0, 1, 2, 3].map(i => `  <Placemark>
-    <name>${papiNames[i]}</name>
-    <styleUrl>#style${i + 1}</styleUrl>
-    <Point><coordinates>${f(p[i].lon)},${f(p[i].lat)},0</coordinates></Point>
-  </Placemark>`).join('\n')}
-</Document>
-</kml>`;
-
-    const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
-    const a = document.createElement('a');
-    a.download = `${apCode}_RWY${rwCode}_${gpDeg}deg_approach.kml`;
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
   function setAimView(mode) {
     if (animRunning) stopAnim(false);
     aimViewMode = mode;
@@ -1596,9 +1471,6 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
     if (btnPersp) btnPersp.addEventListener('click', () => setAimView('persp'));
     if (btnSat)   btnSat.addEventListener('click',   () => setAimView('sat'));
 
-    const kmlBtn = el('aim-kml-btn');
-    if (kmlBtn) kmlBtn.addEventListener('click', generateKML);
-
     // 3° Path アニメーション コントロール
     const animBtn = el('aim-btn-anim');
     if (animBtn) animBtn.addEventListener('click', startAnim);
@@ -1613,17 +1485,6 @@ ${[0, 1, 2, 3].map(i => `  <Placemark>
       animSpeed = parseFloat(b.dataset.sp) || 1;
       document.querySelectorAll('.aim-anim-sp').forEach(x => x.classList.toggle('aim-view-active', x === b));
     }));
-
-    const dlBtn = el('aim-download-btn');
-    if (dlBtn) dlBtn.addEventListener('click', () => {
-      const canvas = el('aim-canvas');
-      if (!canvas) return;
-      const { apCode, rwCode } = currentAimApRw();
-      const a = document.createElement('a');
-      a.download = `${apCode}_RWY${rwCode}_AimingPoint.png`;
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    });
 
     // Blind Zone modal
     const bzBtn = el('aim-blind-zone-btn');
