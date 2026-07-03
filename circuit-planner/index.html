@@ -77,9 +77,9 @@
       }
       if (h1) h1.style.display = 'none';
       if (pdfBtn) pdfBtn.style.display = 'none';
-      if (cacheBtn) cacheBtn.style.display = 'none';
       if (offlineIndicator) offlineIndicator.style.display = 'none';
       if (clearCacheBtn) clearCacheBtn.style.display = 'none';
+      // cache-btn はiframe内でも表示（タイルキャッシュをNCA Tools内から実行できるよう）
     });
   }
 
