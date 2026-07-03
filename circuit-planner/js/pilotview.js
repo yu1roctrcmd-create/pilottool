@@ -16,6 +16,8 @@
   let firedEvents = null;   // Set
   let useSat = true;
   let tex = null, texBuilding = false;
+  let prevRA = 99999;
+  const EYE_GEAR_FT = 20.9;   // B747-8F: Pilot Eye と主脚の垂直差（RA概算用）
 
   // ---------- 経路構築 ----------
   function buildPath() {
@@ -79,6 +81,23 @@
     const patternAltFt = Math.max(200, params.mda - params.thr_elev);
     const rwy = AIRPORTS[currentAirport].runways[currentRunway];
 
+    // ---- Aiming Point（PAPI）: 滑走路データから Eye の照準点を決定 ----
+    // Final では接地点ではなく PAPI 位置（各空港の実データ）に向かって 3° 降下する
+    const papiFt = (rwy.ils && rwy.ils.papiFt) || (rwy.papi && rwy.papi.ft) || 1414;
+    const papiM  = papiFt * 0.3048;
+    const papiSide = (rwy.papi && rwy.papi.side) || (rwy.ils && rwy.ils.papiSide) || 'L';
+    // PAPI照準点(x=papiM)通過の走行距離 s_AIM
+    let sAIM = null;
+    for (let i = v.length - 2; i >= 0; i--) {
+      if (v[i].leg !== 'FINAL' && v[i + 1].leg !== 'FINAL') break;
+      if (v[i].x <= papiM && v[i + 1].x >= papiM) {
+        const f = (papiM - v[i].x) / Math.max(1e-6, v[i + 1].x - v[i].x);
+        sAIM = v[i].s + f * (v[i + 1].s - v[i].s);
+        break;
+      }
+    }
+    if (sAIM === null) sAIM = sTD + papiM;   // 経路がPAPIまで届かない場合は外挿
+
     // イベント点（走行距離）
     const events = [];
     const evAt = (latlon, text) => {
@@ -119,9 +138,11 @@
     mk(result.finalTurnLeadPos, 'LEAD',  '#ffe082');
     mk(result.baseTurnStartPos, 'BASE TURN', '#4fc3f7');
     mk(result.finalTurnStartPos,'FINAL TURN','#4fc3f7');
+    // PAPI照準点（センターライン上・滑走路データ由来）
+    markers.push({ x: papiM, u: 0, label: `AIM ${papiFt}ft (PAPI)`, color: '#ffe082' });
 
     return {
-      v, sTD, patternAltFt, events, markers,
+      v, sTD, sAIM, papiFt, papiM, papiSide, patternAltFt, events, markers,
       total: v[v.length - 1].s,
       thLat: th[0], thLon: th[1], hdgRad, cosH, sinH, cosLat,
       rwLenM: rwy.length_m || 3500,
@@ -141,8 +162,9 @@
     const f = (s - a.s) / Math.max(1e-6, b.s - a.s);
     const x = a.x + (b.x - a.x) * f, u = a.u + (b.u - a.u) * f;
     const psi = Math.atan2(b.u - a.u, b.x - a.x);           // 進行方位（滑走路基準）
-    // 高度 (ft AGL over THR): VDP まで Pattern Alt、以降 3° パス
-    const remNM = Math.max(0, (P.sTD - s)) / 1852;
+    // 高度 (ft AGL over THR): Pattern Alt を維持し、
+    // PAPI照準点(sAIM, 滑走路データ由来)へ向かう 3° パスと交わったら降下
+    const remNM = Math.max(0, (P.sAIM - s)) / 1852;
     const hFt = Math.min(P.patternAltFt, distToAltFt(remNM));
     return { x, u, psi, hFt, gs: a.gs, leg: a.leg, i };
   }
@@ -422,6 +444,28 @@
       ctx.fillText(m.label, q.x, q.y - r - 4);
     });
 
+    // ---- PAPI 4灯（滑走路データの位置・Eye角度で White/Red 切替） ----
+    {
+      const sideSign = P.papiSide === 'L' ? -1 : 1;
+      const dAlong = P.papiM - st.x;                 // 滑走路軸方向の水平距離
+      // PAPIビームが見える範囲（前方 かつ 方位 ±約20°）のみ描画
+      if (dAlong > 30 && Math.abs(st.u) < dAlong * 0.36) {
+        const ang = Math.atan(hM / Math.hypot(dAlong, st.u)) * 180 / Math.PI;
+        const nWhite = ang >= 3.5 ? 4 : ang >= 3.17 ? 3 : ang >= 2.83 ? 2 : ang >= 2.5 ? 1 : 0;
+        for (let i = 0; i < 4; i++) {              // i=0 が滑走路寄り（内側）
+          const q = proj(P.papiM, sideSign * (45 + i * 9));
+          if (!q) continue;
+          const r = Math.min(9, Math.max(1.5, fl * 1.3 / q.d));
+          ctx.save();
+          const color = i < nWhite ? '#ffffff' : '#ff1744';
+          ctx.shadowColor = color; ctx.shadowBlur = r * 2.5;
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
     ctx.restore();   // ロール解除
 
     // ---- FPV（飛行経路ベクトル: カメラ中心から固定チルト分上） ----
@@ -450,7 +494,8 @@
     ctx.fillText(`BANK ${Math.abs(bankDeg) < 1 ? '—' : Math.abs(Math.round(bankDeg)) + '° ' + (bankDeg < 0 ? 'L' : 'R')}`, 16, 80);
     ctx.fillStyle = '#80cbc4'; ctx.font = '9px monospace';
     const remToTD = Math.max(0, P.sTD - sTrack);
-    ctx.fillText(`TDZまで ${(remToTD / 1852).toFixed(1)}NM`, 16, 94);
+    const raHud = Math.max(0, Math.round(st.hFt - EYE_GEAR_FT));
+    ctx.fillText(`THRまで ${(remToTD / 1852).toFixed(1)}NM   RA ${raHud}ft`, 16, 94);
 
     // 右上: レグ + 次イベント
     ctx.font = 'bold 12px monospace';
@@ -501,9 +546,14 @@
       }
     });
 
-    // 終了: 接地点手前90m（高度 ~15ft）
-    if (sTrack >= P.sTD - 90) {
-      callout = { text: 'THRESHOLD', until: performance.now() + 1e9 };
+    // RAコールアウト（B747-8F主脚基準の概算）+ FLARE 終了
+    const raNow = stateAt(P, sTrack).hFt - EYE_GEAR_FT;
+    for (const c of [500, 300, 200, 100, 50, 40]) {
+      if (prevRA > c && raNow <= c) callout = { text: String(c), until: performance.now() + 1500 };
+    }
+    prevRA = raNow;
+    if (raNow <= 30 || sTrack >= P.total - 40) {
+      callout = { text: 'FLARE', until: performance.now() + 1e9 };
       render();
       stop(false);
       return;
@@ -521,12 +571,18 @@
 
   // デバッグ用: 走行距離を直接設定（コンソールから）
   window._pvSet = m => { sTrack = m; if (!running && path) render(); };
-  window._pvInfo = () => path ? { sTrack, total: path.total, sTD: path.sTD, events: path.events } : null;
+  window._pvInfo = () => path ? {
+    sTrack, total: path.total, sTD: path.sTD, sAIM: path.sAIM,
+    papiM: path.papiM, papiSide: path.papiSide, rwLenM: path.rwLenM,
+    markers: path.markers, events: path.events,
+    st: stateAt(path, sTrack),
+  } : null;
 
   function start() {
     path = buildPath();
     if (!path) { alert('サーキット経路を生成できません'); return; }
     sTrack = 0; pitchDisp = 0; rollDisp = 0; callout = null;
+    prevRA = 99999;
     firedEvents = new Set();
     if (useSat && (!tex || tex.key !== path.apCode + '_' + path.rwCode || !tex.ready)) {
       tex = null;
