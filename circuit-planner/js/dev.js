@@ -151,6 +151,10 @@
     // HAT 縦グリッド + 偏差値ラベル（Y間隔トラッキングで重複防止）
     const hatLabel = hat => hat >= 1000 ? (hat % 1000 === 0 ? hat/1000 + 'k' : (hat/1000).toFixed(1) + 'k') : hat + '';
     const LABEL_GAP = 15;
+    // ラベル表示するHAT（右側の過密防止: 全域表示時は中間マークを間引く）
+    const labelHats = HAT_MARKS.filter(h =>
+      h <= devHatMax && !(devHatMax > 2000 && [2500, 3500, 4500].includes(h))
+    );
 
     // GSラベル（暗い輪郭線付き）
     const drawGsLbl = (text, lx, ly, color, bold, ta) => {
@@ -161,35 +165,42 @@
     };
 
     HAT_MARKS.forEach(hat => {
+      if (hat > devHatMax) return;
       const x = XH(hat);
       ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, gsTop); ctx.lineTo(x, gsBot); ctx.stroke();
+      if (!labelHats.includes(hat)) return;
 
       const d05 = Math.round(gsDevAtHAT(0.5, hat, gsDotDeg));
       const d1  = Math.round(gsDevAtHAT(1.0, hat, gsDotDeg));
       const d2  = Math.round(gsDevAtHAT(2.0, hat, gsDotDeg));
-      const y05 = YGs(gsDevAtHAT(0.5, hat, gsDotDeg));
-      const y1  = YGs(gsDevAtHAT(1.0, hat, gsDotDeg));
-      const y2  = YGs(gsDevAtHAT(2.0, hat, gsDotDeg));
       const nearRight = x > PAD_L + plotW - 22;
       const nearLeft  = x < PAD_L + 22;
       const lx = nearRight ? x - 3 : nearLeft ? x + 3 : x;
       const la = nearRight ? 'right' : nearLeft ? 'left' : 'center';
 
-      // 全交点にラベル表示（同HAT内の垂直重複のみ防止）
-      const ok05 = y05 > gsTop + 10 && y05 < gsBot - 8;
-      if (ok05) drawGsLbl('+' + d05 + 'ft', lx, y05 - 4, 'rgba(105,240,174,0.95)', false, la);
-
-      const ok1 = y1 > gsTop + 10 && y1 < gsBot - 8 && (!ok05 || (y05 - y1) >= LABEL_GAP);
-      if (ok1) drawGsLbl('+' + d1 + 'ft', lx, y1 - 4, '#ffd740', true, la);
-
-      const ok2 = y2 > gsTop + 10 && y2 < gsBot - 8 && (!ok1 || (y1 - y2) >= LABEL_GAP);
-      if (ok2) drawGsLbl('+' + d2 + 'ft', lx, y2 - 4, '#ef9a9a', false, la);
+      // 1/2・1・2dot の数値を必ず表示:
+      // プロット内にクランプし、重なる場合は上下にスタックして全て表示する
+      const clampY = v => Math.max(gsTop + 12, Math.min(gsBot - 6, v));
+      let y2  = clampY(YGs(gsDevAtHAT(2.0, hat, gsDotDeg)));
+      let y1  = clampY(YGs(gsDevAtHAT(1.0, hat, gsDotDeg)));
+      let y05 = clampY(YGs(gsDevAtHAT(0.5, hat, gsDotDeg)));
+      if (y1  < y2 + LABEL_GAP) y1  = y2 + LABEL_GAP;
+      if (y05 < y1 + LABEL_GAP) y05 = y1 + LABEL_GAP;
+      const over = y05 - (gsBot - 6);
+      if (over > 0) {
+        y05 -= over;
+        y1 = Math.min(y1, y05 - LABEL_GAP);
+        y2 = Math.min(y2, y1 - LABEL_GAP);
+      }
+      drawGsLbl('+' + d2  + 'ft', lx, y2 - 4,  '#ef9a9a',                false, la);
+      drawGsLbl('+' + d1  + 'ft', lx, y1 - 4,  '#ffd740',                true,  la);
+      drawGsLbl('+' + d05 + 'ft', lx, y05 - 4, 'rgba(105,240,174,0.95)', false, la);
     });
 
     // X軸ラベル (HAT ft + NM for ≤1500ft)
     ctx.textAlign = 'center';
-    HAT_MARKS.forEach(hat => {
+    labelHats.forEach(hat => {
       const x = XH(hat);
       ctx.fillStyle = '#546e7a'; ctx.font = '10px sans-serif';
       ctx.fillText(hatLabel(hat), x, gsBot + 14);
@@ -261,6 +272,7 @@
     ctx.beginPath(); ctx.moveTo(PAD_L, locBot); ctx.lineTo(PAD_L + plotW, locBot); ctx.stroke();
 
     drawBound(1/3, locFn, YLoc, '#ff5252', 2.0, [3, 3]);  // CALLOUT
+    drawBound(0.5, locFn, YLoc, '#4fc3f7', 1.6, [4, 4]);  // 1/2 dot
     drawBound(1.0, locFn, YLoc, '#ffd740', 1.8, [5, 3]);  // Stable limit
     drawBound(2.0, locFn, YLoc, 'rgba(239,83,80,0.75)', 1.2, [7, 4]);
 
@@ -281,22 +293,26 @@
     // LOC HAT縦グリッド + 偏差値（X/Y間隔両方でラベル重複防止）
 
     HAT_MARKS.forEach(hat => {
+      if (hat > devHatMax) return;
       const x = XH(hat);
       ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, locTop); ctx.lineTo(x, locBot); ctx.stroke();
+      if (!labelHats.includes(hat)) return;
 
       const d13 = Math.round(locDevAtHAT(1/3, hat, rwyLengthM, locOffsetM));
+      const d05 = Math.round(locDevAtHAT(0.5, hat, rwyLengthM, locOffsetM));
       const d1  = Math.round(locDevAtHAT(1.0, hat, rwyLengthM, locOffsetM));
       const d2  = Math.round(locDevAtHAT(2.0, hat, rwyLengthM, locOffsetM));
-      const y13 = YLoc(locDevAtHAT(1/3, hat, rwyLengthM, locOffsetM));
-      const y1  = YLoc(locDevAtHAT(1.0, hat, rwyLengthM, locOffsetM));
-      const y2  = YLoc(locDevAtHAT(2.0, hat, rwyLengthM, locOffsetM));
       const nearRightL = x > PAD_L + plotW - 22;
       const nearLeftL  = x < PAD_L + 22;
       const llx = nearRightL ? x - 3 : nearLeftL ? x + 3 : x;
       const lla = nearRightL ? 'right' : nearLeftL ? 'left' : 'center';
 
-      const mToNm = m => { const n = m / 1852; return n >= 0.1 ? '(' + n.toFixed(2) + 'nm)' : ''; };
+      // nm併記は左側（HAT≤2000）のみ — 右側は列間隔が狭く横に重なるため
+      const mToNm = m => {
+        if (hat > 2000) return '';
+        const n = m / 1852; return n >= 0.1 ? '(' + n.toFixed(2) + 'nm)' : '';
+      };
 
       // ラベルを暗い輪郭線付きで描画（背景ゾーン色に依らず視認性確保）
       const drawLocLbl = (text, lx, ly, color, bold) => {
@@ -306,20 +322,32 @@
         ctx.fillStyle = color; ctx.fillText(text, lx, ly);
       };
 
-      // 全交点にラベル表示（同HAT内の垂直重複のみ防止）
-      const ok13 = y13 > locTop + 10 && y13 < locBot - 8;
-      if (ok13) drawLocLbl('+' + d13 + 'm' + mToNm(d13), llx, y13 - 3, '#ff7070', false);
-
-      const ok1 = y1 > locTop + 10 && y1 < locBot - 8 && (!ok13 || (y13 - y1) >= LABEL_GAP);
-      if (ok1) drawLocLbl('+' + d1 + 'm' + mToNm(d1), llx, y1 - 4, '#ffd740', true);
-
-      const ok2 = y2 > locTop + 10 && y2 < locBot - 8 && (!ok1 || (y1 - y2) >= LABEL_GAP);
-      if (ok2) drawLocLbl('+' + d2 + 'm' + mToNm(d2), llx, y2 - 3, '#ef9a9a', false);
+      // 1/3・1/2・1・2dot の数値を必ず表示:
+      // プロット内にクランプし、重なる場合は上下にスタックして全て表示する
+      const clampYL = v => Math.max(locTop + 12, Math.min(locBot - 6, v));
+      let y2  = clampYL(YLoc(locDevAtHAT(2.0, hat, rwyLengthM, locOffsetM)));
+      let y1  = clampYL(YLoc(locDevAtHAT(1.0, hat, rwyLengthM, locOffsetM)));
+      let y05 = clampYL(YLoc(locDevAtHAT(0.5, hat, rwyLengthM, locOffsetM)));
+      let y13 = clampYL(YLoc(locDevAtHAT(1/3, hat, rwyLengthM, locOffsetM)));
+      if (y1  < y2  + LABEL_GAP) y1  = y2  + LABEL_GAP;
+      if (y05 < y1  + LABEL_GAP) y05 = y1  + LABEL_GAP;
+      if (y13 < y05 + LABEL_GAP) y13 = y05 + LABEL_GAP;
+      const overL = y13 - (locBot - 6);
+      if (overL > 0) {
+        y13 -= overL;
+        y05 = Math.min(y05, y13 - LABEL_GAP);
+        y1  = Math.min(y1,  y05 - LABEL_GAP);
+        y2  = Math.min(y2,  y1  - LABEL_GAP);
+      }
+      drawLocLbl('+' + d2  + 'm' + mToNm(d2),  llx, y2 - 3,  '#ef9a9a', false);
+      drawLocLbl('+' + d1  + 'm' + mToNm(d1),  llx, y1 - 4,  '#ffd740', true);
+      drawLocLbl('+' + d05 + 'm' + mToNm(d05), llx, y05 - 3, '#4fc3f7', false);
+      drawLocLbl('+' + d13 + 'm' + mToNm(d13), llx, y13 - 3, '#ff7070', false);
     });
 
     // X軸ラベル (HAT ft + NM for ≤1500ft)
     ctx.textAlign = 'center';
-    HAT_MARKS.forEach(hat => {
+    labelHats.forEach(hat => {
       const x = XH(hat);
       ctx.fillStyle = '#546e7a'; ctx.font = '10px sans-serif';
       ctx.fillText(hatLabel(hat), x, locBot + 14);
@@ -354,7 +382,7 @@
     {
       const lgX = PAD_L + 8, lgY = locTop + 26;
       ctx.fillStyle = 'rgba(7,19,32,0.80)';
-      ctx.fillRect(lgX - 2, lgY - 9, 140, 42);
+      ctx.fillRect(lgX - 2, lgY - 9, 140, 55);
       const drawL = (y, dash, color, lw, label, bold) => {
         ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.setLineDash(dash);
         ctx.beginPath(); ctx.moveTo(lgX, y); ctx.lineTo(lgX + 18, y); ctx.stroke();
@@ -364,8 +392,9 @@
         ctx.fillText(label, lgX + 22, y + 3);
       };
       drawL(lgY,      [3,3], '#ff5252',               2.0, '1/3 dot  ← CALLOUT', true);
-      drawL(lgY + 13, [5,3], '#ffd740',               1.8, '1 dot (Stable limit)', false);
-      drawL(lgY + 26, [7,4], 'rgba(239,83,80,0.85)',  1.2, '2 dot', false);
+      drawL(lgY + 13, [4,4], '#4fc3f7',               1.6, '1/2 dot', false);
+      drawL(lgY + 26, [5,3], '#ffd740',               1.8, '1 dot (Stable limit)', false);
+      drawL(lgY + 39, [7,4], 'rgba(239,83,80,0.85)',  1.2, '2 dot', false);
     }
 
     ctx.save();
@@ -640,25 +669,28 @@
     let html = '<table style="width:100%;border-collapse:collapse;font-size:10px;line-height:1.5">';
     html += '<tr style="color:#78909c;border-bottom:1px solid #1a3050;font-size:9px">';
     html += '<th style="text-align:left;padding:2px">HAT</th>';
+    html += '<th style="color:#69f0ae;padding:2px;text-align:right">GS<br>1/2d</th>';
     html += '<th style="color:#ffd740;padding:2px;text-align:right">GS<br>1dot</th>';
-    html += '<th style="color:#ef9a9a;padding:2px;text-align:right">GS<br>2dot</th>';
     html += '<th style="color:#ff7070;padding:2px;text-align:right">LOC<br>1/3d</th>';
+    html += '<th style="color:#4fc3f7;padding:2px;text-align:right">LOC<br>1/2d</th>';
     html += '<th style="color:#ffd740;padding:2px;text-align:right">LOC<br>1dot</th>';
     html += '</tr>';
 
     HAT_MARKS.forEach(hat => {
-      const gs1 = Math.round(gsDevAtHAT(1.0, hat, gsDotDeg));
-      const gs2 = Math.round(gsDevAtHAT(2.0, hat, gsDotDeg));
-      const l13 = Math.round(locDevAtHAT(1/3, hat, rwyLengthM, locOffsetM));
-      const l1  = Math.round(locDevAtHAT(1.0, hat, rwyLengthM, locOffsetM));
+      const gs05 = Math.round(gsDevAtHAT(0.5, hat, gsDotDeg));
+      const gs1  = Math.round(gsDevAtHAT(1.0, hat, gsDotDeg));
+      const l13  = Math.round(locDevAtHAT(1/3, hat, rwyLengthM, locOffsetM));
+      const l05  = Math.round(locDevAtHAT(0.5, hat, rwyLengthM, locOffsetM));
+      const l1   = Math.round(locDevAtHAT(1.0, hat, rwyLengthM, locOffsetM));
       const key = [50, 100, 500, 1000, 2000, 3000, 5000].includes(hat);
       const lbl = hat >= 1000 ? (hat % 1000 === 0 ? hat/1000 + 'k' : (hat/1000).toFixed(1) + 'k') + 'ft' : hat + 'ft';
 
       html += `<tr style="border-top:1px solid #0f2540${key ? ';background:rgba(33,66,99,0.2)' : ''}">`;
       html += `<td style="color:${key?'#80cbc4':'#607d8b'};padding:2px;font-weight:${key?'bold':'normal'}">${lbl}</td>`;
+      html += `<td style="color:#69f0ae;padding:2px;text-align:right">+${gs05}ft</td>`;
       html += `<td style="color:${gs1>200?'#ef9a9a':'#ffd740'};padding:2px;text-align:right">+${gs1}ft</td>`;
-      html += `<td style="color:#ef5350;padding:2px;text-align:right">+${gs2}ft</td>`;
       html += `<td style="color:#ff7070;padding:2px;text-align:right">+${l13}m</td>`;
+      html += `<td style="color:#4fc3f7;padding:2px;text-align:right">+${l05}m</td>`;
       html += `<td style="color:${l1>150?'#ef9a9a':'#ffd740'};padding:2px;text-align:right">+${l1}m</td>`;
       html += '</tr>';
     });
