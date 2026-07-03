@@ -497,8 +497,9 @@ function applyAirportVOR() {
 // ===== 最適バンク角を適用 =====
 function applyOptimalBanks() {
   const wi = calculateCircuit(getParams()).windInfo;
-  // バンク角スライダーは整数(step=1, 範囲5〜45)。提案値を丸めてクランプ
-  const clamp = v => Math.max(5, Math.min(45, Math.round(v)));
+  // バンク角スライダーは0.1°刻み(範囲5〜45)。丸め誤差でファイナルが中心線から
+  // ずれないよう、提案値を0.1°精度のまま適用する
+  const clamp = v => Math.max(5, Math.min(45, Math.round(v * 10) / 10));
   const setBank = (id, val, valId) => {
     const el = document.getElementById(id);
     el.value = clamp(val);
