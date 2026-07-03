@@ -1,4 +1,4 @@
-const CACHE = 'nca-tools-v3';
+const CACHE = 'nca-tools-v4';
 const ASSETS = [
   './',
   './manifest.json',
@@ -23,10 +23,16 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
 });
 
+// 注意: caches はオリジン全体で共有されるため、自分のプレフィックスのみ削除する
+// （circuit-planner-* / map-tiles-* を消すと衛星画像のオフラインキャッシュが失われる）
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter(k => k.startsWith('nca-tools-') && k !== CACHE)
+          .map(k => caches.delete(k))
+      )
     ).then(() => self.clients.claim())
   );
 });
