@@ -78,7 +78,24 @@
     });
     if (v.length < 2) return null;
 
-    // ---- Final を中心線へ収束（実運航同様、ロールアウト後に修正して整列） ----
+    // ---- 逆走頂点の除去 ----
+    // VOR B で会合点が Abeam より先（ベースターン寄り）にある場合、downwindPath の
+    // Abeam 頂点へ一度逆走してから折り返す経路になる（地図では一直線上のため見えない）。
+    // 隣接セグメントが約134°以上折り返す中間頂点は実飛行に存在しないため除去する。
+    for (let i = 1; i < v.length - 1; ) {
+      const a = v[i - 1], b = v[i], c = v[i + 1];
+      const d1x = b.x - a.x, d1u = b.u - a.u;
+      const d2x = c.x - b.x, d2u = c.u - b.u;
+      const n1 = Math.hypot(d1x, d1u), n2 = Math.hypot(d2x, d2u);
+      if (n1 > 0.5 && n2 > 0.5 && (d1x * d2x + d1u * d2u) / (n1 * n2) < -0.7) {
+        v.splice(i, 1);
+      } else i++;
+    }
+    for (let i = 1; i < v.length; i++) {
+      v[i].s = v[i - 1].s + Math.hypot(v[i].x - v[i - 1].x, v[i].u - v[i - 1].u);
+    }
+
+    // ---- Final を中心線へ収束（実運航同様、ロールアウト後に整列） ----
     // パラメータが整列していない場合、地図はズレをそのまま表示するが、
     // Pilot View ではロールアウト点の横ずれを smoothstep で 0 に戻して滑走路に正対する
     {
