@@ -320,6 +320,29 @@
         <label>磁気偏差 (°E正 / W負)</label>
         <input type="number" id="vor-var" step="0.1" value="-8">
       </div>
+      <div class="param-row" style="margin-top:8px;border-top:1px solid #1a3050;padding-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#ffd740">
+          <input type="checkbox" id="vor2-enable" style="width:auto"> 第2 Reference VOR を表示
+        </label>
+      </div>
+      <div id="vor2-fields" style="display:none">
+        <div class="param-row">
+          <label>VOR識別 (2)</label>
+          <input type="text" id="vor2-ident" value="" placeholder="例: TTE / HME">
+        </div>
+        <div class="param-row">
+          <label>緯度 (decimal)</label>
+          <input type="number" id="vor2-lat" step="0.0001" placeholder="35.5600">
+        </div>
+        <div class="param-row">
+          <label>経度 (decimal)</label>
+          <input type="number" id="vor2-lon" step="0.0001" placeholder="139.7649">
+        </div>
+        <div class="param-row">
+          <label>磁気偏差 (°E正 / W負)</label>
+          <input type="number" id="vor2-var" step="0.1" value="-8">
+        </div>
+      </div>
       <div id="vor-ref" style="font-size:11px;color:#80d8ff;line-height:1.8;margin-top:6px">
         緯度経度を入力するとラジアル/DMEを表示
       </div>

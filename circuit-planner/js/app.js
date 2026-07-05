@@ -597,6 +597,8 @@ function updateVOR(result) {
     { name: isDB ? 'Base進入開始' : 'Base Turn開始', pos: result.baseTurnStartPos, color: '#ef5350' },
     { name: 'VDP (降下開始/トラック)', pos: result.vdpOnCircuit || result.vdpOnFinal, color: '#ff9800', vdp: true },
     { name: 'Final Turn開始', pos: result.finalTurnStartPos, color: '#26c6da' },
+    ...(result.finalPath && result.finalPath.length
+      ? [{ name: 'Final開始', pos: result.finalPath[0], color: '#e040fb' }] : []),
   ];
 
   let html = `<b style="color:#00e5ff">${dispIdent}</b> 基準<br>`;
@@ -687,6 +689,36 @@ function updateVOR(result) {
         })
       }).addTo(vorLayer);
       html += `<span style="color:#00bcd4">◆</span> ${fix.ident} (${fix.role}): <b>R-${pad3(radial)}</b> / ${dme.toFixed(1)} DME<br>`;
+    });
+  }
+
+  // ---- 第2 Reference VOR（ON/OFF可）----
+  const v2on  = document.getElementById('vor2-enable')?.checked;
+  const v2lat = parseFloat(document.getElementById('vor2-lat')?.value);
+  const v2lon = parseFloat(document.getElementById('vor2-lon')?.value);
+  if (v2on && !isNaN(v2lat) && !isNaN(v2lon)) {
+    const v2var = parseFloat(document.getElementById('vor2-var')?.value) || 0;
+    const v2id  = (document.getElementById('vor2-ident')?.value || 'VOR2').trim() || 'VOR2';
+    const p2 = [v2lat, v2lon];
+    L.marker(p2, {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="transform:translate(-50%,-50%);text-align:center">
+                 <div style="width:18px;height:18px;border:2px solid #ffd740;border-radius:50%;box-shadow:0 0 4px #000;display:flex;align-items:center;justify-content:center">
+                   <div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:8px solid #ffd740"></div>
+                 </div>
+                 <div style="color:#ffd740;font-size:10px;font-weight:bold;text-shadow:1px 1px 2px #000;margin-top:1px;white-space:nowrap">${v2id}</div>
+               </div>`,
+        iconSize: [0, 0]
+      })
+    }).bindTooltip(`${v2id}<br>${v2lat.toFixed(4)}, ${v2lon.toFixed(4)}`, { direction: 'top' }).addTo(vorLayer);
+    html += `<b style="color:#ffd740">${v2id} 基準</b><br>`;
+    targets.forEach(t => {
+      if (!t.pos) return;
+      const radial = normalizeBearing(bearingDeg(p2[0], p2[1], t.pos[0], t.pos[1]) - v2var);
+      const dme = distanceNM(p2[0], p2[1], t.pos[0], t.pos[1]);
+      L.polyline([p2, t.pos], { color: '#ffd740', weight: 1, dashArray: '3,5', opacity: 0.5 }).addTo(vorLayer);
+      html += `<span style="color:${t.color}">●</span> ${t.name}: <b>R-${pad3(radial)}</b> / ${dme.toFixed(1)} DME<br>`;
     });
   }
 
@@ -1104,8 +1136,17 @@ window.addEventListener('load', () => {
   });
   document.getElementById('mda-input').addEventListener('input', updateCircuit);
   document.getElementById('mda-input').addEventListener('change', updateCircuit);
-  ['vor-ident', 'vor-lat', 'vor-lon', 'vor-var'].forEach(id =>
-    document.getElementById(id).addEventListener('input', updateCircuit));
+  ['vor-ident', 'vor-lat', 'vor-lon', 'vor-var',
+   'vor2-ident', 'vor2-lat', 'vor2-lon', 'vor2-var'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.addEventListener('input', updateCircuit);
+  });
+  const v2chk = document.getElementById('vor2-enable');
+  if (v2chk) v2chk.addEventListener('change', () => {
+    const f = document.getElementById('vor2-fields');
+    if (f) f.style.display = v2chk.checked ? '' : 'none';
+    updateCircuit();
+  });
   document.getElementById('airport-sel').addEventListener('change', onAirportChange);
   document.getElementById('runway-sel').addEventListener('change', onRunwayChange);
   document.getElementById('cache-btn').addEventListener('click', cacheTiles);
