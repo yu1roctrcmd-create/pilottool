@@ -78,6 +78,39 @@
     });
     if (v.length < 2) return null;
 
+    // ---- Final を中心線へ収束（実運航同様、ロールアウト後に修正して整列） ----
+    // パラメータが整列していない場合、地図はズレをそのまま表示するが、
+    // Pilot View ではロールアウト点の横ずれを smoothstep で 0 に戻して滑走路に正対する
+    {
+      let fi = -1;
+      for (let i = 0; i < v.length; i++) if (v[i].leg === 'FINAL') { fi = i; break; }
+      if (fi >= 0 && fi < v.length - 1) {
+        const rollX = v[fi].x, rollU = v[fi].u;
+        if (Math.abs(rollU) > 2 && rollX < -50) {
+          const endV = v[v.length - 1];
+          // 収束完了点: ロールアウトが1NMより外なら1NM手前、内側なら残距離の45%
+          const convX = (rollX < -2100) ? -1852 : rollX * 0.45;
+          const N = 14;
+          const pts = [];
+          for (let k = 1; k <= N; k++) {
+            const x = rollX + (endV.x - rollX) * (k / N);
+            let t = (x - rollX) / (convX - rollX);
+            t = Math.max(0, Math.min(1, t));
+            const sm = t * t * (3 - 2 * t);
+            pts.push({ x, u: rollU * (1 - sm) });
+          }
+          v.length = fi + 1;                       // rollout までを残す
+          let ss = v[fi].s;
+          let px = v[fi].x, pu = v[fi].u;
+          pts.forEach(p => {
+            ss += Math.hypot(p.x - px, p.u - pu);
+            px = p.x; pu = p.u;
+            v.push({ x: p.x, u: p.u, s: ss, leg: 'FINAL', gs: v[fi].gs });
+          });
+        }
+      }
+    }
+
     // 頂点ごとの進行方位（前後セグメントの単位ベクトル平均）
     // 旋回弧はチャード分割のため、セグメント固定方位だとヨーが階段状に変化して
     // カクつく。頂点方位を持たせて stateAt で角度補間することで滑らかにする。
@@ -115,6 +148,7 @@
     const papiFt = (rwy.ils && rwy.ils.papiFt) || (rwy.papi && rwy.papi.ft) || 1414;
     const papiM  = papiFt * 0.3048;
     const papiSide = (rwy.papi && rwy.papi.side) || (rwy.ils && rwy.ils.papiSide) || 'L';
+    const papiAngle = (rwy.ils && rwy.ils.papiAngle) || (rwy.papi && rwy.papi.papiAngle) || 3.0;
     // PAPI照準点(x=papiM)通過の走行距離 s_AIM
     let sAIM = null;
     for (let i = v.length - 2; i >= 0; i--) {
@@ -186,7 +220,7 @@
     const vorIdent = (document.getElementById('vor-ident')?.value || (apVor ? apVor.ident : 'VOR')).trim() || 'VOR';
 
     return {
-      v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, patternAltFt, events, markers,
+      v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, papiAngle, patternAltFt, events, markers,
       total: v[v.length - 1].s,
       thLat: th[0], thLon: th[1], hdgRad, cosH, sinH, cosLat,
       rwLenM: rwy.length_m || 3500,
@@ -238,7 +272,7 @@
     if (cb) texDoneCb = cb;
     if (texBuilding) return;
     texBuilding = true;
-    texProg = { done: 0, total: 0 };
+    texProg = { done: 0, total: 0, startT: performance.now() };
     // 経路のバウンディングボックス + マージン
     let x0 = 0, x1 = P.rwLenM, u0 = 0, u1 = 0;
     P.v.forEach(p => {
@@ -491,13 +525,16 @@
       const q = proj(m.x, m.u);
       if (!q) return;
       const r = Math.min(14, Math.max(4, fl * 12 / q.d));
+      // 半透明フィル+輪郭線: 下の滑走路標識が透けて見えるように
       ctx.save();
-      ctx.shadowColor = m.color; ctx.shadowBlur = 8;
+      ctx.globalAlpha = 0.32;
       ctx.fillStyle = m.color;
       ctx.beginPath();
       ctx.moveTo(q.x, q.y - r); ctx.lineTo(q.x + r, q.y);
       ctx.lineTo(q.x, q.y + r); ctx.lineTo(q.x - r, q.y);
       ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = m.color; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.restore();
       ctx.fillStyle = m.color; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(m.label, q.x, q.y - r - 4);
@@ -510,7 +547,8 @@
       // PAPIビームが見える範囲（前方 かつ 方位 ±約20°）のみ描画
       if (dAlong > 30 && Math.abs(st.u) < dAlong * 0.36) {
         const ang = Math.atan(hM / Math.hypot(dAlong, st.u)) * 180 / Math.PI;
-        const nWhite = ang >= 3.5 ? 4 : ang >= 3.17 ? 3 : ang >= 2.83 ? 2 : ang >= 2.5 ? 1 : 0;
+        const pr = P.papiAngle;
+        const nWhite = ang >= pr + 0.5 ? 4 : ang >= pr + 0.17 ? 3 : ang >= pr - 0.17 ? 2 : ang >= pr - 0.5 ? 1 : 0;
         for (let i = 0; i < 4; i++) {              // i=0 が滑走路寄り（内側）
           const q = proj(P.papiM, sideSign * (45 + i * 9));
           if (!q) continue;
@@ -681,7 +719,14 @@
     const pct = texProg.total ? texProg.done / texProg.total : 0;
     ctx.fillStyle = '#4fc3f7'; ctx.fillRect(W / 2 - bw / 2, H / 2 - 10, bw * pct, 12);
     ctx.fillStyle = '#80cbc4'; ctx.font = '12px monospace';
-    ctx.fillText(`${texProg.done} / ${texProg.total} タイル (${Math.round(pct * 100)}%)`, W / 2, H / 2 + 24);
+    let eta = '';
+    if (texProg.startT && texProg.done >= 8 && texProg.done < texProg.total) {
+      const remSec = (performance.now() - texProg.startT) / 1000 / texProg.done * (texProg.total - texProg.done);
+      eta = remSec >= 60
+        ? ` ・残り約${Math.floor(remSec / 60)}分${String(Math.round(remSec % 60)).padStart(2, '0')}秒`
+        : ` ・残り約${Math.max(1, Math.round(remSec))}秒`;
+    }
+    ctx.fillText(`${texProg.done} / ${texProg.total} タイル (${Math.round(pct * 100)}%)${eta}`, W / 2, H / 2 + 24);
     ctx.fillStyle = '#546e7a'; ctx.font = '10px sans-serif';
     ctx.fillText('完了後にフライトを開始します', W / 2, H / 2 + 46);
   }

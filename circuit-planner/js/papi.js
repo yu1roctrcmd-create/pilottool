@@ -153,6 +153,8 @@
       papiFt = aimFt;
     }
     const spread  = parseFloat(el('papi-spread').value);
+    // PAPI基準角度（設置角）。降下角度と独立に設定可能（例: ILS 15@PANC = 3.2°）
+    const papiRef = parseFloat((el('papi-ref-angle') || {}).value) || 3.0;
     const gsAntFt = parseFloat(el('papi-gsant').value);
     const rangeNM = parseFloat(el('papi-range').value);
     const acType  = el('papi-aircraft') ? el('papi-aircraft').value : 'B747-8F';
@@ -191,7 +193,7 @@
     const altAt    = (dNM, offFt, deg) => thElev + (dNM * FT_PER_NM + offFt) * Math.tan(deg * Math.PI / 180);
     const eyeAltAt = (dNM, offFt, deg) => altAt(dNM, offFt, deg) + eyeHt;
 
-    const outerAngle = angle + (ilsPresent ? spread * 1.16 : spread);
+    const outerAngle = Math.max(angle, papiRef) + (ilsPresent ? spread * 1.16 : spread);
     const topAlt = Math.ceil((Math.max(
       altAt(rangeNM, papiFt, outerAngle),
       eyeAltAt(rangeNM, aimFt, angle)
@@ -241,8 +243,8 @@
 
     // PAPI 遷移角ライン（ILSあり: ±0.58S/±0.50S、ILSなし: ±S/±S/3）
     const papiAngles = ilsPresent
-      ? [angle + spread * 1.16, angle + spread * 0.5, angle - spread * 0.5, angle - spread * 1.16]
-      : [angle + spread,        angle + spread / 3,   angle - spread / 3,   angle - spread];
+      ? [papiRef + spread * 1.16, papiRef + spread * 0.5, papiRef - spread * 0.5, papiRef - spread * 1.16]
+      : [papiRef + spread,        papiRef + spread / 3,   papiRef - spread / 3,   papiRef - spread];
 
     // ── Approach Corridor 黄色塗りつぶし（Figure 5 黄帯）──
     // papiAngles[1]（2W2R上限 B'）〜 papiAngles[2]（2W2R下限 C'）の楔形
@@ -1406,6 +1408,7 @@
       const aimFt  = calcGsFollowAim(ils.gsAntFt, eyeHt, angle);
 
       setSlider('papi-angle',  angle.toFixed(2));
+      setSlider('papi-ref-angle', (ils.papiAngle || 3.0).toFixed(2));
       setSlider('papi-aim',    aimFt);
       setSlider('papi-loc',    ils.papiFt || 1312);
       setSlider('papi-gsant',  ils.gsAntFt);
@@ -1422,6 +1425,7 @@
       const angle  = 3.0;  // FAA標準
 
       setSlider('papi-angle',  angle.toFixed(2));
+      setSlider('papi-ref-angle', ((rwy.papi && rwy.papi.papiAngle) || 3.0).toFixed(2));
       setSlider('papi-aim',    papiFt);  // ⭐ aimFt = papiFt
       setSlider('papi-loc',    papiFt);
       // gsAntFt はセット不要（ILSなしなので表示されない）
@@ -1533,6 +1537,7 @@
       ['papi-angle',  'papi-angle-val',  '°',  ''],
       ['papi-aim',    'papi-aim-val',    'ft', ''],
       ['papi-loc',    'papi-loc-val',    'ft', ''],
+      ['papi-ref-angle', 'papi-ref-angle-val', '°', ''],
       ['papi-spread', 'papi-spread-val', '°',  '±'],
       ['papi-gsant',  'papi-gsant-val',  'ft', ''],
       ['papi-aspd',   'papi-aspd-val',   'kt', ''],

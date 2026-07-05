@@ -143,6 +143,16 @@
       if (badge) badge.textContent = Math.round(v) + 'ft';
     };
     setN('aim-angle', angle.toFixed(2));
+    // PAPI基準角度（設置角）: データにあれば使用、なければ3.0°
+    {
+      const pa = el('aim-papi-angle');
+      const paVal = ils.papiAngle || 3.0;
+      if (pa) {
+        pa.value = paVal;
+        const b = document.getElementById('aim-papi-angle-val');
+        if (b) b.textContent = paVal.toFixed(2) + '°';
+      }
+    }
     setN('aim-gsant', ils.gsAntFt);
     setN('aim-papi',  ils.papiFt);
     setN('aim-aim',   aimFtDefault);
@@ -714,8 +724,9 @@
     const acType  = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
     const eyeHt   = (AC[acType] || AC['B747-8F']).eyeHt;
     const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    const papiRef = parseFloat((el('aim-papi-angle') || {}).value) || 3.0;
     return {
-      rwy, angle, th: angle * Math.PI / 180,
+      rwy, angle, papiRef, th: angle * Math.PI / 180,
       gsAntFt, papiFt, aimFt, stripeFt, acType, eyeHt,
       gsfEyeFt,
       gsAntM: gsAntFt * 0.3048, papiM: papiFt * 0.3048,
@@ -1022,7 +1033,8 @@
     const papiDist = P.papiM - s;                // Eye → PAPI 水平距離
     let aEyeDeg = 90;
     if (papiDist > 5) aEyeDeg = Math.atan(hM / papiDist) * 180 / Math.PI;
-    const nWhite = aEyeDeg >= 3.5 ? 4 : aEyeDeg >= 3.17 ? 3 : aEyeDeg >= 2.83 ? 2 : aEyeDeg >= 2.5 ? 1 : 0;
+    const pr = P.papiRef;
+    const nWhite = aEyeDeg >= pr + 0.5 ? 4 : aEyeDeg >= pr + 0.17 ? 3 : aEyeDeg >= pr - 0.17 ? 2 : aEyeDeg >= pr - 0.5 ? 1 : 0;
     for (let i = 0; i < 4; i++) {
       const u = sideSign * (HW + 15 + i * 9);    // i=0 が滑走路寄り（内側）
       dot(P.papiM, u, i < nWhite ? '#ffffff' : '#ff1744', 1.3, true);
@@ -1037,19 +1049,19 @@
     }
 
     // ---- G/S Follow Eye Aim Point（黄ダイヤ = 画面中央に固定） ----
+    // 半透明にして、下の滑走路標識がうっすら見えるようにする
     {
       const q = pt(P.gsfEyeM, 0);
       if (q) {
         const r = Math.min(26, Math.max(7, fl * 3 / q.d));
         ctx.save();
-        ctx.shadowColor = '#ffe082'; ctx.shadowBlur = 10;
-        ctx.fillStyle = 'rgba(255,224,130,0.92)';
+        ctx.fillStyle = 'rgba(255,224,130,0.30)';
         ctx.beginPath();
         ctx.moveTo(q.x, q.y - r); ctx.lineTo(q.x + r, q.y);
         ctx.lineTo(q.x, q.y + r); ctx.lineTo(q.x - r, q.y);
         ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,224,130,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
         ctx.restore();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
       }
     }
 
@@ -1617,7 +1629,7 @@
     // 初期座標表示
     updateCoordinateDisplay();
 
-    ['aim-angle','aim-gsant','aim-papi','aim-aim','aim-stripe','aim-aircraft']
+    ['aim-angle','aim-gsant','aim-papi','aim-papi-angle','aim-aim','aim-stripe','aim-aircraft']
       .forEach(id => {
         const e = el(id);
         if (!e) return;

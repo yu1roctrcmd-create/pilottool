@@ -357,6 +357,7 @@ const AIRPORTS = {
         tdze: 151,                 // FAA AIP AD2.12 TDZE: 151.4ft
         ils: {
           gpAngle: 3.2,            // Jeppesen PANC 10-9A: PAPI-R angle 3.2°
+          papiAngle: 3.2,          // PAPI基準角度（ILS 15@PANCはPAPI 3.2°設置）
           tch: 66,                 // 1176ft × tan(3.2°) = 65.8ft ≈ 66ft (FAA AIP GS座標から算出)
           gsAntFt: 1176,           // FAA AIP AD2.19 GS座標(61°11'46.76"N 150°00'54.42"W)→TH投影距離 358.4m=1176ft
           papiFt: 1542,            // FAA AIP PAPI座標(61°11'44.74"N 150°00'41.19"W)→TH投影距離 469.9m=1542ft

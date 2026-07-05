@@ -525,6 +525,12 @@
       <input type="range" id="papi-loc" min="500" max="2500" step="1" value="1414">
     </div>
     <div class="param-row">
+      <label>PAPI 基準角度（°）</label>
+      <div class="param-values"><span>2.5°</span><span id="papi-ref-angle-val" class="value-badge">3.00°</span><span>4.0°</span></div>
+      <input type="range" id="papi-ref-angle" min="2.5" max="4.0" step="0.05" value="3.0">
+      <div style="font-size:10px;color:#546e7a;margin-top:1px">PAPI設置角（例: ILS 15@PANC = 3.2°）。デフォルト3.0°</div>
+    </div>
+    <div class="param-row">
       <label>PAPI 角度間隔（±）</label>
       <div class="param-values"><span>±0.3°</span><span id="papi-spread-val" class="value-badge">±0.5°</span><span>±0.7°</span></div>
       <input type="range" id="papi-spread" min="0.3" max="0.7" step="0.01" value="0.5">
@@ -665,6 +671,11 @@
       <label>PAPI 位置（ft from TH）</label>
       <div class="param-values"><span>100ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',-1)">−1</button><span id="aim-papi-val" class="value-badge">1414ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',1)">+1</button></span><span>3000ft</span></div>
       <input type="range" id="aim-papi" value="1414" step="1" min="100" max="3000" oninput="document.getElementById('aim-papi-val').textContent=this.value+'ft'">
+    </div>
+    <div class="param-row">
+      <label>PAPI 基準角度（°）</label>
+      <div class="param-values"><span>2.5°</span><span id="aim-papi-angle-val" class="value-badge">3.00°</span><span>4.0°</span></div>
+      <input type="range" id="aim-papi-angle" min="2.5" max="4.0" step="0.05" value="3.0" oninput="document.getElementById('aim-papi-angle-val').textContent=parseFloat(this.value).toFixed(2)+'°'">
     </div>
     <div class="section-title" style="margin-top:6px">Aiming Point 標準</div>
     <div class="param-row" style="display:flex;gap:3px;flex-wrap:wrap">

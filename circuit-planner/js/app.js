@@ -593,6 +593,7 @@ function updateVOR(result) {
   const targets = [
     ...(cwStart ? [{ name: 'CW Turn開始', pos: cwStart, color: '#66bb6a' }] : []),
     ...(dwStart ? [{ name: 'DW Turn開始', pos: dwStart, color: '#ce93d8' }] : []),
+    ...(result.abeamPos ? [{ name: 'Abeam', pos: result.abeamPos, color: '#00e5ff' }] : []),
     { name: isDB ? 'Base進入開始' : 'Base Turn開始', pos: result.baseTurnStartPos, color: '#ef5350' },
     { name: 'VDP (降下開始/トラック)', pos: result.vdpOnCircuit || result.vdpOnFinal, color: '#ff9800', vdp: true },
     { name: 'Final Turn開始', pos: result.finalTurnStartPos, color: '#26c6da' },
@@ -878,11 +879,20 @@ function cacheTiles() {
   const countEl = document.getElementById('cache-count');
   const pctEl   = document.getElementById('cache-pct');
   if (overlay) overlay.style.display = 'flex';
+  const startT = performance.now();
   const updateUI = () => {
     const pct = total ? Math.round(completed / total * 100) : 100;
     if (bar)     bar.style.width = pct + '%';
     if (countEl) countEl.textContent = `${completed} / ${total}`;
-    if (pctEl)   pctEl.textContent   = pct + '%';
+    // 予想残り時間（それまでの取得レートから推定）
+    let eta = '';
+    if (completed >= 8 && completed < total) {
+      const remSec = (performance.now() - startT) / 1000 / completed * (total - completed);
+      eta = remSec >= 60
+        ? ` ・ 残り約${Math.floor(remSec / 60)}分${String(Math.round(remSec % 60)).padStart(2, '0')}秒`
+        : ` ・ 残り約${Math.max(1, Math.round(remSec))}秒`;
+    }
+    if (pctEl)   pctEl.textContent   = pct + '%' + eta;
     btn.textContent = `⏳ ${pct}%`;
   };
   updateUI();
