@@ -1035,11 +1035,34 @@
   function drawPapiLights(ctx, X, Y, altAt, aimFt, angle, papiFt, papiAngles, rangeNM, rwyExtNM) {
     const step = rangeNM / 6;
 
+    // 角丸矩形ヘルパー（古いSafari対応: ctx.roundRect が無い環境でも動作）
+    const roundRect = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
     const drawDot = (d) => {
       const acAlt = altAt(d, aimFt, angle);
+      const cx = X(d), cyTop = Y(acAlt) - 22;
+      // 近THR（ラベル密集域）ではドット列の背後に暗色プレートを敷き、
+      // 文字（MEHT/TCH/GS Ant/PAPI等）に埋もれず PAPI 灯列が読めるようにする
+      if (d < 0.42) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(3,9,18,0.80)';
+        ctx.strokeStyle = 'rgba(130,150,170,0.55)';
+        ctx.lineWidth = 0.8;
+        roundRect(cx - 7, cyTop - 6, 14, 3 * 11 + 12, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
       papiAngles.forEach((pa, i) => {
         const white = acAlt >= altAt(d, papiFt, pa);
-        const cx = X(d), cy = Y(acAlt) - 22 + i * 11;
+        const cy = cyTop + i * 11;
         ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2);
         ctx.fillStyle = white ? '#fff' : '#e53935';
         ctx.fill();
