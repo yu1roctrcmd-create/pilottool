@@ -725,6 +725,85 @@ function updateVOR(result) {
   refEl.innerHTML = html;
 }
 
+
+// ===== Flap Maneuver Speed（B747-8F, Sea Level Pressure Altitude） =====
+// Weight(×1000LB) 昇順。各Flapのマニューバ速度(KIAS)を線形補間で求める
+const FMS_WEIGHTS = [450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000];
+const FMS_TABLE = {
+  'UP': [205, 209, 216, 222, 228, 234, 239, 243, 249, 254, 258, 264],
+  '1':  [185, 189, 196, 202, 208, 214, 219, 223, 228, 233, 238, 243],
+  '5':  [164, 169, 175, 182, 188, 193, 199, 203, 208, 213, 218, 223],
+  '10': [144, 151, 158, 166, 173, 180, 186, 190, 193, 196, 200, 203],
+  '20': [134, 140, 147, 153, 160, 166, 172, 174, 178, 183, 188, 193],
+  '25': [125, 132, 138, 145, 152, 158, 163, 168, 173, 179, 184, 190],
+  '30': [122, 129, 136, 142, 148, 154, 160, 165, 170, 175, 181, 186],
+};
+
+function flapManeuverSpeed(wKlb, flap) {
+  const arr = FMS_TABLE[flap];
+  if (!arr) return null;
+  const w = Math.max(FMS_WEIGHTS[0], Math.min(FMS_WEIGHTS[FMS_WEIGHTS.length - 1], wKlb));
+  let i = 0;
+  while (i < FMS_WEIGHTS.length - 2 && FMS_WEIGHTS[i + 1] < w) i++;
+  const f = (w - FMS_WEIGHTS[i]) / (FMS_WEIGHTS[i + 1] - FMS_WEIGHTS[i]);
+  return Math.round(arr[i] + (arr[i + 1] - arr[i]) * f);
+}
+
+// Weight連動が有効なら、各レグ速度スライダーへFlap Maneuver Speedを反映
+function applyFms() {
+  const chk = document.getElementById('fms-enable');
+  if (!chk || !chk.checked) return;
+  const w = parseFloat(document.getElementById('fms-weight').value) || 650;
+  const map = [
+    ['fms-upwind',    'upwind-speed',     'Upwind'],
+    ['fms-crosswind', 'crosswind-speed',  'Crosswind'],
+    ['fms-dw',        'dw-speed',         'Downwind'],
+    ['fms-base',      'base-speed',       'Base Turn'],
+    ['fms-ft',        'final-turn-speed', 'Final Turn'],
+    ['fms-final',     'final-speed',      'Final'],
+  ];
+  let info = `<span style="color:#ffd740">Weight ${w} ×1000LB（約${Math.round(w * 0.4536)}t）</span><br>`;
+  map.forEach(([selId, slId, label]) => {
+    const flap = document.getElementById(selId)?.value;
+    const spd = flapManeuverSpeed(w, flap);
+    if (spd == null) return;
+    const sl = document.getElementById(slId);
+    const max = parseFloat(sl.max) || 200;
+    const set = Math.min(spd, max);
+    sl.value = set;
+    const badge = document.getElementById(slId + '-val');
+    if (badge) badge.textContent = set + 'kt';
+    info += `${label} F${flap}: <b>${spd}kt</b>${spd > max ? `（スライダー上限${max}ktに制限）` : ''}<br>`;
+  });
+  document.getElementById('fms-info').innerHTML = info;
+  updateCircuit();
+}
+
+function initFms() {
+  const chk = document.getElementById('fms-enable');
+  if (!chk) return;
+  // Flap選択肢を生成（デフォルト: UW/CW/DW=F10, Base=F20, Final Turn=F25, Final=F30）
+  const defaults = { 'fms-upwind': '10', 'fms-crosswind': '10', 'fms-dw': '10',
+                     'fms-base': '20', 'fms-ft': '25', 'fms-final': '30' };
+  document.querySelectorAll('.fms-sel').forEach(sel => {
+    sel.innerHTML = Object.keys(FMS_TABLE)
+      .map(f => `<option value="${f}"${defaults[sel.id] === f ? ' selected' : ''}>F${f}</option>`)
+      .join('');
+    sel.addEventListener('change', applyFms);
+  });
+  chk.addEventListener('change', () => {
+    const fields = document.getElementById('fms-fields');
+    if (fields) fields.style.display = chk.checked ? '' : 'none';
+    if (chk.checked) applyFms();
+  });
+  const wSl = document.getElementById('fms-weight');
+  if (wSl) wSl.addEventListener('input', () => {
+    const b = document.getElementById('fms-weight-val');
+    if (b) b.textContent = wSl.value;
+    applyFms();
+  });
+}
+
 function pad3(deg) {
   const r = Math.round(deg) % 360;
   return String(r === 0 ? 360 : r).padStart(3, '0');
@@ -1151,6 +1230,7 @@ window.addEventListener('load', () => {
   document.getElementById('runway-sel').addEventListener('change', onRunwayChange);
   document.getElementById('cache-btn').addEventListener('click', cacheTiles);
   document.getElementById('apply-bank-btn').addEventListener('click', applyOptimalBanks);
+  initFms();
   document.getElementById('show-hdgtrk').addEventListener('change', updateCircuit);
   document.getElementById('pdf-btn').addEventListener('click', () => {
     // 印刷直前に地図サイズを再計算してから印刷ダイアログ（ブラウザの「PDFに保存」で出力）
