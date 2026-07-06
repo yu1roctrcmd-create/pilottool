@@ -63,13 +63,18 @@ function drawRunway() {
       rwy.drawHeading != null ? rwy.drawHeading : rwy.trueHeading,  // 描画は実滑走路方位
       rwy.length_m / 1852
     );
-    L.polyline([threshold, endPos], {
-      color: '#ffcc02', weight: 4, opacity: 0.9
+    // 747-8F 使用不可の滑走路（disabled）は赤線、可能な滑走路は黄線
+    const oppRwy = airport.runways[opposite];
+    const disabled = rwy.disabled || (oppRwy && oppRwy.disabled);
+    const rwyColor = disabled ? '#ff3b30' : '#ffcc02';
+    const rwyLine = L.polyline([threshold, endPos], {
+      color: rwyColor, weight: 4, opacity: 0.9
     }).addTo(runwayLayer);
+    if (disabled) rwyLine.bindTooltip('B747-8F 使用不可', { sticky: true });
     L.marker(threshold, {
       icon: L.divIcon({
         className: '',
-        html: `<div style="color:#ffcc02;font-size:11px;font-weight:bold;text-shadow:1px 1px 2px #000">${rwy.name}</div>`,
+        html: `<div style="color:${rwyColor};font-size:11px;font-weight:bold;text-shadow:1px 1px 2px #000">${rwy.name}</div>`,
         iconAnchor: [0, 0]
       })
     }).addTo(runwayLayer);
