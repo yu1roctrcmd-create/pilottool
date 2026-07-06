@@ -1277,10 +1277,23 @@
        endLon + padAlongM * Math.sin(hdgRad) / (111000 * cosLat) - padPerpM * Math.sin(perpRad) / (111000 * cosLat)],
     ];
 
-    const minLat = Math.min(...corners.map(c => c[0]));
-    const maxLat = Math.max(...corners.map(c => c[0]));
-    const minLon = Math.min(...corners.map(c => c[1]));
-    const maxLon = Math.max(...corners.map(c => c[1]));
+    let minLat = Math.min(...corners.map(c => c[0]));
+    let maxLat = Math.max(...corners.map(c => c[0]));
+    let minLon = Math.min(...corners.map(c => c[1]));
+    let maxLon = Math.max(...corners.map(c => c[1]));
+
+    // ArcGIS export は画像サイズ(480×360=4:3)に合わせて bbox を内部拡張するため、
+    // 要求 bbox と実画像範囲がズレてマーカーが滑走路から外れる。
+    // あらかじめ度数アスペクトを 4:3 に補正して要求＝実画像範囲を一致させる
+    {
+      const target = 480 / 360;               // 経度span / 緯度span（度数）
+      const cLat = (minLat + maxLat) / 2, cLon = (minLon + maxLon) / 2;
+      let dLat = maxLat - minLat, dLon = maxLon - minLon;
+      if (dLon / dLat < target) dLon = dLat * target;
+      else dLat = dLon / target;
+      minLat = cLat - dLat / 2; maxLat = cLat + dLat / 2;
+      minLon = cLon - dLon / 2; maxLon = cLon + dLon / 2;
+    }
 
     _satBbox = { minLon, maxLon, minLat, maxLat };
 
