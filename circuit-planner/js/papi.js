@@ -1073,29 +1073,13 @@
     // ── アプローチ側（TH前）──
     for (let d = step; d <= rangeNM - step / 2; d += step) drawDot(d);
 
-    // ── 滑走路内（TH後）: 色が変わるタイミングを起点に step 毎 ──
+    // ── THR（d=0）には必ず PAPI 灯列を描く ──
+    // ILSなし滑走路（機体がPAPI中心線に完全一致）でも THR 位置の指示が出るようにする
+    drawDot(0);
+
+    // ── 滑走路内（TH後）: アプローチ側と同じ step 間隔で連続表示 ──
     if (!rwyExtNM || rwyExtNM <= 0) return;
-
-    const isOnCourse = (d) => {
-      const acAlt = altAt(d, aimFt, angle);
-      return acAlt >= altAt(d, papiFt, papiAngles[2]) &&
-             acAlt <= altAt(d, papiFt, papiAngles[1]);
-    };
-
-    let startD;
-    if (isOnCourse(0)) {
-      // TH以降 10ft 刻みで最初の色変化地点を探す
-      startD = null;
-      for (let xFt = 10; xFt <= rwyExtNM * FT_PER_NM; xFt += 10) {
-        const d = -xFt / FT_PER_NM;
-        if (!isOnCourse(d)) { startD = d; break; }
-      }
-      if (startD === null) startD = -step;  // 変化なし → TH 直後から
-    } else {
-      startD = 0;  // TH時点で既に外れている → TH から
-    }
-
-    for (let d = startD; d >= -rwyExtNM; d -= step) drawDot(d);
+    for (let d = -step; d >= -rwyExtNM; d -= step) drawDot(d);
   }
 
   // ===== [5] 滑走路 基準点図（平面図） =====
