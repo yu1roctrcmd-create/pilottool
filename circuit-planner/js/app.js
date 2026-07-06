@@ -1096,24 +1096,29 @@ function updateTrafficDirAvailability() {
 }
 
 // VOR A は RJTT 16L または RJFR、VOR B は RJFR または RJTT、LDA W22/23 は RJTT 限定
+// エントリー種別の選択肢（空港/滑走路により表示可否を切替）
+// 注意: iPad Safari は <option hidden> をネイティブピッカーで無視するため、
+// hidden ではなく DOM から除去/再構築する方式で制御する
+const ENTRY_OPTIONS = [
+  ['downwind',   '標準（ダウンウィンド）',          () => true],
+  ['circling',   'サークリング',                    () => true],
+  ['directBase', 'ダイレクトベース',                () => true],
+  ['vorA',       'VOR A（ラジアル→ダウンウィンド）', () => currentAirport === 'RJTT' || currentAirport === 'RJFR'],
+  ['vorB',       'VOR B（ラジアル→ダウンウィンド）', () => currentAirport === 'RJFR'],                              // RJFR のみ（RJTTは不要）
+  ['ldaW22',     'LDA W22（IKL / 277°）',           () => currentAirport === 'RJTT' && currentRunway === '22'],   // RJTT RWY22 のみ
+  ['ldaW23',     'LDA W23（ITL / 277°）',           () => currentAirport === 'RJTT' && currentRunway === '23'],   // RJTT RWY23 のみ
+];
+
 function updateVorBAvailability() {
   const et = document.getElementById('entry-type');
-  const optB = et.querySelector('option[value="vorB"]');
-  const optA = et.querySelector('option[value="vorA"]');
-  const optLDA22 = et.querySelector('option[value="ldaW22"]');
-  const optLDA23 = et.querySelector('option[value="ldaW23"]');
-  const isKKJ = currentAirport === 'RJFR';
-  const isHND = currentAirport === 'RJTT';
-  const isRwy16 = isHND && currentRunway === '16L';
-  const isRwy22 = isHND && currentRunway === '22';
-  const isRwy23 = isHND && currentRunway === '23';
-  const vorBOk = isKKJ;                    // RJFR のみ
-  const vorAOk = isHND || isKKJ;           // RJTT 全RWY OR RJFR
-  if (optB) optB.hidden = !vorBOk;
-  if (optA) optA.hidden = !vorAOk;
-  if (optLDA22) optLDA22.hidden = !isRwy22;
-  if (optLDA23) optLDA23.hidden = !isRwy23;
-  if ((et.value === 'vorB' && !vorBOk) || (et.value === 'vorA' && !vorAOk) || (et.value === 'ldaW22' && !isRwy22) || (et.value === 'ldaW23' && !isRwy23)) {
+  const cur = et.value;
+  et.innerHTML = ENTRY_OPTIONS
+    .filter(([, , ok]) => ok())
+    .map(([v, label]) => `<option value="${v}">${label}</option>`)
+    .join('');
+  if ([...et.options].some(o => o.value === cur)) {
+    et.value = cur;
+  } else {
     et.value = 'downwind';
     document.getElementById('vorb-course-row').style.display = 'none';
     document.getElementById('direct-base-row').style.display = 'none';
