@@ -78,6 +78,16 @@ function drawRunway() {
         iconAnchor: [0, 0]
       })
     }).addTo(runwayLayer);
+    // 反方位側の RWY No も表示
+    if (oppRwy) {
+      L.marker(endPos, {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="color:${rwyColor};font-size:11px;font-weight:bold;text-shadow:1px 1px 2px #000">${oppRwy.name}</div>`,
+          iconAnchor: [0, 0]
+        })
+      }).addTo(runwayLayer);
+    }
   });
 }
 
