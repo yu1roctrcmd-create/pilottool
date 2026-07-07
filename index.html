@@ -1061,15 +1061,6 @@
         style="padding:6px 12px;font-size:0.85em;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap">取得</button>
     </div>
     <div id="atis-stat-to" style="font-size:0.78em;color:var(--label);margin-top:6px;min-height:1.2em"></div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button onclick="openWxLink('to','atis')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">🔊 ATIS</button>
-      <button onclick="openWxLink('to','metar')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">🌤 METAR</button>
-      <button onclick="openWxLink('to','taf')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">📋 TAF</button>
-    </div>
-    <div style="font-size:0.6em;color:var(--muted);margin-top:3px">外部サイトで最新データを表示（要ネット接続・新しいタブ）</div>
   </div>
 </div>
 
@@ -1556,15 +1547,6 @@
         style="padding:6px 12px;font-size:0.85em;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap">取得</button>
     </div>
     <div id="atis-stat-ldg" style="font-size:0.78em;color:var(--label);margin-top:6px;min-height:1.2em"></div>
-    <div style="display:flex;gap:6px;margin-top:8px">
-      <button onclick="openWxLink('ldg','atis')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">🔊 ATIS</button>
-      <button onclick="openWxLink('ldg','metar')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">🌤 METAR</button>
-      <button onclick="openWxLink('ldg','taf')"
-        style="flex:1;padding:6px 0;font-size:0.78em;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer">📋 TAF</button>
-    </div>
-    <div style="font-size:0.6em;color:var(--muted);margin-top:3px">外部サイトで最新データを表示（要ネット接続・新しいタブ）</div>
   </div>
 </div>
 
@@ -5761,25 +5743,6 @@ function _fetchTimeout(url, ms) {
   // cache:'reload' — Service Worker/HTTPキャッシュをバイパスして常に最新のMETARを取得
   // （従来はSWのキャッシュ優先戦略により古い観測が返り続けていた）
   return fetch(url, { signal: ctrl.signal, cache: 'reload' }).finally(() => clearTimeout(tid));
-}
-
-// 外部サイトで最新の ATIS / METAR / TAF を開く（選択中の空港）
-function openWxLink(tab, kind) {
-  const ap = ($(`atis-ap-${tab}`) || {}).value || '';
-  const statEl = $(`atis-stat-${tab}`);
-  if (!ap) { if (statEl) statEl.textContent = '空港を選択してください'; return; }
-  let url;
-  if (kind === 'metar') {
-    url = `https://metar-taf.com/${ap}`;
-  } else if (kind === 'taf') {
-    url = `https://metar-taf.com/taf/${ap}`;
-  } else {
-    // ATIS: 米国空港は D-ATIS テキスト、その他は LiveATC（音声）
-    url = /^[KP]/.test(ap)
-      ? `https://datis.clowd.io/#${ap}`
-      : `https://www.liveatc.net/search/?icao=${ap}`;
-  }
-  window.open(url, '_blank', 'noopener');
 }
 
 async function _fetchMetarJson(icao, statEl) {
