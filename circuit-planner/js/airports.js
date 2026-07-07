@@ -1039,7 +1039,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 55,
           gsAntFt: 1050,
-          papiFt: 1312,
+          papiFt: 1412,   // 衛星画像実測（z19タイル・4灯列確認）
           papiMeht: 68.0,
           papiSide: 'L',
           aimFt: 1450,
@@ -1059,7 +1059,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 55,
           gsAntFt: 1050,
-          papiFt: 1312,
+          papiFt: 1490,   // 衛星画像実測（z19タイル・4灯列確認）
           papiMeht: 68.0,
           papiSide: 'L',
           aimFt: 1450,
@@ -1078,7 +1078,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 55,
           gsAntFt: 1050,
-          papiFt: 1312,
+          papiFt: 1500,   // 衛星画像実測（z19タイル・4灯列確認）
           papiMeht: 68.0,
           papiSide: 'L',
           aimFt: 1450,
@@ -1117,7 +1117,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 55,
           gsAntFt: 1050,
-          papiFt: 1312,
+          papiFt: 1332,   // 衛星画像実測（z19タイル・4灯列確認、画質粗のため±30ft）
           papiMeht: 68.0,
           papiSide: 'L',
           aimFt: 1450,
