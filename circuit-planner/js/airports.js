@@ -406,40 +406,40 @@ const AIRPORTS = {
         name: "02L",
         threshold: [13.665175, 100.729244],   // 13°39'54.63"N 100°43'45.28"E
         elevation: 5, trueHeading: 14.3, length_m: 4000, displaced_ft: 0, opposite: "20R", tdze: 5,
-        papi: { papiFt: 1312, papiMeht: 63.82, papiSide: 'L' }
+        papi: { papiFt: 1348 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, papiSide: 'L' }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "20R": {
         name: "20R",
         threshold: [13.700189, 100.738447],   // 13°42'00.68"N 100°44'18.41"E
         elevation: 5, trueHeading: 194.3, length_m: 4000, displaced_ft: 0, opposite: "02L", tdze: 5,
-        papi: { papiFt: 1312, papiMeht: 63.82, papiSide: 'L' }
+        papi: { papiFt: 1358 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, papiSide: 'L' }
       },
       "02R": {
         name: "02R",
         threshold: [13.671278, 100.734664],   // 13°40'16.60"N 100°44'04.79"E
         elevation: 5, trueHeading: 14.3, length_m: 3700, displaced_ft: 0, opposite: "20L", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1345 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "20L": {
         name: "20L",
         threshold: [13.703947, 100.743178],   // 13°42'13.21"N 100°44'35.44"E
         elevation: 5, trueHeading: 194.3, length_m: 3700, displaced_ft: 0, opposite: "02R", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1350 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, aimFt: 1449 }
       },
       "01": {
         name: "01",
         threshold: [13.656697, 100.751831],   // 13°39'24.11"N 100°45'06.59"E
         elevation: 5, trueHeading: 14.3, length_m: 4000, displaced_ft: 0, opposite: "19", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1344 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, papiSide: 'L', aimFt: 1449 }
         // Jeppesen VTBS 20-9A: PAPI-L angle 2.80°
       },
       "19": {
         name: "19",
         threshold: [13.691714, 100.761033],   // 13°41'30.17"N 100°45'39.72"E
         elevation: 5, trueHeading: 194.3, length_m: 4000, displaced_ft: 0, opposite: "01", tdze: 5,
-        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1312, papiMeht: 63.82, aimFt: 1449 }
+        ils: { gpAngle: 3.0, tch: 55, gsAntFt: 1049, papiFt: 1352 /*衛星画像実測(Aiming Marking始端)*/, papiMeht: 63.82, aimFt: 1449 }
       }
     }
   },
@@ -665,7 +665,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1027,
-          papiFt: 1312,
+          papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -684,7 +684,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1027,
-          papiFt: 1312,
+          papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -703,7 +703,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1024,
-          papiFt: 1312,
+          papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -722,7 +722,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1017,
-          papiFt: 1312,
+          papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -741,7 +741,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1030,
-          papiFt: 1312,
+          papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -760,7 +760,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1030,
-          papiFt: 1312,
+          papiFt: 1494 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -779,7 +779,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1017,
-          papiFt: 1452,  // 442.8m
+          papiFt: 1507 /*衛星画像実測(Aiming Marking始端)*/,  // 442.8m
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1505,   // 458.7m (終端 518.7m)
@@ -798,7 +798,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1017,
-          papiFt: 1312,
+          papiFt: 1513 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
           aimFt: 1712,
@@ -825,7 +825,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1033,  // GS Antenna position
-          papiFt: 1312,
+          papiFt: 1395 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.3,
           papiSide: 'L',
           aimFt: 1312,  // ICAO standard
@@ -844,7 +844,7 @@ const AIRPORTS = {
           gpAngle: 3.1,
           tch: 53,
           gsAntFt: 1033,  // FAA standard
-          papiFt: 1312,
+          papiFt: 1317 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.3,
           papiSide: 'R',
           aimFt: 1000,  // FAA standard
@@ -863,7 +863,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1033,  // FAA standard
-          papiFt: 1312,
+          papiFt: 1365 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 72.3,
           papiSide: 'L',
           aimFt: 1000,  // FAA standard
@@ -882,7 +882,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1033,  // FAA standard
-          papiFt: 1312,
+          papiFt: 1394 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 72.3,
           papiSide: 'R',
           aimFt: 1000,  // FAA standard
@@ -901,7 +901,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1033,  // FAA standard
-          papiFt: 1312,
+          papiFt: 1281 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 71.2,
           papiSide: 'L',
           aimFt: 1000,  // FAA standard
@@ -920,7 +920,7 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1013,  // FAA standard
-          papiFt: 1312,
+          papiFt: 1301 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 77.4,
           papiSide: 'R',
           aimFt: 1000,  // FAA standard
