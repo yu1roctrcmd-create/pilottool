@@ -74,14 +74,19 @@
     return rwy ? (rwy.length_m || 3000) * 3.28084 : 9843;
   }
 
+  // Aiming Point タブと同じ基準値ロジック
   function getStandardAimFt() {
-    if (standardMode === 'faa') return 1000;
-    return getRwyLengthFt() >= 7874 ? 1312 : 984;
+    if (standardMode === 'jp')    return 1312;   // 日本標準
+    if (standardMode === 'faa')   return 1000;
+    if (standardMode === 'china') return 1505;
+    return getRwyLengthFt() >= 7874 ? 1312 : 984; // ICAO（滑走路長依存）
   }
 
   function getStripeLenFt() {
-    if (standardMode === 'faa') return 150;
-    return getRwyLengthFt() >= 7874 ? 197 : 148;
+    if (standardMode === 'jp')    return 197;
+    if (standardMode === 'faa')   return 150;
+    if (standardMode === 'china') return 197;
+    return getRwyLengthFt() >= 7874 ? 197 : 148;  // ICAO
   }
 
   function updateIlsButtons() {
@@ -1178,6 +1183,16 @@
       ctx.moveTo(Xft(1460), rwyY - rwyH / 2 - 8);
       ctx.lineTo(Xft(1460), rwyY + rwyH / 2 + 8);
       ctx.stroke();
+    } else if (standardMode === 'china') {
+      // CHINA方式: 1505ft / 1702ft (1505 + 197stripe)
+      ctx.beginPath();
+      ctx.moveTo(Xft(1505), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1505), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Xft(1702), rwyY - rwyH / 2 - 8);
+      ctx.lineTo(Xft(1702), rwyY + rwyH / 2 + 8);
+      ctx.stroke();
     } else {
       // PAPI のみ（ILS なし）: papiFt に補助線を表示
       ctx.beginPath();
@@ -1532,15 +1547,16 @@
       console.error('Tab event listener error:', e);
     }
 
-    el('std-icao').addEventListener('click', () => {
-      standardMode = 'icao';
-      el('std-icao').classList.add('std-active'); el('std-faa').classList.remove('std-active');
-      drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
-    });
-    el('std-faa').addEventListener('click', () => {
-      standardMode = 'faa';
-      el('std-faa').classList.add('std-active'); el('std-icao').classList.remove('std-active');
-      drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
+    // Aiming Point 基準ボタン（日本 / ICAO / FAA / CHINA）統一ハンドラ
+    [['std-japan','jp'],['std-icao','icao'],['std-faa','faa'],['std-china','china']].forEach(([id, mode]) => {
+      const b = el(id); if (!b) return;
+      b.addEventListener('click', () => {
+        standardMode = mode;
+        ['std-japan','std-icao','std-faa','std-china'].forEach(x => {
+          const e = el(x); if (e) e.classList.toggle('std-active', x === id);
+        });
+        drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
+      });
     });
 
     const acEl = el('papi-aircraft');
@@ -1592,10 +1608,13 @@
       // 空港別デフォルト standard auto-select
       const apCode = el('papi-airport-sel').value;
       let btnToClick = null;
+      const japanAps = ['RJAA', 'RJTT', 'RJGG', 'RJFR'];
       if (apCode === 'ZSPD') {
         btnToClick = el('std-china');  // CHINA
       } else if (apCode === 'PANC' || apCode === 'KLAX' || apCode === 'KORD') {
         btnToClick = el('std-faa');    // FAA
+      } else if (japanAps.includes(apCode)) {
+        btnToClick = el('std-japan');  // 日本
       } else {
         btnToClick = el('std-icao');   // ICAO (default)
       }
