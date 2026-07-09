@@ -344,7 +344,7 @@ const AIRPORTS = {
         displaced_ft: 0,
         opposite: "15",
         tdze: 121,                 // FAA AIP AD2.12 TDZE: 120.8ft
-        papi: { papiFt: 1290, papiMeht: 67.0, papiSide: 'R' }  // Google Earth実測: 接地閾値から393.18m
+        papi: { papiFt: 1290, papiAngle: 3.0, papiMeht: 67.0, papiSide: 'R' }  // Google Earth実測: 接地閾値から393.18m。PAPI 3.0°
       },
       "15": {
         name: "15",

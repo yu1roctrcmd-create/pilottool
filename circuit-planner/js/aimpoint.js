@@ -161,7 +161,7 @@
     // 空港ごとのAiming Point標準値をデフォルト選択
     let stdBtn = null;
     const japanAps = ['RJAA', 'RJTT', 'RJGG', 'RJFR']; // 日本空港
-    const faaAps = ['PANC', 'KLAX']; // FAA空港
+    const faaAps = ['PANC', 'KLAX', 'KORD']; // FAA空港
 
     if (japanAps.includes(apCode)) {
       stdBtn = document.querySelector('.aim-std-btn[data-std="japan"]');

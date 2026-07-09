@@ -1089,7 +1089,7 @@
     // 空港別 Aiming Point 方式の自動選択
     const { apCode } = currentApRw();
     const japanAps = ['RJAA', 'RJTT', 'RJGG', 'RJFR'];
-    const faaAps = ['PANC', 'KLAX'];
+    const faaAps = ['PANC', 'KLAX', 'KORD'];
     if (japanAps.includes(apCode)) {
       standardMode = 'jp';
     } else if (faaAps.includes(apCode)) {
