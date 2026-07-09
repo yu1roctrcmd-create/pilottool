@@ -110,17 +110,31 @@
     const rwy = currentAimRwy();
     if (!rwy) return;
 
+    const setN0 = (id, v) => {
+      const e = el(id); if (!e || v === undefined) return;
+      e.value = v;
+      const badge = document.getElementById(id + '-val');
+      if (badge) badge.textContent = Math.round(v) + 'ft';
+    };
+
     // ILS データ入力フィールドの有効/無効を切り替え
     const ilsInputs = [el('aim-angle'), el('aim-gsant'), el('aim-papi')];
     if (!rwy.ils) {
-      ilsInputs.forEach(inp => {
-        if (inp) {
-          inp.disabled = true;
-          inp.style.opacity = '0.5';
-          inp.style.backgroundColor = '#e0e0e0';
-          inp.style.cursor = 'not-allowed';
-        }
+      // ILS無し（PAPIのみ）: GP角度・GSアンテナは無効化するが、PAPI位置は papi データから設定
+      [el('aim-angle'), el('aim-gsant')].forEach(inp => {
+        if (inp) { inp.disabled = true; inp.style.opacity = '0.5'; inp.style.backgroundColor = '#e0e0e0'; inp.style.cursor = 'not-allowed'; }
       });
+      const papiEl = el('aim-papi');
+      if (papiEl) { papiEl.disabled = false; papiEl.style.opacity = '1'; papiEl.style.backgroundColor = ''; papiEl.style.cursor = 'auto'; }
+      const { apCode: apc } = currentAimApRw();
+      const pd = rwy.papi || {};
+      setN0('aim-papi', pd.papiFt || 1312);
+      setN0('aim-aim',  defaultAimFt(apc));
+      // PAPI基準角度
+      const pa = el('aim-papi-angle');
+      const paVal = pd.papiAngle || 3.0;
+      if (pa) { pa.value = paVal; const b = document.getElementById('aim-papi-angle-val'); if (b) b.textContent = paVal.toFixed(2) + '°'; }
+      updateAimInfo();
       return;
     } else {
       ilsInputs.forEach(inp => {
