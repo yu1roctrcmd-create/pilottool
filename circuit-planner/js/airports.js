@@ -337,18 +337,18 @@ const AIRPORTS = {
       // RW 15/33: 10,865ft ≈ 3312m
       "33": {
         name: "33",
-        threshold: [61.172537, -149.999305],   // 接地閾値(LDG TH): OurAirports末端[61.171042,-149.998469]から Displaced 565ft 内側（旧値は中心線から約53m西にズレ）
+        threshold: [61.172291, -149.999168],   // 接地閾値(LDG TH): 衛星画像でピアノキー始端(矢羽終端)を実測 = OurAirports末端[61.171042,-149.998469]から144m
         elevation: 122,
         trueHeading: 344.91,       // 両末端座標(OurAirports)から算出
         length_m: 3312,
         displaced_ft: 0,
         opposite: "15",
         tdze: 121,                 // FAA AIP AD2.12 TDZE: 120.8ft
-        papi: { papiFt: 1312, papiMeht: 67.0, papiSide: 'R' }
+        papi: { papiFt: 1160, papiMeht: 67.0, papiSide: 'R' }  // 衛星画像でPAPI灯列を実測(接地閾値から498m)
       },
       "15": {
         name: "15",
-        threshold: [61.199202, -150.014234],   // 接地閾値(LDG TH): FAA末端[61.199731,-150.014531]から Displaced 200ft 内側
+        threshold: [61.199731, -150.014531],   // 接地閾値(LDG TH): 衛星画像でピアノキー(閾値標識)始端を実測 = OurAirports le座標に一致（Displaced補正は不要だった）
         elevation: 151,            // FAA AIP AD2.12: 151.3ft
         trueHeading: 164.89,       // 両末端座標(OurAirports)から算出
         length_m: 3312,
@@ -358,12 +358,12 @@ const AIRPORTS = {
         ils: {
           gpAngle: 3.2,            // Jeppesen PANC 10-9A: PAPI-R angle 3.2°
           papiAngle: 3.2,          // PAPI基準角度（ILS 15@PANCはPAPI 3.2°設置）
-          tch: 55,                 // 975ft × tan(3.2°) = 54.5ft ≈ 55ft (Displaced LDG TH基準)
-          gsAntFt: 975,            // FAA AIP AD2.19 GS座標(61°11'46.76"N 150°00'54.42"W)→Displaced LDG TH投影距離 975ft
-          papiFt: 1341,            // FAA AIP PAPI座標(61°11'44.74"N 150°00'41.19"W)→Displaced LDG TH投影距離 1341ft
+          tch: 66,                 // 1176ft × tan(3.2°) = 65.8ft ≈ 66ft
+          gsAntFt: 1176,           // FAA AIP AD2.19 GS座標(61°11'46.76"N 150°00'54.42"W)→接地閾値投影距離 1176ft
+          papiFt: 1542,            // FAA AIP PAPI座標(61°11'44.74"N 150°00'41.19"W)→接地閾値投影距離 1542ft
           papiMeht: 67.0,
           papiSide: 'R',           // FAA AIP AD2.14: P4R / Jeppesen PANC 10-9A: PAPI-R
-          aimFt: 1375,             // G/S Follow Eye Aim: gsAntFt(975) + 400ft
+          aimFt: 1576,             // G/S Follow Eye Aim: gsAntFt(1176) + 400ft
         }
       },
       // RW 7R/25L: 12,400ft=3780m (真89.9/269.9 = 磁074/254)
