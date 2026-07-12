@@ -1048,7 +1048,10 @@
     let aEyeDeg = 90;
     if (papiDist > 5) aEyeDeg = Math.atan(hM / papiDist) * 180 / Math.PI;
     const pr = P.papiRef;
-    const nWhite = aEyeDeg >= pr + 0.5 ? 4 : aEyeDeg >= pr + 0.17 ? 3 : aEyeDeg >= pr - 0.17 ? 2 : aEyeDeg >= pr - 0.5 ? 1 : 0;
+    // PAPI灯の白/赤切替角: ILS併設時は帯が広い(内±0.25°/外±0.58°)、ILSなしは±0.17°/±0.5°
+    const withIls = !!(P.rwy && P.rwy.ils);
+    const inA = withIls ? 0.25 : 0.17, outA = withIls ? 0.58 : 0.5;
+    const nWhite = aEyeDeg >= pr + outA ? 4 : aEyeDeg >= pr + inA ? 3 : aEyeDeg >= pr - inA ? 2 : aEyeDeg >= pr - outA ? 1 : 0;
     for (let i = 0; i < 4; i++) {
       const u = sideSign * (HW + 15 + i * 9);    // i=0 が滑走路寄り（内側）
       dot(P.papiM, u, i < nWhite ? '#ffffff' : '#ff1744', 1.3, true);

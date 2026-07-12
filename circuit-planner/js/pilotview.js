@@ -166,6 +166,7 @@
     const papiM  = papiFt * 0.3048;
     const papiSide = (rwy.papi && rwy.papi.side) || (rwy.ils && rwy.ils.papiSide) || 'L';
     const papiAngle = (rwy.ils && rwy.ils.papiAngle) || (rwy.papi && rwy.papi.papiAngle) || 3.0;
+    const hasIls = !!rwy.ils;
     // PAPI照準点(x=papiM)通過の走行距離 s_AIM
     let sAIM = null;
     for (let i = v.length - 2; i >= 0; i--) {
@@ -237,7 +238,7 @@
     const vorIdent = (document.getElementById('vor-ident')?.value || (apVor ? apVor.ident : 'VOR')).trim() || 'VOR';
 
     return {
-      v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, papiAngle, patternAltFt, events, markers,
+      v, sTD, sAIM, sAbeam, sBaseTurn, papiFt, papiM, papiSide, papiAngle, hasIls, patternAltFt, events, markers,
       total: v[v.length - 1].s,
       thLat: th[0], thLon: th[1], hdgRad, cosH, sinH, cosLat,
       rwLenM: rwy.length_m || 3500,
@@ -565,7 +566,9 @@
       if (dAlong > 30 && Math.abs(st.u) < dAlong * 0.36) {
         const ang = Math.atan(hM / Math.hypot(dAlong, st.u)) * 180 / Math.PI;
         const pr = P.papiAngle;
-        const nWhite = ang >= pr + 0.5 ? 4 : ang >= pr + 0.17 ? 3 : ang >= pr - 0.17 ? 2 : ang >= pr - 0.5 ? 1 : 0;
+        // ILS併設時は帯が広い(内±0.25°/外±0.58°)、ILSなしは±0.17°/±0.5°
+        const inA = P.hasIls ? 0.25 : 0.17, outA = P.hasIls ? 0.58 : 0.5;
+        const nWhite = ang >= pr + outA ? 4 : ang >= pr + inA ? 3 : ang >= pr - inA ? 2 : ang >= pr - outA ? 1 : 0;
         for (let i = 0; i < 4; i++) {              // i=0 が滑走路寄り（内側）
           const q = proj(P.papiM, sideSign * (45 + i * 9));
           if (!q) continue;
