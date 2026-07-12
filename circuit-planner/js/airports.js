@@ -1229,5 +1229,70 @@ const AIRPORTS = {
         }
       }
     }
+  },
+  RCTP: {
+    name: "台湾桃園国際空港",
+    icao: "RCTP",
+    elevation: 106,
+    center: [25.0777, 121.233002],
+    // 平行滑走路 05L/23R (3660m), 05R/23L (3350m)。ICAO方式（Aiming=PAPI整合）
+    runways: {
+      "05L": {
+        name: "05L",
+        threshold: [25.072901, 121.216003],   // OurAirports末端（displaced 0）
+        elevation: 73,
+        trueHeading: 48.97,   // 両末端座標から算出
+        length_m: 3660,
+        displaced_ft: 0,
+        opposite: "23R",
+        tdze: 73,
+        ils: {
+          gpAngle: 3.0, tch: 53,
+          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,  // PAPI位置は暫定（ICAO標準）。衛星実測で精査可
+        }
+      },
+      "23R": {
+        name: "23R",
+        threshold: [25.094475, 121.243378],   // OurAirports末端（displaced 0）
+        elevation: 62,
+        trueHeading: 228.98,
+        length_m: 3660,
+        displaced_ft: 0,
+        opposite: "05L",
+        tdze: 62,
+        ils: {
+          gpAngle: 3.0, tch: 53,
+          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+        }
+      },
+      "05R": {
+        name: "05R",
+        threshold: [25.061467, 121.224280],   // 接地閾値: OurAirports末端から Displaced 347ft
+        elevation: 106,
+        trueHeading: 48.98,
+        length_m: 3350,
+        displaced_ft: 0,
+        opposite: "23L",
+        tdze: 106,
+        ils: {
+          gpAngle: 3.0, tch: 53,
+          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+        }
+      },
+      "23L": {
+        name: "23L",
+        threshold: [25.081201, 121.249333],   // 接地閾値: OurAirports末端から Displaced 1167ft
+        elevation: 95,
+        trueHeading: 229.00,
+        length_m: 3350,
+        displaced_ft: 0,
+        opposite: "05R",
+        tdze: 95,
+        ils: {
+          gpAngle: 3.0, tch: 53,
+          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+        }
+      }
+    }
   }
 };
