@@ -1619,15 +1619,17 @@
         }
       }
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
-      if (typeof window.syncPapiTo === 'function')
-        window.syncPapiTo(apSel.value, el('aim-runway-sel') ? el('aim-runway-sel').value : null);
+      const arw = el('aim-runway-sel') ? el('aim-runway-sel').value : null;
+      if (typeof window.syncPapiTo === 'function') window.syncPapiTo(apSel.value, arw);
+      if (typeof window.syncCircuitTo === 'function') window.syncCircuitTo(apSel.value, arw);
     });
     if (rwSel) rwSel.addEventListener('change', () => {
       loadAimIlsDefaults();
       updateCoordinateDisplay();
       if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
-      if (typeof window.syncPapiTo === 'function')
-        window.syncPapiTo(null, rwSel.value);
+      if (typeof window.syncPapiTo === 'function') window.syncPapiTo(null, rwSel.value);
+      if (typeof window.syncCircuitTo === 'function')
+        window.syncCircuitTo(el('aim-airport-sel') ? el('aim-airport-sel').value : null, rwSel.value);
     });
 
     // 座標調整ボタン

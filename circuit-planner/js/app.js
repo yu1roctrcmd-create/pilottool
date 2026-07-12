@@ -1070,7 +1070,33 @@ function onAirportChange() {
   map.setView(airport.center, 13);
   drawRunway();
   updateCircuit();
+  // PAPI / Aiming タブへ空港・滑走路を反映（同期由来の変更時は再同期しない）
+  if (!window._rwSyncing) {
+    if (typeof window.syncPapiTo === 'function') window.syncPapiTo(currentAirport, currentRunway);
+    if (typeof window.syncAimTo  === 'function') window.syncAimTo(currentAirport, currentRunway);
+  }
 }
+
+// PAPI / Aiming タブから Visual Circuit の空港・滑走路を同期
+window.syncCircuitTo = function(apCode, rwCode) {
+  const apSel = document.getElementById('airport-sel');
+  const rwSel = document.getElementById('runway-sel');
+  if (!apSel || !rwSel) return;
+  window._rwSyncing = true;
+  try {
+    if (apCode && apSel.value !== apCode) {
+      apSel.value = apCode;
+      apSel.dispatchEvent(new Event('change'));   // 滑走路リスト再構築＋再描画
+    }
+    if (rwCode && rwSel.value !== rwCode &&
+        [...rwSel.options].some(o => o.value === rwCode && !o.disabled)) {
+      rwSel.value = rwCode;
+      rwSel.dispatchEvent(new Event('change'));
+    }
+  } finally {
+    window._rwSyncing = false;
+  }
+};
 
 // 標準/サークリング時、現在のTDZEからPattern Altitude/MDAを再計算
 function refreshPatternAltitude() {
@@ -1134,6 +1160,10 @@ function onRunwayChange() {
   updateVorBAvailability();
   map.setView(rwy.threshold, 14);
   updateCircuit();
+  if (!window._rwSyncing) {
+    if (typeof window.syncPapiTo === 'function') window.syncPapiTo(currentAirport, currentRunway);
+    if (typeof window.syncAimTo  === 'function') window.syncAimTo(currentAirport, currentRunway);
+  }
 }
 
 // ===== 初期化 =====

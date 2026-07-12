@@ -1622,12 +1622,16 @@
       updatePapiRwyLabel(); loadIlsDefaults(); updateSatelliteImage(); drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
       if (typeof window.syncAimTo === 'function')
         window.syncAimTo(el('papi-airport-sel').value, el('papi-runway-sel').value);
+      if (typeof window.syncCircuitTo === 'function')
+        window.syncCircuitTo(el('papi-airport-sel').value, el('papi-runway-sel').value);
     });
     el('papi-runway-sel').addEventListener('change', () => {
       autoDetectIls();
       updatePapiRwyLabel(); loadIlsDefaults(); updateSatelliteImage(); drawPapi(); drawRunwayDiagram(); updateBlindZoneInfo();
       if (typeof window.syncAimTo === 'function')
         window.syncAimTo(null, el('papi-runway-sel').value);
+      if (typeof window.syncCircuitTo === 'function')
+        window.syncCircuitTo(el('papi-airport-sel').value, el('papi-runway-sel').value);
     });
 
     const ilsBtn   = el('papi-ils-btn');
