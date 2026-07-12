@@ -1235,62 +1235,76 @@ const AIRPORTS = {
     icao: "RCTP",
     elevation: 106,
     center: [25.0777, 121.233002],
-    // 平行滑走路 05L/23R (3660m), 05R/23L (3350m)。ICAO方式（Aiming=PAPI整合）
+    // AIP RCTP AD2.12/14/19 実測値。平行滑走路 05L/23R (3660m), 05R/23L (3800m)
+    // PAPI は全末端 LEFT/3.0°、位置は MEHT/tan(3°) から算出。ICAO方式（Aiming=PAPI整合）
+    vor: { ident: "APU", lat: 25.176861, lon: 121.522250, magVar: -4 },  // AIP: VOR/DME APU 112.5 (04°W)
     runways: {
       "05L": {
         name: "05L",
-        threshold: [25.072901, 121.216003],   // OurAirports末端（displaced 0）
-        elevation: 73,
-        trueHeading: 48.97,   // 両末端座標から算出
+        threshold: [25.072894, 121.215986],   // AIP THR COORD 25°04'22.42"N 121°12'57.55"E
+        elevation: 74,
+        trueHeading: 49.08,   // AIP TRUE BRG
         length_m: 3660,
         displaced_ft: 0,
         opposite: "23R",
-        tdze: 73,
+        tdze: 74,
         ils: {
-          gpAngle: 3.0, tch: 53,
-          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,  // PAPI位置は暫定（ICAO標準）。衛星実測で精査可
+          gpAngle: 3.0, tch: 50,        // AIP GP 05L RDH 50FT
+          gsAntFt: 1020,                // AIP GP座標→THR投影
+          papiFt: 1298,                 // AIP PAPI MEHT 68ft / tan(3°)
+          papiMeht: 68.0, papiSide: 'L', papiAngle: 3.0,
+          aimFt: 1420,
         }
       },
       "23R": {
         name: "23R",
-        threshold: [25.094475, 121.243378],   // OurAirports末端（displaced 0）
-        elevation: 62,
-        trueHeading: 228.98,
+        threshold: [25.094497, 121.243442],   // AIP THR COORD 25°05'40.19"N 121°14'36.39"E
+        elevation: 63,
+        trueHeading: 229.08,
         length_m: 3660,
         displaced_ft: 0,
         opposite: "05L",
-        tdze: 62,
+        tdze: 63,
         ils: {
-          gpAngle: 3.0, tch: 53,
-          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+          gpAngle: 3.0, tch: 50,        // AIP GP 23R RDH 50FT
+          gsAntFt: 1004,
+          papiFt: 1278,                 // MEHT 67ft / tan(3°)
+          papiMeht: 67.0, papiSide: 'L', papiAngle: 3.0,
+          aimFt: 1404,
         }
       },
       "05R": {
         name: "05R",
-        threshold: [25.061467, 121.224280],   // 接地閾値: OurAirports末端から Displaced 347ft
-        elevation: 106,
-        trueHeading: 48.98,
-        length_m: 3350,
+        threshold: [25.061431, 121.224247],   // AIP THR COORD 25°03'41.15"N 121°13'27.29"E（Displaced 100M）
+        elevation: 107,
+        trueHeading: 49.07,
+        length_m: 3800,
         displaced_ft: 0,
         opposite: "23L",
-        tdze: 106,
+        tdze: 107,
         ils: {
-          gpAngle: 3.0, tch: 53,
-          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+          gpAngle: 3.0, tch: 53,        // AIP GP 05R RDH 53FT
+          gsAntFt: 1010,
+          papiFt: 1278,                 // MEHT 67ft / tan(3°)
+          papiMeht: 67.0, papiSide: 'L', papiAngle: 3.0,
+          aimFt: 1410,
         }
       },
       "23L": {
         name: "23L",
-        threshold: [25.081201, 121.249333],   // 接地閾値: OurAirports末端から Displaced 1167ft
-        elevation: 95,
-        trueHeading: 229.00,
-        length_m: 3350,
+        threshold: [25.081203, 121.249369],   // AIP THR COORD 25°04'52.33"N 121°14'57.73"E（Displaced 350M）
+        elevation: 96,
+        trueHeading: 229.07,
+        length_m: 3800,
         displaced_ft: 0,
         opposite: "05R",
-        tdze: 95,
+        tdze: 97,
         ils: {
-          gpAngle: 3.0, tch: 53,
-          gsAntFt: 1000, papiFt: 1312, papiMeht: 65.0, papiSide: 'L', aimFt: 1400,
+          gpAngle: 3.0, tch: 55,        // AIP GP 23L RDH 55FT
+          gsAntFt: 1042,
+          papiFt: 1278,                 // MEHT 67ft / tan(3°)
+          papiMeht: 67.0, papiSide: 'L', papiAngle: 3.0,
+          aimFt: 1442,
         }
       }
     }
