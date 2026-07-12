@@ -89,7 +89,7 @@
       .map(r => {
         const rwy = ap.runways[r];
         const isDisabled = rwy?.disabled ? ' disabled' : '';
-        const displayText = rwy?.disabled ? r + ' (B747-8F 使用不可)' : r;
+        const displayText = rwy?.disabled ? r + ' (' + (rwy.disabledReason || 'B747-8F 使用不可') + ')' : r;
         return `<option value="${r}"${r === cur ? ' selected' : ''}${isDisabled}>${displayText}</option>`;
       })
       .join('');

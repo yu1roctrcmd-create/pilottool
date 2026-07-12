@@ -947,6 +947,7 @@ const AIRPORTS = {
         opposite: "22R",
         tdze: 658,
         disabled: true,  // 着陸に使用しないためグレーアウト
+        disabledReason: '着陸不可',
         ils: {}  // No ILS
       },
       "22R": {

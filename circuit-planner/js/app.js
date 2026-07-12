@@ -70,7 +70,7 @@ function drawRunway() {
     const rwyLine = L.polyline([threshold, endPos], {
       color: rwyColor, weight: 4, opacity: 0.9
     }).addTo(runwayLayer);
-    if (disabled) rwyLine.bindTooltip('B747-8F 使用不可', { sticky: true });
+    if (disabled) rwyLine.bindTooltip((rwy.disabledReason || (oppRwy && oppRwy.disabledReason)) || 'B747-8F 使用不可', { sticky: true });
     L.marker(threshold, {
       icon: L.divIcon({
         className: '',
@@ -1057,8 +1057,8 @@ function onAirportChange() {
     const opt = document.createElement('option');
     const rwy = airport.runways[k];
     opt.value = k;
-    // disabled フラグがある場合は B747-8F 使用不可の表示を追加
-    opt.textContent = rwy.disabled ? k + ' (B747-8F 使用不可)' : k;
+    // disabled フラグがある場合は理由（既定: B747-8F 使用不可）を表示
+    opt.textContent = rwy.disabled ? k + ' (' + (rwy.disabledReason || 'B747-8F 使用不可') + ')' : k;
     if (rwy.disabled) opt.disabled = true;
     rwySelect.appendChild(opt);
   });
