@@ -946,6 +946,7 @@ const AIRPORTS = {
         displaced_ft: 0,
         opposite: "22R",
         tdze: 658,
+        disabled: true,  // 着陸に使用しないためグレーアウト
         ils: {}  // No ILS
       },
       "22R": {
