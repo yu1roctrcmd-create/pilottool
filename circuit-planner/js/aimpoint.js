@@ -101,9 +101,12 @@
   }
 
   // ICAOコードのprefixでICAO/FAA標準を判別
+  // 空港の既定 Aiming Point Marking 位置（AIMING POINT 標準ボタンと同じ規格分類）
   function defaultAimFt(apCode) {
+    if (apCode === 'ZSPD') return AIM_STANDARDS.china.aimFt;   // CHINA 1505ft
     const p = (apCode || '')[0].toUpperCase();
-    return (p === 'K' || p === 'P') ? 1000 : 1312;  // FAA: 1000ft / ICAO: 1312ft(400m)
+    if (p === 'K' || p === 'P') return AIM_STANDARDS.faa.aimFt; // FAA 1000ft
+    return AIM_STANDARDS.japan.aimFt;                           // 日本/ICAO 1312ft(400m)
   }
 
   function loadAimIlsDefaults() {
@@ -149,7 +152,9 @@
     const ils = rwy.ils;
     const angle = ils.gpAngle || 3.0;
     const { apCode } = currentAimApRw();
-    const aimFtDefault = ils.aimFt || defaultAimFt(apCode);
+    // Aiming Point Marking は規格の既定位置を使う（ils.aimFt は G/S Follow Eye Aim
+    // 用の別概念なので aim-aim には混入させない）
+    const aimFtDefault = defaultAimFt(apCode);
     const setN = (id, v) => {
       const e = el(id); if (!e || v === undefined) return;
       e.value = v;
