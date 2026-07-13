@@ -101,6 +101,15 @@
   }
 
   // ICAOコードのprefixでICAO/FAA標準を判別
+  // GP Aiming Point（G/S Follow Eye Aim）: aim-gpaimスライダー値を優先、なければ gsAnt+400
+  // ILSなし滑走路では PAPI位置に収束
+  function gpAimFt(rwy, gsAntFt, papiFt) {
+    if (!(rwy && rwy.ils)) return papiFt;
+    const e = el('aim-gpaim');
+    const v = e ? parseFloat(e.value) : NaN;
+    return isNaN(v) ? (gsAntFt + 400) : v;
+  }
+
   // 空港の既定 Aiming Point Marking 位置（AIMING POINT 標準ボタンと同じ規格分類）
   function defaultAimFt(apCode) {
     if (apCode === 'ZSPD') return AIM_STANDARDS.china.aimFt;   // CHINA 1505ft
@@ -175,6 +184,13 @@
     setN('aim-gsant', ils.gsAntFt);
     setN('aim-papi',  ils.papiFt);
     setN('aim-aim',   aimFtDefault);
+    // GP Aiming Point（G/S Follow Eye Aim）: データ優先、なければ GSアンテナ + 目線高/tan(角)
+    {
+      const acType = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
+      const eyeHt  = (AC[acType] || AC['B747-8F']).eyeHt;
+      const gpAim  = ils.aimFt || Math.round((ils.gsAntFt + eyeHt / Math.tan(angle * Math.PI / 180)) / 5) * 5;
+      setN('aim-gpaim', gpAim);
+    }
     updateAimInfo();
 
     // 空港ごとのAiming Point標準値をデフォルト選択
@@ -207,7 +223,7 @@
     const acType   = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
     const eyeHt    = (AC[acType] || AC['B747-8F']).eyeHt;
     const vAimFt   = aimFt + eyeHt / Math.tan(angle * Math.PI / 180);
-    const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    const gsfEyeFt = gpAimFt(rwy, gsAntFt, papiFt);
     const tdze     = rwy ? (rwy.tdze || 0) : 0;
     info.innerHTML =
       `GP: ${angle}°&nbsp; TH: ${tdze}ft<br>` +
@@ -269,7 +285,7 @@
 
     // G/S Follow Eye（GS Ant + 400ft、ILSある場合）
     // ILSなし場合は papiFt に収束
-    const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    const gsfEyeFt = gpAimFt(rwy, gsAntFt, papiFt);
     const gsfEyeM  = gsfEyeFt * 0.3048;
 
     // ---- パース変換パラメータ ----
@@ -745,7 +761,7 @@
     const stripeFt= parseFloat(el('aim-stripe').value)|| 197;
     const acType  = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
     const eyeHt   = (AC[acType] || AC['B747-8F']).eyeHt;
-    const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    const gsfEyeFt = gpAimFt(rwy, gsAntFt, papiFt);
     const papiRef = parseFloat((el('aim-papi-angle') || {}).value) || 3.0;
     return {
       rwy, angle, papiRef, th: angle * Math.PI / 180,
@@ -1315,7 +1331,7 @@
     const papiFt   = parseFloat(el('aim-papi').value)   || 1414;
     const aimFt    = parseFloat(el('aim-aim').value)    || 1312;
     const stripeFt = parseFloat(el('aim-stripe').value) || 197;
-    const gsfEyeFt = (rwy && rwy.ils) ? (gsAntFt + 400) : papiFt;
+    const gsfEyeFt = gpAimFt(rwy, gsAntFt, papiFt);
     const HW = 35; // 滑走路半幅(m)
     const dispFt   = rwy.displaced_ft || 0; // Displaced Threshold距離(ft)
 
@@ -1678,15 +1694,31 @@
     // 初期座標表示
     updateCoordinateDisplay();
 
-    ['aim-angle','aim-gsant','aim-papi','aim-papi-angle','aim-aim','aim-stripe','aim-aircraft']
+    // GSアンテナ・角度・機種の変更で GP Aiming Point を再計算
+    const recalcGpAim = () => {
+      const rwy = currentAimRwy();
+      if (!rwy || !rwy.ils) return;   // ILSなしは PAPI収束（gpAimFtが処理）
+      const acType = el('aim-aircraft') ? el('aim-aircraft').value : 'B747-8F';
+      const eyeHt  = (AC[acType] || AC['B747-8F']).eyeHt;
+      const gsAnt  = parseFloat(el('aim-gsant').value) || 1115;
+      const ang    = parseFloat(el('aim-angle').value) || 3.0;
+      const v = Math.round((gsAnt + eyeHt / Math.tan(ang * Math.PI / 180)) / 5) * 5;
+      const e = el('aim-gpaim'); if (e) { e.value = v; const b = document.getElementById('aim-gpaim-val'); if (b) b.textContent = v + 'ft'; }
+    };
+
+    ['aim-angle','aim-gsant','aim-gpaim','aim-papi','aim-papi-angle','aim-aim','aim-stripe','aim-aircraft']
       .forEach(id => {
         const e = el(id);
         if (!e) return;
         e.addEventListener('change', () => {
+          if (id === 'aim-gsant' || id === 'aim-angle' || id === 'aim-aircraft') recalcGpAim();
           updateAimInfo();
           if (aimViewMode === 'persp') drawAimingPoint(); else updateAimMap();
         });
-        e.addEventListener('input', () => { updateAimInfo(); });
+        e.addEventListener('input', () => {
+          if (id === 'aim-gsant' || id === 'aim-angle') recalcGpAim();
+          updateAimInfo();
+        });
       });
 
     const btnPersp = el('aim-btn-persp');

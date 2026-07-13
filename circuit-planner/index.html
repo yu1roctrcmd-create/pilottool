@@ -725,6 +725,11 @@
       <input type="range" id="aim-gsant" value="1115" step="1" min="100" max="3000" oninput="document.getElementById('aim-gsant-val').textContent=this.value+'ft'">
     </div>
     <div class="param-row">
+      <label>GP Aiming Point（ILS接地点, 末端から）</label>
+      <div class="param-values"><span>500ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-gpaim',-1)">−1</button><span id="aim-gpaim-val" class="value-badge">1515ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-gpaim',1)">+1</button></span><span>3000ft</span></div>
+      <input type="range" id="aim-gpaim" value="1515" step="1" min="500" max="3000" oninput="document.getElementById('aim-gpaim-val').textContent=this.value+'ft'">
+    </div>
+    <div class="param-row">
       <label>PAPI 位置（ft from TH）</label>
       <div class="param-values"><span>100ft</span><span style="display:flex;align-items:center;gap:2px"><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',-1)">−1</button><span id="aim-papi-val" class="value-badge">1414ft</span><button class="fine-adj-btn" onclick="adjustSlider('aim-papi',1)">+1</button></span><span>3000ft</span></div>
       <input type="range" id="aim-papi" value="1414" step="1" min="100" max="3000" oninput="document.getElementById('aim-papi-val').textContent=this.value+'ft'">
