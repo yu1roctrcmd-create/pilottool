@@ -1313,7 +1313,8 @@
     _satBbox = { minLon, maxLon, minLat, maxLat };
 
     const bbox = [minLon.toFixed(6), minLat.toFixed(6), maxLon.toFixed(6), maxLat.toFixed(6)].join(',');
-    img.src = `https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=${bbox}&bboxSR=4326&imageSR=4326&size=480,360&format=png&f=image`;
+    // 高解像度化: 320×240の表示枠に対し Retina でも十分な 1024×768（4:3維持）で取得
+    img.src = `https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=${bbox}&bboxSR=4326&imageSR=4326&size=1024,768&format=png&f=image`;
     img.onerror = () => { if (lbl) lbl.textContent = 'Satellite unavailable'; };
     if (lbl) lbl.textContent = `${apCode} RWY${rwCode}  Landing TH – 1900ft`;
 

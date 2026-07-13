@@ -16,7 +16,9 @@ function initMap() {
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     {
       attribution: 'Esri, Maxar, Earthstar Geographics',
-      maxZoom: 19,
+      maxZoom: 20,             // 表示上限を1段引き上げ
+      maxNativeZoom: 19,       // ネイティブは19、それ以上は拡大表示
+      detectRetina: true,      // Retina(iPad)では高密度タイルを取得して鮮明化
       crossOrigin: true
     }
   ).addTo(map);
@@ -24,7 +26,7 @@ function initMap() {
   // ラベルオーバーレイ
   L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    { opacity: 0.6, maxZoom: 19, crossOrigin: true }
+    { opacity: 0.6, maxZoom: 20, maxNativeZoom: 19, detectRetina: true, crossOrigin: true }
   ).addTo(map);
 
   circuitLayer = L.layerGroup().addTo(map);
