@@ -779,10 +779,10 @@ const AIRPORTS = {
           gpAngle: 3.0,
           tch: 53,
           gsAntFt: 1017,
-          papiFt: 1507 /*衛星画像実測(Aiming Marking始端)*/,  // 442.8m
+          papiFt: 1458,   // Google Earth実測: PAPI 444.44m
           papiMeht: 65.0,
-          papiSide: 'L',
-          aimFt: 1505,   // 458.7m (終端 518.7m)
+          papiSide: 'L', papiAngle: 3.0,
+          aimFt: 1507,    // Google Earth実測: Aiming Point 459.19m
         }
       },
       "35L": {

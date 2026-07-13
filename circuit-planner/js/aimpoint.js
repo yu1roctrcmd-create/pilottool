@@ -1132,18 +1132,40 @@
     ctx.fillStyle = '#90a4ae'; ctx.fillText(t2, W - tw + 2, 42);
     ctx.fillStyle = '#ffe082'; ctx.fillText(t3, W - tw + 2, 58);
 
+    // ---- WWRR→WWWR に変わる高度（Eye→PAPI角 = pr+inA となる G/S追従パス上の点） ----
+    let transTxt = 'WWRR→WWWR: 到達せず';
+    {
+      const TG = Math.tan(P.th);
+      const TT = Math.tan((pr + inA) * Math.PI / 180);
+      const denom = TG - TT;
+      if (Math.abs(denom) > 1e-6) {
+        const sT = (P.gsfEyeM * TG - P.papiM * TT) / denom;   // 遷移点のTH基準位置(m)
+        const hT = (P.gsfEyeM - sT) * TG;                     // Eye高さ(m)
+        if (hT > 0.3 && sT < P.papiM) {                        // Eyeが空中 かつ PAPI手前
+          const aglT = Math.round(hT / 0.3048);
+          const mslT = aglT + Math.round(P.rwy.tdze || 0);
+          transTxt = `WWRR→WWWR ${mslT}ft MSL / ${aglT}ft AGL`;
+        }
+      }
+    }
+    // 現在WWRRからWWWRへ変わった瞬間かを判定（3灯目が点いた＝nWhite>=3）してハイライト
+    const atTrans = nWhite >= 3;
+
     // ---- HUD 左下: PAPI リピーター ----
-    ctx.fillStyle = 'rgba(0,10,20,0.72)'; ctx.fillRect(8, H - 46, 150, 38);
-    ctx.strokeStyle = '#ef5350'; ctx.strokeRect(8, H - 46, 150, 38);
-    ctx.fillStyle = '#ef5350'; ctx.font = 'bold 10px monospace';
-    ctx.fillText(`PAPI  ${aEyeDeg < 89 ? aEyeDeg.toFixed(2) + '°' : '--'}`, 16, H - 33);
+    ctx.fillStyle = 'rgba(0,10,20,0.78)'; ctx.fillRect(8, H - 64, 214, 56);
+    ctx.strokeStyle = '#ef5350'; ctx.strokeRect(8, H - 64, 214, 56);
+    ctx.fillStyle = '#ef5350'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(`PAPI  ${aEyeDeg < 89 ? aEyeDeg.toFixed(2) + '°' : '--'}`, 16, H - 51);
     for (let i = 0; i < 4; i++) {
       ctx.save();
       const color = i < nWhite ? '#ffffff' : '#ff1744';
       ctx.shadowColor = color; ctx.shadowBlur = 6; ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(24 + i * 22, H - 19, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(24 + i * 22, H - 37, 6, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
+    // WWRR→WWWR 遷移高度（遷移中は黄色強調）
+    ctx.fillStyle = atTrans ? '#ffeb3b' : '#ffcc80'; ctx.font = 'bold 9px monospace';
+    ctx.fillText(transTxt, 16, H - 15);
 
     // ---- 衛星テクスチャ読込中表示 ----
     if (animUseSat && !useSat) {
