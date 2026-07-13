@@ -176,11 +176,14 @@
     let stdBtn = null;
     const japanAps = ['RJAA', 'RJTT', 'RJGG', 'RJFR']; // 日本空港
     const faaAps = ['PANC', 'KLAX', 'KORD']; // FAA空港
+    const chinaAps = ['ZSPD'];               // CHINA方式空港
 
     if (japanAps.includes(apCode)) {
       stdBtn = document.querySelector('.aim-std-btn[data-std="japan"]');
     } else if (faaAps.includes(apCode)) {
       stdBtn = document.querySelector('.aim-std-btn[data-std="faa"]');
+    } else if (chinaAps.includes(apCode)) {
+      stdBtn = document.querySelector('.aim-std-btn[data-std="china"]');
     } else {
       stdBtn = document.querySelector('.aim-std-btn[data-std="icao"]');
     }
