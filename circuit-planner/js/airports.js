@@ -668,7 +668,7 @@ const AIRPORTS = {
           papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1427,
         }
       },
       "34R": {
@@ -687,7 +687,7 @@ const AIRPORTS = {
           papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1427,
         }
       },
       "16R": {
@@ -706,7 +706,7 @@ const AIRPORTS = {
           papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1424,
         }
       },
       "34L": {
@@ -725,7 +725,7 @@ const AIRPORTS = {
           papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1417,
         }
       },
       "17L": {
@@ -744,7 +744,7 @@ const AIRPORTS = {
           papiFt: 1505 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1430,
         }
       },
       "35R": {
@@ -763,7 +763,7 @@ const AIRPORTS = {
           papiFt: 1494 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1430,
         }
       },
       "17R": {
@@ -782,7 +782,7 @@ const AIRPORTS = {
           papiFt: 1458,   // Google Earth実測: PAPI 444.44m
           papiMeht: 65.0,
           papiSide: 'L', papiAngle: 3.0,
-          aimFt: 1507,    // Google Earth実測: Aiming Point 459.19m
+          aimFt: 1417,    // Google Earth実測: Aiming Point 459.19m
         }
       },
       "35L": {
@@ -801,7 +801,7 @@ const AIRPORTS = {
           papiFt: 1513 /*衛星画像実測(Aiming Marking始端)*/,
           papiMeht: 65.0,
           papiSide: 'L',
-          aimFt: 1712,
+          aimFt: 1417,
         }
       }
     }
