@@ -9233,29 +9233,8 @@ restoreState();
   </div>
 </div>
 
-<!-- FL335 上下 切替 + 検索 -->
-<div class="card" style="margin-top:10px">
-  <div style="display:flex;gap:6px;margin-bottom:8px">
-    <button id="freq-below-btn" class="std-btn std-active" onclick="freqSetBand('below')" style="flex:1">BELOW FL335</button>
-    <button id="freq-above-btn" class="std-btn" onclick="freqSetBand('above')" style="flex:1">AT / ABOVE FL335</button>
-  </div>
-  <input type="text" id="freq-search" placeholder="🔍 セクター名 (F06, T30, N43) / 周波数で検索" oninput="freqRender()"
-         style="width:100%;padding:8px;font-size:0.9em;background:#0d1f2d;color:#fff;border:1px solid #1a4a7a;border-radius:6px;box-sizing:border-box">
-  <div id="freq-table" style="margin-top:10px"></div>
-  <div style="font-size:0.62em;color:var(--warn);margin-top:8px;line-height:1.6">
-    ⚠ この表は参考です。運航では必ず原典チャート／AIP／該当ATCの指示を優先してください。★印は高度限定の副周波数。
-  </div>
-</div>
-
-<!-- HF 周波数 -->
-<div class="card" style="margin-top:12px">
-  <div class="card-title">HF 周波数 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">Tokyo〔Fukuoka ACC〕· SELCAL AVBL</span></div>
-  <div id="freq-hf"></div>
-  <div style="font-size:0.62em;color:var(--muted);margin-top:6px">Appropriate HF FREQ will be assigned by Tokyo</div>
-</div>
-
 <!-- 公式チャート画像 -->
-<div class="card" style="margin-top:12px">
+<div class="card" style="margin-top:10px">
   <div class="card-title">公式チャート &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">原典（拡大可）</span></div>
   <div style="display:grid;gap:10px;margin-top:6px">
     <div>
@@ -9275,6 +9254,27 @@ restoreState();
       </div>
     </div>
   </div>
+</div>
+
+<!-- FL335 上下 切替 + 検索 -->
+<div class="card" style="margin-top:12px">
+  <div style="display:flex;gap:6px;margin-bottom:8px">
+    <button id="freq-below-btn" class="std-btn std-active" onclick="freqSetBand('below')" style="flex:1">BELOW FL335</button>
+    <button id="freq-above-btn" class="std-btn" onclick="freqSetBand('above')" style="flex:1">AT / ABOVE FL335</button>
+  </div>
+  <input type="text" id="freq-search" placeholder="🔍 セクター名 (F06, T30, N43) / 周波数で検索" oninput="freqRender()"
+         style="width:100%;padding:8px;font-size:0.9em;background:#0d1f2d;color:#fff;border:1px solid #1a4a7a;border-radius:6px;box-sizing:border-box">
+  <div id="freq-table" style="margin-top:10px"></div>
+  <div style="font-size:0.62em;color:var(--warn);margin-top:8px;line-height:1.6">
+    ⚠ この表は参考です。運航では必ず原典チャート／AIP／該当ATCの指示を優先してください。★印は高度限定の副周波数。
+  </div>
+</div>
+
+<!-- HF 周波数 -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">HF 周波数 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">Tokyo〔Fukuoka ACC〕· SELCAL AVBL</span></div>
+  <div id="freq-hf"></div>
+  <div style="font-size:0.62em;color:var(--muted);margin-top:6px">Appropriate HF FREQ will be assigned by Tokyo</div>
 </div>
 
 </div>
