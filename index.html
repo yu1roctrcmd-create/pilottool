@@ -6248,6 +6248,70 @@ function desPathCalc() {
     <p style="font-size:0.65em;color:var(--muted);margin-top:5px">${dist} NM で ${alt.toLocaleString()} ft 降下</p>`;
 }
 
+/* ───────────────────────────────────────────
+   DES: Top of Descent (TOD) 計算
+─────────────────────────────────────────── */
+function desTodCalc() {
+  const crz = parseFloat($('des-tod-crz').value);
+  const tgt = parseFloat($('des-tod-tgt').value);
+  const ang = parseFloat($('des-tod-ang').value) || 3.0;
+  const gs  = parseFloat($('des-tod-gs').value)  || 280;
+  const decelKt = parseFloat($('des-tod-decel').value) || 0;
+  const nowNM   = parseFloat($('des-tod-now').value);
+  const el = $('des-tod-result');
+  if (isNaN(crz) || isNaN(tgt) || crz <= tgt) {
+    el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">巡航高度・降下先高度を入力してください（巡航 > 降下先）</p>';
+    return;
+  }
+  const dAlt = crz - tgt;                                   // 降下高度差 (ft)
+  const ftPerNM = Math.tan(ang * Math.PI / 180) * 6076.115; // 降下勾配 (ft/NM)
+  const pathNM  = dAlt / ftPerNM;                           // 純パス距離 (NM)
+  // 減速距離加算: おおよそ 10kt あたり 1NM（アイドル減速の目安）
+  const decelNM = decelKt / 10;
+  const todNM   = pathNM + decelNM;
+  // 3× ルール（1000ftあたり3NM）参考
+  const ruleNM  = (dAlt / 1000) * 3;
+  // 必要降下率 ROD (fpm) = GS(kt) × ft/NM ÷ 60
+  const rod = Math.round(gs * ftPerNM / 60);
+  // 現在距離があれば「あと○NMで降下 / 既に通過」判定
+  let nowHtml = '';
+  if (!isNaN(nowNM)) {
+    const remain = nowNM - todNM;   // TODまでの残り (正=まだ手前, 負=既にTOD通過)
+    if (remain > 0.5) {
+      nowHtml = `<div class="brow"><span>降下開始まで</span><span class="v" style="color:var(--accent)">あと ${remain.toFixed(0)} NM</span></div>`;
+    } else if (remain < -0.5) {
+      nowHtml = `<div class="brow"><span>状態</span><span class="v" style="color:var(--warn)">⚠ TOD通過 ${Math.abs(remain).toFixed(0)}NM 遅れ（High）</span></div>`;
+    } else {
+      nowHtml = `<div class="brow"><span>状態</span><span class="v" style="color:#00e698">▶ 今 TOD — 降下開始</span></div>`;
+    }
+  }
+  el.innerHTML = `
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">TOD 距離</div>
+        <div style="font-size:1.7em;font-weight:700;color:var(--accent)">${todNM.toFixed(0)}<span style="font-size:0.5em"> NM</span></div>
+        <div style="font-size:0.62em;color:var(--muted)">目標点の手前</div>
+      </div>
+      <div>
+        <div style="font-size:0.68em;color:var(--muted)">必要降下率 ROD</div>
+        <div style="font-size:1.7em;font-weight:700">${rod.toLocaleString()}<span style="font-size:0.5em"> fpm</span></div>
+        <div style="font-size:0.62em;color:var(--muted)">GS ${gs}kt / ${ang.toFixed(1)}°</div>
+      </div>
+    </div>
+    <div class="breakdown" style="display:block">
+      ${nowHtml}
+      <div class="brow"><span>降下高度差</span><span class="v">${dAlt.toLocaleString()} ft</span></div>
+      <div class="brow"><span>降下勾配</span><span class="v">${Math.round(ftPerNM)} ft/NM</span></div>
+      <div class="brow"><span>パス距離（${ang.toFixed(1)}°）</span><span class="v">${pathNM.toFixed(0)} NM</span></div>
+      ${decelKt > 0 ? `<div class="brow"><span>減速距離加算（${decelKt}kt）</span><span class="v">+${decelNM.toFixed(0)} NM</span></div>` : ''}
+      <div class="brow"><span>3×ルール参考</span><span class="v">${ruleNM.toFixed(0)} NM</span></div>
+    </div>
+    <p style="font-size:0.62em;color:var(--muted);margin-top:5px">
+      ${(crz/1000).toFixed(0)}k → ${(tgt/1000).toFixed(1)}k ft を ${ang.toFixed(1)}° で降下。
+      減速加算は 10kt≈1NM 目安。追い風時は早め、向い風時は遅めに開始。
+    </p>`;
+}
+
 /* DES 3° Approach Path — True Altitude Correction */
 function desApprPathCalc() {
   const elev   = parseFloat($('des-appr-elev').value) || 0;
@@ -8157,6 +8221,50 @@ restoreState();
   </div>
   <div id="des-path-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">距離と高度差を入力してください</p>
+  </div>
+</div>
+
+<!-- Top of Descent (TOD) Card -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Top of Descent (TOD) &nbsp;<span style="font-size:0.8em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">降下開始点・降下率を算出</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>巡航高度 (ft MSL)</label>
+      <input type="number" id="des-tod-crz" step="500" min="1000" max="45000"
+             inputmode="numeric" placeholder="e.g. 35000" oninput="desTodCalc()">
+    </div>
+    <div class="fg">
+      <label>降下先高度 (ft MSL)</label>
+      <input type="number" id="des-tod-tgt" step="100" min="0" max="45000" value="3000"
+             inputmode="numeric" placeholder="e.g. 3000" oninput="desTodCalc()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>降下角 (°)</label>
+      <input type="number" id="des-tod-ang" step="0.1" min="1.5" max="6" value="3.0"
+             inputmode="decimal" placeholder="3.0" oninput="desTodCalc()">
+    </div>
+    <div class="fg">
+      <label>GS (kt) — ROD算出用</label>
+      <input type="number" id="des-tod-gs" step="10" min="150" max="600" value="280"
+             inputmode="numeric" placeholder="e.g. 280" oninput="desTodCalc()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>速度減少 (kt) — 減速距離加算</label>
+      <input type="number" id="des-tod-decel" step="10" min="0" max="200" value="0"
+             inputmode="numeric" placeholder="巡航→降下速度差" oninput="desTodCalc()">
+    </div>
+    <div class="fg">
+      <label>目標点まで (NM) — 任意</label>
+      <input type="number" id="des-tod-now" step="1" min="0" max="500"
+             inputmode="numeric" placeholder="現在の対地距離" oninput="desTodCalc()">
+    </div>
+  </div>
+  <div id="des-tod-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">巡航高度・降下先高度を入力してください</p>
   </div>
 </div>
 
