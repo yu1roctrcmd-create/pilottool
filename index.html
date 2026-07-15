@@ -9365,7 +9365,7 @@ restoreState();
       <input type="number" id="fu-ld-fob" step="1000" min="53600" max="399080" inputmode="numeric" placeholder="e.g. 250000" oninput="fuLoad()">
     </div>
     <div class="fg">
-      <label>Density (lb/USG) — 体積換算用</label>
+      <label>Density (lb/USG) — 配分・体積に反映</label>
       <input type="number" id="fu-ld-dens" step="0.01" min="6.0" max="7.2" value="6.7" inputmode="decimal" placeholder="6.7" oninput="fuLoad()">
     </div>
   </div>
@@ -9513,12 +9513,17 @@ function _fuInterpDist(fob){
   return null;
 }
 function fuLoad(){
-  const fob=_fuNum('fu-ld-fob'), dens=_fuNum('fu-ld-dens')||6.7;
+  const fob=_fuNum('fu-ld-fob'), dens=(_fuNum('fu-ld-dens')||6.7);
   const el=document.getElementById('fu-ld-result');
   if(!isFinite(fob)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">FOB を入力してください</p>'; return; }
-  const d=_fuInterpDist(fob); if(!d){ el.innerHTML=''; return; }
-  const total=2*d.m14+2*d.m23+d.ctr+2*d.r14;
-  const usg=(lb)=> dens>0 ? _fuFmt(lb/dens) : '—';
+  // 配分は容積基準（各タンクは容積一定で充填）。表は 6.7 lb/USG 基準。
+  // 実密度では等価重量 W67 = FOB × 6.7/Density でテーブル参照し、各タンク重量を Density/6.7 倍する。
+  const k = dens/6.7;
+  const w67 = fob*6.7/dens;
+  const d=_fuInterpDist(w67); if(!d){ el.innerHTML=''; return; }
+  const m14=d.m14*k, m23=d.m23*k, ctr=d.ctr*k, r14=d.r14*k;      // 実重量 (LB)
+  const total=2*m14+2*m23+ctr+2*r14;
+  const usg=(lb)=> dens>0 ? _fuFmt(lb/dens) : '—';                // 容積 (密度非依存)
   const trow=(lbl,each,cnt)=>{
     const tot=each*cnt;
     return `<tr style="border-top:1px solid #12283c">`
@@ -9528,21 +9533,25 @@ function fuLoad(){
       +`<td style="padding:5px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${_fuFmt(tot)}</td>`
       +`<td style="padding:5px 6px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">${usg(tot)}</td></tr>`;
   };
+  const resFull = 94680*k, ctrStart = 285180*k;  // 満タン/搭載開始点（密度補正）
   el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:0.85em">'
     +'<tr style="font-size:0.72em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
     +'<td style="padding:2px 6px">Tank</td><td style="padding:2px 6px;text-align:right">Each (LB)</td>'
     +'<td style="padding:2px 6px;text-align:center">#</td><td style="padding:2px 6px;text-align:right">Total (LB)</td>'
     +'<td style="padding:2px 6px;text-align:right">USG</td></tr>'
-    +trow('No.1 / 4 Main',d.m14,2)
-    +trow('No.2 / 3 Main',d.m23,2)
-    +trow('Center',d.ctr,1)
-    +trow('No.1 / 4 Reserve',d.r14,2)
+    +trow('No.1 / 4 Main',m14,2)
+    +trow('No.2 / 3 Main',m23,2)
+    +trow('Center',ctr,1)
+    +trow('No.1 / 4 Reserve',r14,2)
     +`<tr style="border-top:2px solid #1a4a7a"><td style="padding:6px 6px;font-weight:700">合計</td>`
     +`<td></td><td></td><td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${_fuFmt(total)}</td>`
     +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${usg(total)}</td></tr>`
     +'</table>'
-    +`<div style="font-size:0.66em;color:var(--muted);margin-top:5px">Center は 285,180 LB 超で搭載開始。USG = LB ÷ Density(${dens.toFixed(2)})。表の基準密度は 6.7 lb/USG。`
-    +(d.clamped?'<br><span style="color:var(--warn)">⚠ 表範囲(53,600〜399,080 LB)外のため端値でクランプ。</span>':'')+'</div>';
+    +`<div style="font-size:0.66em;color:var(--muted);margin-top:5px">`
+    +`Reserve は Total <b style="color:var(--fg)">${_fuFmt(resFull)} LB</b> で満タン（各 ${_fuFmt(10270*k)} LB）。Center は <b style="color:var(--fg)">${_fuFmt(ctrStart)} LB</b> 超で搭載開始。`
+    +`<br>配分は<b>容積基準</b>のため密度で変化（表基準 6.7 lb/USG${dens!==6.7?` → 入力 ${dens.toFixed(2)}`:''}）。USG = 容積（密度非依存）。`
+    +(d.clamped?`<br><span style="color:var(--warn)">⚠ 換算重量 ${_fuFmt(w67)} LB が表範囲(53,600〜399,080)外のため端値でクランプ。</span>`:'')
+    +`</div>`;
 }
 
 // ③ Holding Fuel 〔Flaps Up · racetrack +5%込〕FF/ENG (LB/HR)
