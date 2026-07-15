@@ -931,6 +931,7 @@
   <button class="tab-btn"        onclick="switchTab('flight',this)">FLIGHT</button>
   <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
+  <button class="tab-btn"        onclick="switchTab('freq',this)">FREQ</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
   <button class="theme-btn" id="update-btn" onclick="ncaUpdate()" title="キャッシュをクリアして最新バージョンに更新">🔄</button>
@@ -2204,6 +2205,7 @@ function switchTab(name, btn) {
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
+  if (name === 'freq')   requestAnimationFrame(freqRender);
 }
 
 let _crewDrumReady = false;
@@ -9196,7 +9198,159 @@ restoreState();
 </div>
 </div>
 
+<!-- ═══════════════════════════ TAB: FREQ (ACC Sector Frequencies) ═══════════════════════════ -->
+<div class="tab-panel" id="tab-freq">
+<div class="tab-content">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h2 style="margin:0">📻 ACC Sector Frequencies</h2>
+    <p class="lead" style="margin:2px 0 0">Tokyo〔Fukuoka ACC〕— セクター周波数早見</p>
+  </div>
+</div>
+
+<!-- FL335 上下 切替 + 検索 -->
+<div class="card" style="margin-top:10px">
+  <div style="display:flex;gap:6px;margin-bottom:8px">
+    <button id="freq-below-btn" class="std-btn std-active" onclick="freqSetBand('below')" style="flex:1">BELOW FL335</button>
+    <button id="freq-above-btn" class="std-btn" onclick="freqSetBand('above')" style="flex:1">AT / ABOVE FL335</button>
+  </div>
+  <input type="text" id="freq-search" placeholder="🔍 セクター名 (F06, T30, N43) / 周波数で検索" oninput="freqRender()"
+         style="width:100%;padding:8px;font-size:0.9em;background:#0d1f2d;color:#fff;border:1px solid #1a4a7a;border-radius:6px;box-sizing:border-box">
+  <div id="freq-table" style="margin-top:10px"></div>
+  <div style="font-size:0.62em;color:var(--warn);margin-top:8px;line-height:1.6">
+    ⚠ この表は参考です。運航では必ず原典チャート／AIP／該当ATCの指示を優先してください。★印は高度限定の副周波数。
+  </div>
+</div>
+
+<!-- HF 周波数 -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">HF 周波数 &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">Tokyo〔Fukuoka ACC〕· SELCAL AVBL</span></div>
+  <div id="freq-hf"></div>
+  <div style="font-size:0.62em;color:var(--muted);margin-top:6px">Appropriate HF FREQ will be assigned by Tokyo</div>
+</div>
+
+<!-- 公式チャート画像 -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">公式チャート &nbsp;<span style="font-size:0.75em;font-weight:400;color:var(--muted)">原典（拡大可）</span></div>
+  <div style="display:grid;gap:10px;margin-top:6px">
+    <div>
+      <div style="font-size:0.7em;color:var(--muted);margin-bottom:3px">BELOW FL335</div>
+      <img src="./freq/acc_below_fl335.png" alt="ACC Below FL335" style="width:100%;border-radius:6px;border:1px solid var(--border)"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div style="display:none;font-size:0.72em;color:var(--muted);padding:14px;border:1px dashed var(--border);border-radius:6px;text-align:center">
+        画像未配置：<code>freq/acc_below_fl335.png</code> を保存してください
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.7em;color:var(--muted);margin-bottom:3px">AT / ABOVE FL335</div>
+      <img src="./freq/acc_above_fl335.png" alt="ACC At/Above FL335" style="width:100%;border-radius:6px;border:1px solid var(--border)"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div style="display:none;font-size:0.72em;color:var(--muted);padding:14px;border:1px dashed var(--border);border-radius:6px;text-align:center">
+        画像未配置：<code>freq/acc_above_fl335.png</code> を保存してください
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
 <script>
+// ── ACC Sector Frequencies (FREQ tab) ─────────────────────
+// 出典: Tokyo〔Fukuoka ACC〕ACC SECTOR FREQUENCIES チャート（参考・要原典確認）
+// center: 'F'=Fukuoka Control / 'T'=Tokyo Control / 'N'=Kobe Control
+const ACC_FREQ = {
+  below: [
+    // Fukuoka Control
+    {c:'F', s:'F01', f:['133.3']},   {c:'F', s:'F02', f:['128.2']},
+    {c:'F', s:'F03', f:['133.6']},   {c:'F', s:'F04', f:['120.75']},
+    {c:'F', s:'F06', f:['134.15']},  {c:'F', s:'F07', f:['133.025']},
+    {c:'F', s:'F08', f:['124.15']},  {c:'F', s:'F11', f:['124.55']},
+    {c:'F', s:'F13', f:['133.6']},   {c:'F', s:'F15', f:['127.5']},
+    {c:'F', s:'F16', f:['132.3']},   {c:'F', s:'F17', f:['123.9','124.5']},
+    // Tokyo Control
+    {c:'T', s:'T30', f:['132.6','127.5']}, {c:'T', s:'T31', f:['119.3']},
+    {c:'T', s:'T32', f:['124.5'], n:'★below FL245: 124.5'},
+    {c:'T', s:'T33', f:['132.3']},   {c:'T', s:'T34', f:['118.9']},
+    {c:'T', s:'T35', f:['124.1']},   {c:'T', s:'T36', f:['134.0']},
+    {c:'T', s:'T38', f:['120.5']},   {c:'T', s:'T39', f:['132.1']},
+    {c:'T', s:'T40', f:['133.35','123.7']}, {c:'T', s:'T41', f:['133.7']},
+    {c:'T', s:'T42', f:['125.9']},
+    {c:'T', s:'T45', f:['125.7'], n:'★below FL285: 125.7'},
+    {c:'T', s:'T46', f:['133.5']},
+    // Kobe Control
+    {c:'N', s:'N40', f:['132.7']},   {c:'N', s:'N43', f:['132.45']},
+    {c:'N', s:'N44', f:['123.9']},   {c:'N', s:'N47', f:['133.55']},
+    {c:'N', s:'N48', f:['133.8']},   {c:'N', s:'N50', f:['127.15']},
+    {c:'N', s:'N51', f:['132.5']},   {c:'N', s:'N52', f:['135.65']},
+    {c:'N', s:'N53', f:['118.9']},
+    {c:'N', s:'N54', f:['133.85'], n:'★below FL275: 133.85'},
+    {c:'N', s:'N55', f:['132.35']},
+  ],
+  above: [  // AT/ABOVE FL335 は全て Fukuoka Control
+    {c:'F', s:'F01', f:['133.3']},   {c:'F', s:'F02', f:['128.2']},
+    {c:'F', s:'F03', f:['133.6']},   {c:'F', s:'F04', f:['120.75']},
+    {c:'F', s:'F05', f:['128.125']}, {c:'F', s:'F06', f:['134.15']},
+    {c:'F', s:'F07', f:['133.025']}, {c:'F', s:'F08', f:['124.15']},
+    {c:'F', s:'F11', f:['124.55']},  {c:'F', s:'F12', f:['133.15']},
+    {c:'F', s:'F13', f:['133.6']},   {c:'F', s:'F14', f:['135.3']},
+    {c:'F', s:'F15', f:['127.5']},   {c:'F', s:'F16', f:['132.3']},
+    {c:'F', s:'F17', f:['123.9','124.5']},
+    {c:'F', s:'F19', f:['119.35']},  {c:'F', s:'F20', f:['134.35']},
+  ],
+};
+const ACC_HF = {
+  NP1:['2932','5628','10048','13273','17946','21925'],
+  NP2:['2932','6655','8951','11330','17946','21925'],
+  NP3:['5667','8915','17946','21925'],
+  CWP1:['3455','6532','8903','13300','17904'],
+  CWP2:['2998','4666','8903','11384','13300','17904'],
+};
+const ACC_CTR = { F:{name:'Fukuoka Control', col:'#2e9e57'}, T:{name:'Tokyo Control', col:'#4f8fd8'}, N:{name:'Kobe Control', col:'#e0a020'} };
+let _freqBand = 'below';
+function freqSetBand(b){
+  _freqBand = b;
+  document.getElementById('freq-below-btn').classList.toggle('std-active', b==='below');
+  document.getElementById('freq-above-btn').classList.toggle('std-active', b==='above');
+  freqRender();
+}
+function freqRender(){
+  const el = document.getElementById('freq-table'); if(!el) return;
+  const q = (document.getElementById('freq-search').value||'').trim().toLowerCase();
+  const rows = ACC_FREQ[_freqBand].filter(r =>
+    !q || r.s.toLowerCase().includes(q) || r.f.some(x=>x.includes(q)));
+  // 管制機関ごとにグループ
+  const groups = {};
+  rows.forEach(r=>{ (groups[r.c]=groups[r.c]||[]).push(r); });
+  let html='';
+  ['F','T','N'].forEach(c=>{
+    if(!groups[c]) return;
+    const ct = ACC_CTR[c];
+    html += `<div style="margin-top:8px;font-size:0.7em;font-weight:700;color:${ct.col};letter-spacing:.05em">${ct.name}</div>`;
+    html += '<table style="width:100%;border-collapse:collapse;font-size:0.85em">';
+    groups[c].forEach(r=>{
+      html += `<tr style="border-top:1px solid #12283c">`
+        + `<td style="padding:4px 6px;font-weight:700;color:${ct.col};width:52px">${r.s}</td>`
+        + `<td style="padding:4px 6px;font-weight:700;font-variant-numeric:tabular-nums">${r.f.join(' / ')}</td>`
+        + `<td style="padding:4px 6px;font-size:0.8em;color:var(--muted)">${r.n||''}</td></tr>`;
+    });
+    html += '</table>';
+  });
+  el.innerHTML = html || '<p style="font-size:0.8em;color:var(--muted)">該当なし</p>';
+  // HF は初回のみ描画
+  const hf = document.getElementById('freq-hf');
+  if(hf && !hf.dataset.done){
+    hf.dataset.done='1';
+    let h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">';
+    Object.keys(ACC_HF).forEach(k=>{
+      h+=`<div><div style="font-size:0.72em;font-weight:700;color:var(--accent);margin-bottom:2px">${k}</div>`
+        +`<div style="font-size:0.78em;line-height:1.7;font-variant-numeric:tabular-nums">${ACC_HF[k].map(x=>x+' KHz').join('<br>')}</div></div>`;
+    });
+    h+='</div>';
+    hf.innerHTML=h;
+  }
+}
 
 // ── Flight Lookup (embedded) ──────────────────────────────
 (function() {
