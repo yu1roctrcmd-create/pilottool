@@ -932,6 +932,7 @@
   <button class="tab-btn"        onclick="switchTab('wxrdr',this)">WXRDR</button>
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="tab-btn"        onclick="switchTab('freq',this)">FREQ</button>
+  <button class="tab-btn"        onclick="switchTab('fuel',this)">FUEL</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
   <button class="theme-btn" id="update-btn" onclick="ncaUpdate()" title="キャッシュをクリアして最新バージョンに更新">🔄</button>
@@ -2206,6 +2207,7 @@ function switchTab(name, btn) {
   if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
   if (name === 'freq')   requestAnimationFrame(freqRender);
+  if (name === 'fuel')   requestAnimationFrame(fuelInit);
 }
 
 let _crewDrumReady = false;
@@ -9255,6 +9257,317 @@ restoreState();
 
 </div>
 </div>
+
+<!-- ══════════════════ FUEL TAB ══════════════════ -->
+<div class="tab-panel" id="tab-fuel">
+<div class="tab-content">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h2 style="margin:0">⛽ FUEL</h2>
+    <p class="lead" style="margin:2px 0 0">B747-8F 燃料計算 — Divert / タンク配分 / Holding / 追加燃料</p>
+  </div>
+</div>
+
+<!-- 1. Divert 決心燃料 -->
+<div class="card" style="margin-top:10px">
+  <div class="card-title">① Divert 決心燃料 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">RSV・ALTN から Commit / Minimum / Mayday</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>RSV — Final Reserve (LB)</label>
+      <input type="number" id="fu-dv-rsv" step="100" min="0" inputmode="numeric" placeholder="e.g. 9600" oninput="fuDivert()">
+    </div>
+    <div class="fg">
+      <label>ALTN — Fuel to Alternate (LB)</label>
+      <input type="number" id="fu-dv-altn" step="100" min="0" inputmode="numeric" placeholder="e.g. 12000" oninput="fuDivert()">
+    </div>
+  </div>
+  <div id="fu-dv-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN を入力してください</p>
+  </div>
+</div>
+
+<!-- 2. Fuel Loading Distribution -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">② 燃料タンク配分 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">FOB → 各タンク量〔WB Sec.8〕</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>FOB — Total Fuel (LB)</label>
+      <input type="number" id="fu-ld-fob" step="1000" min="53600" max="399080" inputmode="numeric" placeholder="e.g. 250000" oninput="fuLoad()">
+    </div>
+    <div class="fg">
+      <label>Density (lb/USG) — 体積換算用</label>
+      <input type="number" id="fu-ld-dens" step="0.01" min="6.0" max="7.2" value="6.7" inputmode="decimal" placeholder="6.7" oninput="fuLoad()">
+    </div>
+  </div>
+  <div id="fu-ld-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">FOB を入力してください（53,600〜399,080 LB）</p>
+  </div>
+</div>
+
+<!-- 3. Holding Fuel -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">③ Holding Fuel &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Flaps Up · racetrack +5%込</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>Weight (×1000 LB)</label>
+      <input type="number" id="fu-hd-wt" step="10" min="450" max="1000" inputmode="numeric" placeholder="e.g. 650" oninput="fuHold()">
+    </div>
+    <div class="fg">
+      <label>Pressure Altitude (ft)</label>
+      <input type="number" id="fu-hd-alt" step="500" min="1500" max="43000" inputmode="numeric" placeholder="e.g. 15000" oninput="fuHold()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Holding Time (min)</label>
+      <input type="number" id="fu-hd-min" step="5" min="1" max="240" value="30" inputmode="numeric" placeholder="30" oninput="fuHold()">
+    </div>
+    <div class="fg" style="display:flex;align-items:flex-end">
+      <div style="font-size:0.68em;color:var(--muted);line-height:1.5">FF/ENG × 4発 × 時間で算出。<br>表は5,000ft刻みで補間します。</div>
+    </div>
+  </div>
+  <div id="fu-hd-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">Weight・高度・時間を入力してください</p>
+  </div>
+</div>
+
+<!-- 4. 追加燃料 Reference -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">④ 追加燃料 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">レート × 時間</span></div>
+  <div class="row2">
+    <div class="fg">
+      <label>Taxi (6,000 LB/HR) — 時間 (min)</label>
+      <input type="number" id="fu-rf-taxi" step="1" min="0" value="20" inputmode="numeric" placeholder="20" oninput="fuRef()">
+    </div>
+    <div class="fg">
+      <label>APU (720 LB/HR) — 時間 (min)</label>
+      <input type="number" id="fu-rf-apu" step="1" min="0" value="0" inputmode="numeric" placeholder="0" oninput="fuRef()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Engine A/I (570 LB/HR) — 時間 (min)</label>
+      <input type="number" id="fu-rf-eai" step="1" min="0" value="0" inputmode="numeric" placeholder="0" oninput="fuRef()">
+    </div>
+    <div class="fg">
+      <label>Eng+Wing A/I (1,120 LB/HR) — 時間 (min)</label>
+      <input type="number" id="fu-rf-ewai" step="1" min="0" value="0" inputmode="numeric" placeholder="0" oninput="fuRef()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Gear Down 増分 (LB/HR) — 時間 (min)</label>
+      <div class="row2" style="gap:6px">
+        <input type="number" id="fu-rf-gearff" step="100" min="0" inputmode="numeric" placeholder="増分 LB/HR" oninput="fuRef()">
+        <input type="number" id="fu-rf-gearmin" step="1" min="0" value="0" inputmode="numeric" placeholder="min" oninput="fuRef()">
+      </div>
+    </div>
+    <div class="fg" style="display:flex;align-items:flex-end">
+      <div style="font-size:0.66em;color:var(--muted);line-height:1.5">Gear Down 増分は AOM 性能値を入力。<br>Go Around = <b style="color:var(--fg)">8,500 LB</b> 固定/回。</div>
+    </div>
+  </div>
+  <div id="fu-rf-result" style="margin-top:8px"></div>
+</div>
+
+<div style="font-size:0.62em;color:var(--warn);margin:10px 2px 0;line-height:1.6">
+  ⚠ この計算は参考です。運航では必ず AOM／FLT PLAN／Dispatch 及び当該 ATC の指示を優先してください。
+</div>
+
+</div>
+</div>
+
+<script>
+// ── FUEL TAB ─────────────────────────────────────────────
+const _fuNum = (id)=>{ const v=parseFloat(document.getElementById(id).value); return isFinite(v)?v:NaN; };
+const _fuFmt = (n)=> Math.round(n).toLocaleString('en-US');
+
+// ① Divert 決心燃料
+function fuDivert(){
+  const rsv=_fuNum('fu-dv-rsv'), altn=_fuNum('fu-dv-altn');
+  const el=document.getElementById('fu-dv-result');
+  if(!isFinite(rsv)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>'; return; }
+  const a=isFinite(altn)?altn:0;
+  const commit=1.5*rsv+a, minimum=1.5*rsv, mayday=rsv;
+  const row=(lbl,val,note,col)=>`<tr style="border-top:1px solid #12283c">`
+    +`<td style="padding:6px 6px;font-weight:700;color:${col}">${lbl}</td>`
+    +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:1.05em">${_fuFmt(val)} <span style="font-size:0.7em;color:var(--muted)">LB</span></td>`
+    +`<td style="padding:6px 6px;font-size:0.72em;color:var(--muted)">${note}</td></tr>`;
+  el.innerHTML='<table style="width:100%;border-collapse:collapse">'
+    +row('Commit Fuel',commit,'RSV×0.5 + RSV + ALTN','#4f8fd8')
+    +row('Minimum Fuel',minimum,'RSV×0.5 + RSV','#e0a020')
+    +row('Mayday Fuel',mayday,'= RSV','#e05555')
+    +'</table>'
+    +(isFinite(altn)?'':'<div style="font-size:0.68em;color:var(--warn);margin-top:4px">※ ALTN 未入力（0扱い）— Commit は 1.5×RSV のみ</div>');
+}
+
+// ② Fuel Loading Distribution 〔WB Sec.8 · density 6.7 lb/USG〕
+// [total, No.1/4 Main(each), No.2/3 Main(each), Center, No.1/4 Reserve(each)]
+const FUEL_DIST=[
+  [53600,13400,13400,0,0],[60000,13400,15000,0,1600],[80000,13400,20000,0,6600],
+  [94680,13400,23670,0,10270],[100000,14730,24990,0,10270],[120000,19730,29990,0,10270],
+  [140000,24730,34990,0,10270],[160000,29730,39990,0,10270],[180000,34730,44990,0,10270],
+  [183660,35640,45920,0,10270],[200000,35640,54090,0,10270],[220000,35640,64090,0,10270],
+  [240000,35640,74090,0,10270],[260000,35640,84090,0,10270],[280000,35640,94090,0,10270],
+  [285180,35640,96680,0,10270],[300000,35640,96680,14820,10270],[320000,35640,96680,34820,10270],
+  [340000,35640,96680,54820,10270],[360000,35640,96680,74820,10270],[380000,35640,96680,94820,10270],
+  [399080,35640,96680,113900,10270],
+];
+function _fuInterpDist(fob){
+  const T=FUEL_DIST, lo=T[0][0], hi=T[T.length-1][0];
+  const f=Math.max(lo,Math.min(hi,fob));
+  for(let i=0;i<T.length-1;i++){
+    if(f>=T[i][0] && f<=T[i+1][0]){
+      const t=(f-T[i][0])/(T[i+1][0]-T[i][0]);
+      const lerp=(a,b)=>a+(b-a)*t;
+      return { m14:lerp(T[i][1],T[i+1][1]), m23:lerp(T[i][2],T[i+1][2]),
+               ctr:lerp(T[i][3],T[i+1][3]), r14:lerp(T[i][4],T[i+1][4]),
+               clamped:(fob<lo||fob>hi) };
+    }
+  }
+  return null;
+}
+function fuLoad(){
+  const fob=_fuNum('fu-ld-fob'), dens=_fuNum('fu-ld-dens')||6.7;
+  const el=document.getElementById('fu-ld-result');
+  if(!isFinite(fob)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">FOB を入力してください</p>'; return; }
+  const d=_fuInterpDist(fob); if(!d){ el.innerHTML=''; return; }
+  const total=2*d.m14+2*d.m23+d.ctr+2*d.r14;
+  const usg=(lb)=> dens>0 ? _fuFmt(lb/dens) : '—';
+  const trow=(lbl,each,cnt)=>{
+    const tot=each*cnt;
+    return `<tr style="border-top:1px solid #12283c">`
+      +`<td style="padding:5px 6px;font-weight:600">${lbl}</td>`
+      +`<td style="padding:5px 6px;text-align:right;font-variant-numeric:tabular-nums">${_fuFmt(each)}</td>`
+      +`<td style="padding:5px 6px;text-align:center;color:var(--muted)">×${cnt}</td>`
+      +`<td style="padding:5px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${_fuFmt(tot)}</td>`
+      +`<td style="padding:5px 6px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">${usg(tot)}</td></tr>`;
+  };
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:0.85em">'
+    +'<tr style="font-size:0.72em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
+    +'<td style="padding:2px 6px">Tank</td><td style="padding:2px 6px;text-align:right">Each (LB)</td>'
+    +'<td style="padding:2px 6px;text-align:center">#</td><td style="padding:2px 6px;text-align:right">Total (LB)</td>'
+    +'<td style="padding:2px 6px;text-align:right">USG</td></tr>'
+    +trow('No.1 / 4 Main',d.m14,2)
+    +trow('No.2 / 3 Main',d.m23,2)
+    +trow('Center',d.ctr,1)
+    +trow('No.1 / 4 Reserve',d.r14,2)
+    +`<tr style="border-top:2px solid #1a4a7a"><td style="padding:6px 6px;font-weight:700">合計</td>`
+    +`<td></td><td></td><td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${_fuFmt(total)}</td>`
+    +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${usg(total)}</td></tr>`
+    +'</table>'
+    +`<div style="font-size:0.66em;color:var(--muted);margin-top:5px">Center は 285,180 LB 超で搭載開始。USG = LB ÷ Density(${dens.toFixed(2)})。表の基準密度は 6.7 lb/USG。`
+    +(d.clamped?'<br><span style="color:var(--warn)">⚠ 表範囲(53,600〜399,080 LB)外のため端値でクランプ。</span>':'')+'</div>';
+}
+
+// ③ Holding Fuel 〔Flaps Up · racetrack +5%込〕FF/ENG (LB/HR)
+const HOLD_WT=[450,500,550,600,650,700,750,800,850,900,950,1000];
+const HOLD_ALT=[1500,5000,10000,15000,20000,25000,30000,35000,40000,43000];
+const HOLD_FF=[
+  [3590,3530,3420,3300,3240,3190,3070,3090,3190,3310],
+  [3850,3800,3700,3580,3540,3540,3300,3380,3530,3660],
+  [4120,4040,3980,3880,3860,3870,3660,3740,3920,4040],
+  [4380,4270,4220,4140,4200,4230,4020,4110,4350,null],
+  [4650,4520,4460,4360,4550,4610,4390,4510,null,null],
+  [4930,4820,4740,4670,4850,4920,4770,4910,null,null],
+  [5240,5140,5070,5010,5170,5230,5170,5350,null,null],
+  [5570,5470,5420,5370,5550,5660,5590,5720,null,null],
+  [5940,5820,5790,5740,5960,6090,6040,null,null,null],
+  [6300,6180,6160,6130,6390,6530,6500,null,null,null],
+  [6660,6550,6550,6520,6810,6980,7000,null,null,null],
+  [7040,6940,6960,6910,7240,7430,7410,null,null,null],
+];
+const HOLD_N1=[
+  [45.9,48.1,51.6,55.2,59.3,63.6,68.1,72.9,79.3,83.3],
+  [47.9,50.3,53.7,57.4,61.8,66.1,70.8,75.6,82.0,86.0],
+  [49.9,52.3,55.8,59.6,64.2,68.6,73.2,78.2,84.4,88.6],
+  [51.8,54.3,57.7,61.7,66.5,70.9,75.5,80.4,86.8,null],
+  [53.8,56.1,59.6,63.7,68.5,73.0,77.6,82.5,null,null],
+  [55.6,57.9,61.4,65.7,70.5,75.0,79.7,84.5,null,null],
+  [57.4,59.4,63.1,67.7,72.3,76.9,81.5,86.4,null,null],
+  [58.9,60.9,64.9,69.6,74.1,78.7,83.3,88.2,null,null],
+  [60.3,62.5,66.8,71.2,75.9,80.5,85.1,null,null,null],
+  [61.7,64.1,68.5,72.8,77.6,82.2,86.8,null,null,null],
+  [63.0,65.7,70.1,74.4,79.2,83.8,88.4,null,null,null],
+  [64.5,67.2,71.5,75.9,80.7,85.4,90.1,null,null,null],
+];
+const HOLD_KIAS=[
+  [206,208,207,205,209,211,212,214,217,219],
+  [211,213,213,211,220,223,224,226,230,232],
+  [217,219,220,218,231,235,235,238,242,235],
+  [224,226,226,224,242,246,247,250,252,null],
+  [230,232,232,230,252,256,257,261,null,null],
+  [235,238,238,236,262,266,268,272,null,null],
+  [241,243,244,242,272,276,278,283,null,null],
+  [245,247,248,247,281,286,288,283,null,null],
+  [250,253,254,252,290,295,298,null,null,null],
+  [255,258,259,258,299,305,307,null,null,null],
+  [261,264,266,265,308,314,316,null,null,null],
+  [266,269,272,274,316,322,316,null,null,null],
+];
+function _fuBracket(arr,v){
+  if(v<=arr[0]) return [0,0,0];
+  if(v>=arr[arr.length-1]) return [arr.length-1,arr.length-1,0];
+  for(let i=0;i<arr.length-1;i++) if(v>=arr[i]&&v<=arr[i+1]) return [i,i+1,(v-arr[i])/(arr[i+1]-arr[i])];
+  return [0,0,0];
+}
+function _fuHoldLookup(tbl,wt,alt){
+  const [wi,wj,wt_t]=_fuBracket(HOLD_WT,wt);
+  const [ai,aj,al_t]=_fuBracket(HOLD_ALT,alt);
+  const c=[tbl[wi][ai],tbl[wi][aj],tbl[wj][ai],tbl[wj][aj]];
+  if(c.some(x=>x==null)) return null;
+  const top=c[0]+(c[1]-c[0])*al_t, bot=c[2]+(c[3]-c[2])*al_t;
+  return top+(bot-top)*wt_t;
+}
+function fuHold(){
+  const wt=_fuNum('fu-hd-wt'), alt=_fuNum('fu-hd-alt'), min=_fuNum('fu-hd-min');
+  const el=document.getElementById('fu-hd-result');
+  if(!isFinite(wt)||!isFinite(alt)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">Weight・高度を入力してください</p>'; return; }
+  const ff=_fuHoldLookup(HOLD_FF,wt,alt);
+  if(ff==null){ el.innerHTML='<div style="font-size:0.8em;color:var(--warn);padding:6px 0">⚠ この Weight × 高度では表に値がありません（保持不可域）。高度を下げるか重量を確認してください。</div>'; return; }
+  const n1=_fuHoldLookup(HOLD_N1,wt,alt), kias=_fuHoldLookup(HOLD_KIAS,wt,alt);
+  const totFF=ff*4;
+  const m=isFinite(min)?min:0;
+  const fuel=totFF*m/60;
+  el.innerHTML=
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:0.8em;margin-bottom:6px">`
+    +`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">FF/ENG <b style="font-variant-numeric:tabular-nums">${_fuFmt(ff)}</b> LB/HR</span>`
+    +`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">4発計 <b style="font-variant-numeric:tabular-nums">${_fuFmt(totFF)}</b> LB/HR</span>`
+    +(n1!=null?`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">N1 <b>${n1.toFixed(1)}</b>%</span>`:'')
+    +(kias!=null?`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">${Math.round(kias)} KIAS</span>`:'')
+    +`</div>`
+    +`<div style="font-size:1.15em;font-weight:700">Holding Fuel（${m} min）= <span style="color:var(--accent);font-variant-numeric:tabular-nums">${_fuFmt(fuel)} LB</span></div>`
+    +`<div style="font-size:0.66em;color:var(--muted);margin-top:4px">racetrack pattern +5% 込。高度・重量は表点間を線形補間。</div>`;
+}
+
+// ④ 追加燃料
+function fuRef(){
+  const rate=(min,perHr)=> (isFinite(min)?min:0)*perHr/60;
+  const taxi=rate(_fuNum('fu-rf-taxi'),6000);
+  const apu=rate(_fuNum('fu-rf-apu'),720);
+  const eai=rate(_fuNum('fu-rf-eai'),570);
+  const ewai=rate(_fuNum('fu-rf-ewai'),1120);
+  const gff=_fuNum('fu-rf-gearff'); const gear=rate(_fuNum('fu-rf-gearmin'), isFinite(gff)?gff:0);
+  const items=[
+    ['Taxi',taxi],['APU',apu],['Engine A/I',eai],['Eng+Wing A/I',ewai],['Gear Down 増分',gear],
+  ].filter(x=>x[1]>0);
+  const sum=items.reduce((s,x)=>s+x[1],0);
+  let html='<table style="width:100%;border-collapse:collapse;font-size:0.85em">';
+  items.forEach(([l,v])=>{ html+=`<tr style="border-top:1px solid #12283c"><td style="padding:4px 6px">${l}</td>`
+    +`<td style="padding:4px 6px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${_fuFmt(v)} LB</td></tr>`; });
+  html+=`<tr style="border-top:2px solid #1a4a7a"><td style="padding:5px 6px;font-weight:700">追加燃料 合計</td>`
+    +`<td style="padding:5px 6px;text-align:right;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums">${_fuFmt(sum)} LB</td></tr></table>`;
+  html+='<div style="font-size:0.7em;color:var(--muted);margin-top:5px">Go Around 1回あたり <b style="color:var(--fg)">8,500 LB</b>（必要回数分を別途加算）。</div>';
+  document.getElementById('fu-rf-result').innerHTML = items.length? html
+    : '<p style="font-size:0.78em;color:var(--muted)">各項目の時間を入力してください</p>'+'<div style="font-size:0.7em;color:var(--muted);margin-top:5px">Go Around 1回あたり <b style="color:var(--fg)">8,500 LB</b>。</div>';
+}
+
+let _fuInit=false;
+function fuelInit(){
+  if(_fuInit) return; _fuInit=true;
+  fuDivert(); fuLoad(); fuHold(); fuRef();
+}
+</script>
 
 <script>
 // ── ACC Sector Frequencies (FREQ tab) ─────────────────────
