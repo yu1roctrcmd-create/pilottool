@@ -9355,19 +9355,35 @@ restoreState();
       <input type="number" id="fu-rf-ewai" step="1" min="0" value="0" inputmode="numeric" placeholder="0" oninput="fuRef()">
     </div>
   </div>
-  <div class="row2" style="margin-top:8px">
+  <div style="font-size:0.66em;color:var(--muted);line-height:1.5;margin-top:8px">Go Around = <b style="color:var(--fg)">8,500 LB</b> 固定/回。Gear Down 巡航燃料は⑤で算出。</div>
+  <div id="fu-rf-result" style="margin-top:8px"></div>
+</div>
+
+<!-- 5. Gear Down Cruise (LRC) -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">⑤ Gear Down 巡航燃料 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Long Range Cruise〔PI-QRH.15.2〕</span></div>
+  <div class="row2">
     <div class="fg">
-      <label>Gear Down 増分 (LB/HR) — 時間 (min)</label>
-      <div class="row2" style="gap:6px">
-        <input type="number" id="fu-rf-gearff" step="100" min="0" inputmode="numeric" placeholder="増分 LB/HR" oninput="fuRef()">
-        <input type="number" id="fu-rf-gearmin" step="1" min="0" value="0" inputmode="numeric" placeholder="min" oninput="fuRef()">
-      </div>
+      <label>Weight (×1000 LB)</label>
+      <input type="number" id="fu-gd-wt" step="10" min="450" max="1000" inputmode="numeric" placeholder="e.g. 700" oninput="fuGear()">
     </div>
-    <div class="fg" style="display:flex;align-items:flex-end">
-      <div style="font-size:0.66em;color:var(--muted);line-height:1.5">Gear Down 増分は AOM 性能値を入力。<br>Go Around = <b style="color:var(--fg)">8,500 LB</b> 固定/回。</div>
+    <div class="fg">
+      <label>Pressure Altitude (ft)</label>
+      <input type="number" id="fu-gd-alt" step="1000" min="10000" max="33000" inputmode="numeric" placeholder="e.g. 20000" oninput="fuGear()">
     </div>
   </div>
-  <div id="fu-rf-result" style="margin-top:8px"></div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Cruise Time (min)</label>
+      <input type="number" id="fu-gd-min" step="5" min="1" max="600" value="60" inputmode="numeric" placeholder="60" oninput="fuGear()">
+    </div>
+    <div class="fg" style="display:flex;align-items:flex-end">
+      <div style="font-size:0.68em;color:var(--muted);line-height:1.5">FF/ENG × 4発 × 時間。<br>10,000〜33,000ft を線形補間。</div>
+    </div>
+  </div>
+  <div id="fu-gd-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">Weight・高度・時間を入力してください</p>
+  </div>
 </div>
 
 <div style="font-size:0.62em;color:var(--warn);margin:10px 2px 0;line-height:1.6">
@@ -9547,9 +9563,8 @@ function fuRef(){
   const apu=rate(_fuNum('fu-rf-apu'),720);
   const eai=rate(_fuNum('fu-rf-eai'),570);
   const ewai=rate(_fuNum('fu-rf-ewai'),1120);
-  const gff=_fuNum('fu-rf-gearff'); const gear=rate(_fuNum('fu-rf-gearmin'), isFinite(gff)?gff:0);
   const items=[
-    ['Taxi',taxi],['APU',apu],['Engine A/I',eai],['Eng+Wing A/I',ewai],['Gear Down 増分',gear],
+    ['Taxi',taxi],['APU',apu],['Engine A/I',eai],['Eng+Wing A/I',ewai],
   ].filter(x=>x[1]>0);
   const sum=items.reduce((s,x)=>s+x[1],0);
   let html='<table style="width:100%;border-collapse:collapse;font-size:0.85em">';
@@ -9562,10 +9577,84 @@ function fuRef(){
     : '<p style="font-size:0.78em;color:var(--muted)">各項目の時間を入力してください</p>'+'<div style="font-size:0.7em;color:var(--muted);margin-top:5px">Go Around 1回あたり <b style="color:var(--fg)">8,500 LB</b>。</div>';
 }
 
+// ⑤ Gear Down 巡航燃料 〔Long Range Cruise · PI-QRH.15.2〕FF/ENG (LB/HR)
+const GD_WT=[450,500,550,600,650,700,750,800,850,900,950,1000];
+const GD_ALT=[10000,14000,20000,21000,23000,25000,27000,29000,31000,33000];
+const GD_FF=[
+  [4892,4798,4779,4787,4851,4921,4860,4828,4805,4892],
+  [5375,5231,5206,5225,5282,5289,5335,5297,5289,5398],
+  [5858,5708,5662,5691,5729,5787,5839,5806,5822,6000],
+  [6342,6193,6142,6172,6211,6296,6353,6335,6395,null],
+  [6824,6686,6659,6670,6724,6832,6886,6903,null,null],
+  [7317,7200,7228,7258,7351,7457,7525,7568,null,null],
+  [7821,7731,7839,7886,7990,8095,8238,null,null,null],
+  [8350,8288,8485,8541,8646,8779,null,null,null,null],
+  [8906,8888,9162,9219,9345,null,null,null,null,null],
+  [9380,9449,9779,9857,null,null,null,null,null,null],
+  [9682,9770,10140,null,null,null,null,null,null,null],
+  [10019,10137,null,null,null,null,null,null,null,null],
+];
+const GD_N1=[
+  [63.8,67.0,72.4,73.3,75.3,77.4,79.5,81.7,84.0,86.2],
+  [66.2,69.3,74.6,75.6,77.7,79.9,82.0,84.2,86.5,89.0],
+  [68.6,71.7,76.9,78.0,80.2,82.3,84.5,86.6,89.2,92.0],
+  [70.8,73.8,79.2,80.3,82.5,84.7,86.8,89.1,92.0,null],
+  [72.8,75.9,81.5,82.5,84.7,86.9,89.1,91.6,null,null],
+  [74.7,78.0,83.9,84.9,87.1,89.3,91.7,94.5,null,null],
+  [76.6,80.1,86.1,87.2,89.4,91.6,94.5,null,null,null],
+  [78.4,82.1,88.3,89.4,91.6,94.1,null,null,null,null],
+  [80.3,84.1,90.4,91.5,93.9,null,null,null,null,null],
+  [81.8,85.9,92.3,93.5,null,null,null,null,null,null],
+  [82.8,86.9,93.5,null,null,null,null,null,null,null],
+  [83.8,88.1,null,null,null,null,null,null,null,null],
+];
+const GD_KIAS=[
+  [206,205,205,205,205,205,205,205,205,205],
+  [215,212,211,211,212,212,212,212,212,212],
+  [223,220,218,218,219,219,219,219,219,219],
+  [231,227,225,225,225,225,225,225,225,null],
+  [238,235,232,232,232,232,232,232,null,null],
+  [245,242,240,240,241,241,240,239,null,null],
+  [252,250,249,249,249,248,248,null,null,null],
+  [259,257,257,257,256,256,null,null,null,null],
+  [266,264,264,264,264,null,null,null,null,null],
+  [270,270,270,270,null,null,null,null,null,null],
+  [270,270,270,null,null,null,null,null,null,null],
+  [270,270,null,null,null,null,null,null,null,null],
+];
+function _fuGdLookup(tbl,wt,alt){
+  const [wi,wj,wt_t]=_fuBracket(GD_WT,wt);
+  const [ai,aj,al_t]=_fuBracket(GD_ALT,alt);
+  const c=[tbl[wi][ai],tbl[wi][aj],tbl[wj][ai],tbl[wj][aj]];
+  if(c.some(x=>x==null)) return null;
+  const top=c[0]+(c[1]-c[0])*al_t, bot=c[2]+(c[3]-c[2])*al_t;
+  return top+(bot-top)*wt_t;
+}
+function fuGear(){
+  const wt=_fuNum('fu-gd-wt'), alt=_fuNum('fu-gd-alt'), min=_fuNum('fu-gd-min');
+  const el=document.getElementById('fu-gd-result');
+  if(!isFinite(wt)||!isFinite(alt)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">Weight・高度を入力してください</p>'; return; }
+  const ff=_fuGdLookup(GD_FF,wt,alt);
+  if(ff==null){ el.innerHTML='<div style="font-size:0.8em;color:var(--warn);padding:6px 0">⚠ この Weight × 高度では表に値がありません（Gear Down 巡航不可域）。高度を下げるか重量を確認してください。</div>'; return; }
+  const n1=_fuGdLookup(GD_N1,wt,alt), kias=_fuGdLookup(GD_KIAS,wt,alt);
+  const totFF=ff*4;
+  const m=isFinite(min)?min:0;
+  const fuel=totFF*m/60;
+  el.innerHTML=
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:0.8em;margin-bottom:6px">`
+    +`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">FF/ENG <b style="font-variant-numeric:tabular-nums">${_fuFmt(ff)}</b> LB/HR</span>`
+    +`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">4発計 <b style="font-variant-numeric:tabular-nums">${_fuFmt(totFF)}</b> LB/HR</span>`
+    +(n1!=null?`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">N1 <b>${n1.toFixed(1)}</b>%</span>`:'')
+    +(kias!=null?`<span style="background:#0d1f2d;border-radius:5px;padding:3px 8px">${Math.round(kias)} KIAS</span>`:'')
+    +`</div>`
+    +`<div style="font-size:1.15em;font-weight:700">Gear Down Fuel（${m} min）= <span style="color:var(--accent);font-variant-numeric:tabular-nums">${_fuFmt(fuel)} LB</span></div>`
+    +`<div style="font-size:0.66em;color:var(--muted);margin-top:4px">Long Range Cruise。高度・重量は表点間を線形補間。</div>`;
+}
+
 let _fuInit=false;
 function fuelInit(){
   if(_fuInit) return; _fuInit=true;
-  fuDivert(); fuLoad(); fuHold(); fuRef();
+  fuDivert(); fuLoad(); fuHold(); fuRef(); fuGear();
 }
 </script>
 
