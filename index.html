@@ -1127,7 +1127,7 @@
   <div class="fg">
     <label>Takeoff Weight (× 1000 LB)</label>
     <input type="number" id="weight" value="800" step="1" inputmode="decimal"
-           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng();">
+           oninput="pitchCalc(); flapSpdCalc(); atbCalc(); cgCalc(); syncClbWeight(); syncCrzWeight(); syncDesWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel();">
     <span class="hint" id="weightHint">Valid range: 600 – 950 × 1000 LB</span>
   </div>
 </div>
@@ -2202,7 +2202,7 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); }
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
@@ -8126,7 +8126,7 @@ restoreState();
       <label>Weight (×1000 LB)</label>
       <input type="number" id="inop-weight" step="1" min="450" max="1050"
              inputmode="decimal"
-             oninput="_inopWtManual=true;$('inop-wt-sync-lbl').style.display='none';$('inop-wt-reset').style.display='inline-block';calcInop1Eng();calcInop2Eng();">
+             oninput="_inopWtManual=true;$('inop-wt-sync-lbl').style.display='none';$('inop-wt-reset').style.display='inline-block';calcInop1Eng();calcInop2Eng();calcInopFuel();">
     </div>
     <button id="inop-wt-reset" onclick="resetInopWeight()"
             style="display:none;padding:7px 14px;font-size:0.8em;border-radius:6px;border:1px solid var(--muted);background:transparent;color:var(--text);cursor:pointer;white-space:nowrap;margin-bottom:1px">
@@ -8152,6 +8152,28 @@ restoreState();
   </div>
   <div id="inop-2eng-result">
     <p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>
+  </div>
+</div>
+
+<!-- INOP Cruise Fuel -->
+<div class="card" style="margin-top:10px;border:1px solid rgba(122,160,255,0.35)">
+  <div class="card-title" style="color:#7aa0ff">INOP 巡航燃料 (Fuel)
+    <span style="float:right;font-size:0.75rem;font-weight:400;color:var(--muted)">LRC · MAX CONT</span>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Cruise Pressure Altitude (ft)</label>
+      <input type="number" id="inop-fuel-alt" step="1000" min="10000" max="37000"
+             inputmode="numeric" placeholder="e.g. 20000" oninput="calcInopFuel()">
+    </div>
+    <div class="fg">
+      <label>Cruise Time (min)</label>
+      <input type="number" id="inop-fuel-min" step="5" min="1" max="600" value="60"
+             inputmode="numeric" placeholder="60" oninput="calcInopFuel()">
+    </div>
+  </div>
+  <div id="inop-fuel-result" style="margin-top:8px">
+    <p style="font-size:0.78em;color:var(--muted)">Weight（上）・高度・時間を入力してください</p>
   </div>
 </div>
 
@@ -10743,6 +10765,113 @@ const _LRC1_KIAS = [
   [260,260,261,262,262,262,262,261,261,259],
   [248,247,248,249,249,249,249,249,248,248],
 ];
+
+/* 2 ENGINE INOP — LRC CRUISE CONTROL 〔MAX CONT THRUST〕 */
+const _LRC2_W = [950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450];
+const _LRC2_A = [10, 14, 17, 20, 23, 25, 27, 29, 31]; // x1000 ft = FL
+const _LRC2_MA = [
+  [.639,null,null,null,null,null,null,null,null],
+  [.623,null,null,null,null,null,null,null,null],
+  [.607,.653,null,null,null,null,null,null,null],
+  [.590,.635,.671,null,null,null,null,null,null],
+  [.572,.616,.652,null,null,null,null,null,null],
+  [.553,.596,.632,.668,null,null,null,null,null],
+  [.534,.576,.610,.646,.684,null,null,null,null],
+  [.513,.554,.587,.623,.660,.686,.712,null,null],
+  [.492,.531,.563,.598,.635,.660,.686,.713,null],
+  [.470,.507,.538,.571,.607,.632,.658,.684,.712],
+  [.448,.482,.511,.543,.577,.601,.627,.653,.680],
+];
+const _LRC2_FF = [
+  [14975,null,null,null,null,null,null,null,null],
+  [13984,null,null,null,null,null,null,null,null],
+  [13015,13233,null,null,null,null,null,null,null],
+  [12079,12268,12394,null,null,null,null,null,null],
+  [11209,11353,11501,null,null,null,null,null,null],
+  [10385,10482,10620,10788,null,null,null,null,null],
+  [9570,9638,9749,9910,10101,null,null,null,null],
+  [8777,8829,8904,9041,9194,9344,9503,null,null],
+  [8009,8034,8089,8196,8330,8442,8545,8653,null],
+  [7264,7254,7295,7373,7480,7586,7648,7668,7832],
+  [6526,6499,6512,6575,6653,6744,6801,6770,6820],
+];
+const _LRC2_KIAS = [
+  [356,null,null,null,null,null,null,null,null],
+  [347,null,null,null,null,null,null,null,null],
+  [337,338,null,null,null,null,null,null,null],
+  [328,328,328,null,null,null,null,null,null],
+  [317,318,318,null,null,null,null,null,null],
+  [307,308,308,308,null,null,null,null,null],
+  [296,297,297,298,297,null,null,null,null],
+  [284,285,286,286,286,286,286,null,null],
+  [272,273,274,274,275,275,274,274,null],
+  [260,260,261,261,262,262,262,262,262],
+  [248,247,248,248,249,249,249,249,249],
+];
+
+// 汎用 LRC ルックアップ（1/2発 INOP 共通）W 降順・A 昇順
+function _lrcBil(arr, wi, ai, wf, af) {
+  // 重み0の隅は評価しない（グリッド線上でも隣のnullで失敗しないように）
+  const corners = [[wi,ai,(1-wf)*(1-af)], [wi,ai+1,(1-wf)*af], [wi+1,ai,wf*(1-af)], [wi+1,ai+1,wf*af]];
+  let sum = 0;
+  for (const [r, c, wt] of corners) {
+    if (wt === 0) continue;
+    const v = (arr[r] && arr[r][c] != null) ? arr[r][c] : null;
+    if (v == null) return null;
+    sum += v * wt;
+  }
+  return sum;
+}
+function _lrcLook(w, fl, W, A, MA, FF, KIAS) {
+  const alt = fl / 10;
+  const wc = Math.max(W[W.length-1], Math.min(W[0], w));
+  let wi = 0; while (wi < W.length-2 && wc < W[wi+1]) wi++;
+  let wf = (W[wi] - wc) / (W[wi] - W[wi+1]);
+  if (alt < A[0] || alt > A[A.length-1]) return null;
+  let ai = 0; while (ai < A.length-2 && alt > A[ai+1]) ai++;
+  let af = (alt - A[ai]) / (A[ai+1] - A[ai]);
+  // グリッド線上に乗る場合は隣接null列/行を巻き込まないよう吸着
+  if (wf >= 0.9999 && wi+1 < W.length) { wi++; wf = 0; }
+  if (af >= 0.9999 && ai+1 < A.length) { ai++; af = 0; }
+  const ff = _lrcBil(FF, wi, ai, wf, af);
+  if (ff == null) return null;
+  const ma = _lrcBil(MA, wi, ai, wf, af), ks = _lrcBil(KIAS, wi, ai, wf, af);
+  return { ff: Math.round(ff),
+           mach: ma!=null ? Math.round(ma*1000)/1000 : null,
+           kias: ks!=null ? Math.round(ks) : null };
+}
+
+// INOP 巡航燃料（Drift Down — 1発/2発 INOP 共通）
+function calcInopFuel() {
+  const el = $('inop-fuel-result'); if (!el) return;
+  const w = parseFloat($('inop-weight') ? $('inop-weight').value : '');
+  const altFt = parseFloat($('inop-fuel-alt') ? $('inop-fuel-alt').value : '');
+  const min = parseFloat($('inop-fuel-min') ? $('inop-fuel-min').value : '');
+  if (isNaN(w) || w < 450) { el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Weight を入力してください</p>'; return; }
+  if (isNaN(altFt)) { el.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Cruise Altitude を入力してください</p>'; return; }
+  const fl = altFt / 100;
+  const m = isNaN(min) ? 0 : min;
+  const r1 = _lrcLook(w, fl, _LRC1_W, _LRC1_A, _LRC1_MA, _LRC1_FF, _LRC1_KIAS);
+  const r2 = _lrcLook(w, fl, _LRC2_W, _LRC2_A, _LRC2_MA, _LRC2_FF, _LRC2_KIAS);
+  const block = (title, col, r, neng) => {
+    if (!r) return `<div style="margin-bottom:8px"><div style="font-size:0.65em;color:${col};font-weight:700;letter-spacing:0.05em;margin-bottom:4px">▸ ${title}</div>`
+      + `<div style="font-size:0.78em;color:var(--warn)">この Weight × 高度は表範囲外（巡航不可 / データなし）</div></div>`;
+    const tot = r.ff * neng, fuel = tot * m / 60;
+    return `<div style="margin-bottom:10px">`
+      + `<div style="font-size:0.65em;color:${col};font-weight:700;letter-spacing:0.05em;margin-bottom:5px">▸ ${title}</div>`
+      + `<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:0.75em;margin-bottom:5px">`
+      + `<span style="background:rgba(0,0,0,0.28);border-radius:5px;padding:3px 8px">FF/ENG <b style="font-variant-numeric:tabular-nums">${r.ff.toLocaleString()}</b></span>`
+      + `<span style="background:rgba(0,0,0,0.28);border-radius:5px;padding:3px 8px">×${neng}発 <b style="font-variant-numeric:tabular-nums">${tot.toLocaleString()}</b> lb/hr</span>`
+      + (r.mach!=null ? `<span style="background:rgba(0,0,0,0.28);border-radius:5px;padding:3px 8px">M${r.mach.toFixed(3)}</span>` : '')
+      + (r.kias!=null ? `<span style="background:rgba(0,0,0,0.28);border-radius:5px;padding:3px 8px">${r.kias} KIAS</span>` : '')
+      + `</div>`
+      + `<div style="font-size:1.02em;font-weight:700">Fuel（${m} min）= <span style="color:${col};font-variant-numeric:tabular-nums">${Math.round(fuel).toLocaleString()} LB</span></div>`
+      + `</div>`;
+  };
+  el.innerHTML = block('1 ENGINE INOP — 3発運転', '#ff8c42', r1, 3)
+    + block('2 ENGINE INOP — 2発運転', '#ff4560', r2, 2)
+    + `<div style="font-size:0.62em;color:var(--muted);margin-top:2px">LRC · MAX CONT THRUST。Weight × 高度を線形補間。運転発数で total FF を算出。</div>`;
+}
 
 function _lrc1Interp(arr2d, wi, ai, wFrac, aFrac) {
   // Bilinear interp at fractional indices wi+wFrac, ai+aFrac
