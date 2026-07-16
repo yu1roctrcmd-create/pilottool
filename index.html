@@ -9341,30 +9341,31 @@ restoreState();
     <b style="color:var(--fg)">2,000 LB 以下</b>になると表示（B747-8F システム）。低残燃料の注意喚起。
   </div>
 
-  <!-- PAN PAN 判断タイミング -->
+  <!-- 通報タイミング判断 -->
   <div style="margin-top:12px;border-top:1px solid #12283c;padding-top:10px">
-    <div style="font-size:0.75em;font-weight:700;color:#4f8fd8;letter-spacing:.04em;margin-bottom:5px">▸ PAN PAN 判断タイミング</div>
+    <div style="font-size:0.75em;font-weight:700;color:#4f8fd8;letter-spacing:.04em;margin-bottom:5px">▸ 通報タイミング判断（Minimum Fuel / PAN PAN / MAYDAY）</div>
     <div style="font-size:0.68em;color:var(--muted);margin-bottom:8px;line-height:1.6">
-      Final Reserve(RSV) を割らずに降りられる<b>最終点で先行発報</b>。着陸時予測燃料が RSV に触れる＝発報タイミング。RSV は上の①の値を使用。
+      目的地上空の予測残燃料から各トリガーを逆算。RSV は①の値を使用。<br>
+      基準：<b style="color:#ff7a8c">MAYDAY</b>=RSV ／ <b style="color:#7ab8ff">PAN PAN</b>=RSV＋Approach ／ <b style="color:#e0a020">Minimum</b>=PAN PAN＋10分(RSV/3)。
     </div>
     <div class="row2">
       <div class="fg">
-        <label>現在 FOB (LB)</label>
-        <input type="number" id="fu-pp-fob" step="1000" min="0" inputmode="numeric" placeholder="現在総燃料" oninput="pppCalc()">
+        <label>目的地上空 予測残燃料 (LB)</label>
+        <input type="number" id="fu-pp-fod" step="500" min="0" inputmode="numeric" placeholder="FMC PROG 目的地予測残" oninput="pppCalc()">
       </div>
       <div class="fg">
-        <label>着陸まで必要燃料 (LB)</label>
-        <input type="number" id="fu-pp-fland" step="500" min="0" inputmode="numeric" placeholder="残り行程＋進入〜接地" oninput="pppCalc()">
+        <label>Approach 燃料 (LB) — 進入〜接地</label>
+        <input type="number" id="fu-pp-fapp" step="500" min="0" value="5000" inputmode="numeric" placeholder="≈0.5×RSV" oninput="pppCalc()">
       </div>
     </div>
     <div class="row2" style="margin-top:8px">
       <div class="fg">
         <label>燃料流量 4発計 (LB/hr) — 任意</label>
-        <input type="number" id="fu-pp-ff" step="100" min="0" inputmode="numeric" placeholder="許容遅延の時間換算用" oninput="pppCalc()">
+        <input type="number" id="fu-pp-ff" step="100" min="0" inputmode="numeric" placeholder="次トリガーまでの時間換算用" oninput="pppCalc()">
       </div>
     </div>
     <div id="fu-pp-result" style="margin-top:8px">
-      <p style="font-size:0.75em;color:var(--muted)">RSV(①)・現在 FOB・着陸まで必要燃料を入力してください</p>
+      <p style="font-size:0.75em;color:var(--muted)">RSV(①)・目的地上空 予測残燃料を入力してください</p>
     </div>
   </div>
 </div>
@@ -9547,40 +9548,47 @@ function fuDivert(){
   pppCalc();
 }
 
-// ① PAN PAN 判断タイミング（RSV は fu-dv-rsv を使用）
+// ① 通報タイミング判断（Minimum Fuel / PAN PAN / MAYDAY）RSV は fu-dv-rsv を使用
 function pppCalc(){
   const el=document.getElementById('fu-pp-result'); if(!el) return;
-  const rsv=_fuNum('fu-dv-rsv'), fob=_fuNum('fu-pp-fob'), fland=_fuNum('fu-pp-fland'), ff=_fuNum('fu-pp-ff');
+  const rsv=_fuNum('fu-dv-rsv'), fod=_fuNum('fu-pp-fod'), ff=_fuNum('fu-pp-ff');
+  let fapp=_fuNum('fu-pp-fapp'); if(!isFinite(fapp)) fapp=0;
   if(!isFinite(rsv)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">① の RSV を入力してください</p>'; return; }
-  if(!isFinite(fob)||!isFinite(fland)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">現在 FOB・着陸まで必要燃料を入力してください</p>'; return; }
-  const landFuel = fob - fland;      // 着陸時予測燃料
-  const trigger  = rsv + fland;      // PAN PAN 目安燃料（現在FOBがこれ以下→着陸時Reserve割れ）
-  const margin   = landFuel - rsv;   // Final Reserve 上の余裕
-  const delayMin = (isFinite(ff)&&ff>0) ? margin/ff*60 : NaN;
-  let badge, detail;
-  if(fob <= rsv){
-    badge=`<span style="background:#4a1420;color:#ff7a8c;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🔴 MAYDAY 水準</span>`;
-    detail=`実燃料が Final Reserve 以下。最寄り空港でも Reserve を割ると判断なら <b style="color:#ff7a8c">「MAYDAY ×3 FUEL」</b>で緊急事態宣言。`;
-  } else if(margin <= 0){
-    badge=`<span style="background:#0f3350;color:#7ab8ff;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🔵 ▶ PAN PAN 発報</span>`;
-    detail=`着陸時予測が Final Reserve 以下。<b style="color:#7ab8ff">「PAN PAN ×3」</b>で優先権を要求し Reserve を防衛（まだ進入燃料は機内にある最終局面）。`;
-  } else {
-    badge=`<span style="background:#123321;color:#5fd08a;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🟢 正常</span>`;
-    detail=isFinite(delayMin)
-      ? `追加で受け入れ可能な遅延 <b style="color:var(--fg)">${Math.max(0,Math.round(delayMin))} 分</b>。これを超える遅延見込みなら PAN PAN を先行発報。`
-      : `Final Reserve 上の余裕 <b style="color:var(--fg)">${_fuFmt(margin)} LB</b>。FF を入力すると許容遅延（分）を表示。`;
+  if(!isFinite(fod)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">目的地上空 予測残燃料を入力してください</p>'; return; }
+  const MAY=rsv, PP=rsv+fapp, MIN=rsv+fapp+rsv/3;   // 各トリガー（目的地上空残で判定）
+  const land=fod-fapp;                              // 着陸時予測燃料
+  let badge,detail,nextLbl,nextLvl,col;
+  if(fod<=MAY){ col='#ff7a8c'; badge='🔴 MAYDAY 水準';
+    detail=`目的地上空残が Final Reserve 以下。着陸時は Reserve を割る → <b style="color:#ff7a8c">「MAYDAY ×3 FUEL」</b>で緊急事態宣言・着陸優先権要求。`; nextLbl=null; }
+  else if(fod<=PP){ col='#7ab8ff'; badge='🔵 ▶ PAN PAN 発報';
+    detail=`このまま進むと着陸時に Final Reserve 未満（進入燃料を確保できる最終局面）→ <b style="color:#7ab8ff">「PAN PAN ×3」</b>で優先権を要求。`; nextLbl='MAYDAY'; nextLvl=MAY; }
+  else if(fod<=MIN){ col='#e0a020'; badge='🟡 MINIMUM FUEL 通報';
+    detail=`予想外の遅延を受け入れられない水準 → <b style="color:#e0a020">「MINIMUM FUEL」</b>を通報（優先権なし）。以後の遅延で PAN PAN へ。`; nextLbl='PAN PAN'; nextLvl=PP; }
+  else { col='#5fd08a'; badge='🟢 正常';
+    detail=`各トリガーまで余裕あり。目的地上空残が下の各水準を切ると通報／発報。`; nextLbl='MINIMUM FUEL'; nextLvl=MIN; }
+  let nextTxt='';
+  if(nextLbl){
+    const dLB=fod-nextLvl;
+    const t=(isFinite(ff)&&ff>0)?` / 約 <b style="color:var(--fg)">${Math.max(0,Math.round(dLB/ff*60))} 分</b>`:'';
+    const nc=nextLbl==='MAYDAY'?'#ff7a8c':nextLbl==='PAN PAN'?'#7ab8ff':'#e0a020';
+    nextTxt=`<div style="font-size:0.72em;margin-top:2px">次のトリガー（<b style="color:${nc}">${nextLbl}</b>）まで <b style="color:var(--fg)">${_fuFmt(dLB)} LB</b>${t}</div>`;
   }
-  const r=(lbl,val,col,note)=>`<tr style="border-top:1px solid #12283c">`
-    +`<td style="padding:5px 6px;font-size:0.82em">${lbl}</td>`
-    +`<td style="padding:5px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:${col||'var(--fg)'}">${_fuFmt(val)} <span style="font-size:0.68em;color:var(--muted)">LB</span></td>`
-    +`<td style="padding:5px 6px;font-size:0.68em;color:var(--muted)">${note||''}</td></tr>`;
-  el.innerHTML=`<div style="margin-bottom:7px">${badge}</div>`
-    +`<div style="font-size:0.72em;line-height:1.6;margin-bottom:7px">${detail}</div>`
+  const lvlRow=(lbl,lvl,c)=>{
+    const hit=fod<=lvl;
+    return `<tr style="border-top:1px solid #12283c">`
+      +`<td style="padding:5px 6px;font-weight:700;color:${c};font-size:0.8em">${lbl}</td>`
+      +`<td style="padding:5px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${_fuFmt(lvl)} <span style="font-size:0.68em;color:var(--muted)">LB</span></td>`
+      +`<td style="padding:5px 6px;font-size:0.7em;color:${hit?c:'var(--muted)'}">${hit?'◀ 到達':''}</td></tr>`;
+  };
+  el.innerHTML=`<div style="margin-bottom:6px"><span style="background:rgba(0,0,0,0.3);color:${col};font-weight:700;font-size:0.85em;padding:3px 10px;border-radius:6px">${badge}</span></div>`
+    +`<div style="font-size:0.72em;line-height:1.6;margin-bottom:6px">${detail}</div>`
+    +nextTxt
+    +`<div style="font-size:0.66em;color:var(--muted);margin:8px 0 3px">目的地上空 <b style="color:var(--fg)">${_fuFmt(fod)}</b> → 着陸時予測 <b style="color:${land>rsv?'#5fd08a':'#ff7a8c'}">${_fuFmt(land)} LB</b>（−Approach ${_fuFmt(fapp)}）</div>`
     +'<table style="width:100%;border-collapse:collapse">'
-    +r('着陸時予測燃料', landFuel, landFuel>rsv?'#5fd08a':'#ff7a8c', 'FOB − 着陸まで必要')
-    +r('Final Reserve (RSV)', rsv, '#e0a020', '30分 Holding · 死守')
-    +r('Reserve 上の余裕', margin, margin>0?'var(--fg)':'#ff7a8c', '着陸時予測 − RSV')
-    +r('PAN PAN 目安 FOB', trigger, '#7ab8ff', 'これ以下で発報（RSV＋着陸必要）')
+    +'<tr style="font-size:0.64em;color:var(--muted)"><td style="padding:2px 6px">トリガー</td><td style="padding:2px 6px;text-align:right">上空残 目安</td><td></td></tr>'
+    +lvlRow('MINIMUM FUEL 通報',MIN,'#e0a020')
+    +lvlRow('PAN PAN 発報',PP,'#7ab8ff')
+    +lvlRow('MAYDAY 水準',MAY,'#ff7a8c')
     +'</table>';
 }
 
