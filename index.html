@@ -7376,8 +7376,10 @@ function crzCalc() {
     sp = _casToSpeeds(iasRaw, h_ft, dISA);
   } else {
     elRes.innerHTML = '<p style="font-size:0.78em;color:var(--muted)">Mach または IAS を入力してください</p>';
-    elDelta.innerHTML = ''; _crzRenderTable(h_ft, dISA, null, null); return;
+    elDelta.innerHTML = ''; _crzRenderTable(h_ft, dISA, null, null);
+    window._crzCur = null; return;
   }
+  window._crzCur = { mach: sp.M, cas: sp.CAS, tas: sp.TAS, fl: flRaw };
   elRes.innerHTML = `
     <div class="result-card" style="margin-bottom:0;padding:14px 16px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;margin-bottom:12px">
@@ -8004,26 +8006,26 @@ restoreState();
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
       <input type="number" id="crz-disa" value="0" step="1"
-             inputmode="numeric" placeholder="0" oninput="crzDisaChanged()">
+             inputmode="numeric" placeholder="0" oninput="crzDisaChanged(); econCruiseCalc();">
     </div>
   </div>
   <div class="row2" style="margin-top:8px">
     <div class="fg">
       <label>SAT (°C) <span style="font-size:0.75em;font-weight:400;color:var(--muted)">Static Air Temp</span></label>
       <input type="number" id="crz-sat" step="1"
-             inputmode="decimal" placeholder="自動計算" oninput="crzSatChanged()">
+             inputmode="decimal" placeholder="自動計算" oninput="crzSatChanged(); econCruiseCalc();">
     </div>
   </div>
   <div class="row2" style="margin-top:8px">
     <div class="fg">
       <label>Mach</label>
       <input type="number" id="crz-mach" value="0.84" step="0.01" min="0.5" max="1.0"
-             inputmode="decimal" oninput="crzCalcFrom('mach'); buffetCalc();">
+             inputmode="decimal" oninput="crzCalcFrom('mach'); buffetCalc(); econCruiseCalc();">
     </div>
     <div class="fg">
       <label>IAS / CAS (KT)</label>
       <input type="number" id="crz-ias" step="1" min="150" max="400"
-             inputmode="numeric" placeholder="e.g. 280" oninput="crzCalcFrom('ias'); buffetCalc();">
+             inputmode="numeric" placeholder="e.g. 280" oninput="crzCalcFrom('ias'); buffetCalc(); econCruiseCalc();">
     </div>
   </div>
   <div id="crz-result" style="margin-top:10px">
@@ -11448,6 +11450,24 @@ function econCruiseCalc(){
     +`<div style="font-size:0.56em;color:var(--muted);margin-bottom:2px">${t}</div>`
     +`<div style="font-size:1.15em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}</div>`
     +(sub?`<div style="font-size:0.55em;color:var(--muted)">${sub}</div>`:'')+`</div>`;
+  // 現在の速度（上の変換器）と ECON の比較 — CRZ ALT 変更後の照合用
+  let cmp='';
+  const cur=window._crzCur;
+  if(cur && isFinite(cur.mach) && isFinite(cur.cas)){
+    const dM=cur.mach - r.mach;      // + = 現在の方が速い
+    const dI=cur.cas  - r.kias;
+    const near=Math.abs(dM)<0.003 && Math.abs(dI)<3;
+    const col=near?'var(--green)':(dM>0?'#e0a020':'#7ab8ff');
+    const word=near?'ECON とほぼ一致 ✓':(dM>0?'ECON より速い → 減速で ECON へ':'ECON より遅い → 増速で ECON へ');
+    const sgn=(x,dp)=>(x>=0?'+':'')+(dp?x.toFixed(dp):Math.round(x));
+    cmp=`<div style="margin-top:9px;border-top:1px solid #12283c;padding-top:8px">`
+      +`<div style="font-size:0.64em;color:var(--muted);margin-bottom:5px">現在（変換器 FL${Math.round(cur.fl)}）: <b style="color:var(--fg)">M${cur.mach.toFixed(3)}</b> / <b style="color:var(--fg)">${Math.round(cur.cas)}</b> kt　<span style="color:var(--muted)">vs ECON</span></div>`
+      +`<div style="display:flex;gap:6px">`
+      +box('Δ MACH（現在−ECON）',sgn(dM,3),col)
+      +box('Δ IAS（現在−ECON）',sgn(dI)+'<span style="font-size:0.6em"> kt</span>',col)
+      +`</div>`
+      +`<div style="font-size:0.68em;font-weight:700;color:${col};margin-top:5px">${word}</div></div>`;
+  }
   el.innerHTML=
     `<div style="font-size:0.66em;color:var(--muted);margin-bottom:6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:var(--fg)">FL${Math.round(fl)}</b></div>`
     +`<div style="display:flex;gap:6px">`
@@ -11455,8 +11475,9 @@ function econCruiseCalc(){
     +box('IAS',r.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
     +box('FF/ENG',r.ff.toLocaleString(),'var(--text)','× 4 = '+(r.ff*4).toLocaleString())
     +`</div>`
+    +cmp
     +(clamped?`<div style="color:var(--warn);font-size:0.64em;margin-top:5px">⚠ 表範囲外（Weight 450–1000k / FL110–430）のため端値でクランプ。</div>`:'')
-    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。高度変更時の目安速度。</div>`;
+    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=現在（変換器）との差。</div>`;
 }
 
 /* ─────────────────────────────────────────────
