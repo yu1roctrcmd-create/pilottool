@@ -9338,6 +9338,33 @@ restoreState();
     <b style="color:#e0a020">EICAS「FUEL QTY LOW」</b> — いずれかの <b>Main Tank</b> が
     <b style="color:var(--fg)">2,000 LB 以下</b>になると表示（B747-8F システム）。低残燃料の注意喚起。
   </div>
+
+  <!-- PAN PAN 判断タイミング -->
+  <div style="margin-top:12px;border-top:1px solid #12283c;padding-top:10px">
+    <div style="font-size:0.75em;font-weight:700;color:#4f8fd8;letter-spacing:.04em;margin-bottom:5px">▸ PAN PAN 判断タイミング</div>
+    <div style="font-size:0.68em;color:var(--muted);margin-bottom:8px;line-height:1.6">
+      Final Reserve(RSV) を割らずに降りられる<b>最終点で先行発報</b>。着陸時予測燃料が RSV に触れる＝発報タイミング。RSV は上の①の値を使用。
+    </div>
+    <div class="row2">
+      <div class="fg">
+        <label>現在 FOB (LB)</label>
+        <input type="number" id="fu-pp-fob" step="1000" min="0" inputmode="numeric" placeholder="現在総燃料" oninput="pppCalc()">
+      </div>
+      <div class="fg">
+        <label>着陸まで必要燃料 (LB)</label>
+        <input type="number" id="fu-pp-fland" step="500" min="0" inputmode="numeric" placeholder="残り行程＋進入〜接地" oninput="pppCalc()">
+      </div>
+    </div>
+    <div class="row2" style="margin-top:8px">
+      <div class="fg">
+        <label>燃料流量 4発計 (LB/hr) — 任意</label>
+        <input type="number" id="fu-pp-ff" step="100" min="0" inputmode="numeric" placeholder="許容遅延の時間換算用" oninput="pppCalc()">
+      </div>
+    </div>
+    <div id="fu-pp-result" style="margin-top:8px">
+      <p style="font-size:0.75em;color:var(--muted)">RSV(①)・現在 FOB・着陸まで必要燃料を入力してください</p>
+    </div>
+  </div>
 </div>
 
 <!-- 通報基準・用語 -->
@@ -9515,6 +9542,44 @@ function fuDivert(){
     +row('Mayday Fuel',mayday,'= RSV','#e05555')
     +'</table>'
     +(isFinite(altn)?'':'<div style="font-size:0.68em;color:var(--warn);margin-top:4px">※ ALTN 未入力（0扱い）— Commit は 1.5×RSV のみ</div>');
+  pppCalc();
+}
+
+// ① PAN PAN 判断タイミング（RSV は fu-dv-rsv を使用）
+function pppCalc(){
+  const el=document.getElementById('fu-pp-result'); if(!el) return;
+  const rsv=_fuNum('fu-dv-rsv'), fob=_fuNum('fu-pp-fob'), fland=_fuNum('fu-pp-fland'), ff=_fuNum('fu-pp-ff');
+  if(!isFinite(rsv)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">① の RSV を入力してください</p>'; return; }
+  if(!isFinite(fob)||!isFinite(fland)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">現在 FOB・着陸まで必要燃料を入力してください</p>'; return; }
+  const landFuel = fob - fland;      // 着陸時予測燃料
+  const trigger  = rsv + fland;      // PAN PAN 目安燃料（現在FOBがこれ以下→着陸時Reserve割れ）
+  const margin   = landFuel - rsv;   // Final Reserve 上の余裕
+  const delayMin = (isFinite(ff)&&ff>0) ? margin/ff*60 : NaN;
+  let badge, detail;
+  if(fob <= rsv){
+    badge=`<span style="background:#4a1420;color:#ff7a8c;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🔴 MAYDAY 水準</span>`;
+    detail=`実燃料が Final Reserve 以下。最寄り空港でも Reserve を割ると判断なら <b style="color:#ff7a8c">「MAYDAY ×3 FUEL」</b>で緊急事態宣言。`;
+  } else if(margin <= 0){
+    badge=`<span style="background:#0f3350;color:#7ab8ff;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🔵 ▶ PAN PAN 発報</span>`;
+    detail=`着陸時予測が Final Reserve 以下。<b style="color:#7ab8ff">「PAN PAN ×3」</b>で優先権を要求し Reserve を防衛（まだ進入燃料は機内にある最終局面）。`;
+  } else {
+    badge=`<span style="background:#123321;color:#5fd08a;font-weight:700;font-size:0.82em;padding:3px 10px;border-radius:6px">🟢 正常</span>`;
+    detail=isFinite(delayMin)
+      ? `追加で受け入れ可能な遅延 <b style="color:var(--fg)">${Math.max(0,Math.round(delayMin))} 分</b>。これを超える遅延見込みなら PAN PAN を先行発報。`
+      : `Final Reserve 上の余裕 <b style="color:var(--fg)">${_fuFmt(margin)} LB</b>。FF を入力すると許容遅延（分）を表示。`;
+  }
+  const r=(lbl,val,col,note)=>`<tr style="border-top:1px solid #12283c">`
+    +`<td style="padding:5px 6px;font-size:0.82em">${lbl}</td>`
+    +`<td style="padding:5px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:${col||'var(--fg)'}">${_fuFmt(val)} <span style="font-size:0.68em;color:var(--muted)">LB</span></td>`
+    +`<td style="padding:5px 6px;font-size:0.68em;color:var(--muted)">${note||''}</td></tr>`;
+  el.innerHTML=`<div style="margin-bottom:7px">${badge}</div>`
+    +`<div style="font-size:0.72em;line-height:1.6;margin-bottom:7px">${detail}</div>`
+    +'<table style="width:100%;border-collapse:collapse">'
+    +r('着陸時予測燃料', landFuel, landFuel>rsv?'#5fd08a':'#ff7a8c', 'FOB − 着陸まで必要')
+    +r('Final Reserve (RSV)', rsv, '#e0a020', '30分 Holding · 死守')
+    +r('Reserve 上の余裕', margin, margin>0?'var(--fg)':'#ff7a8c', '着陸時予測 − RSV')
+    +r('PAN PAN 目安 FOB', trigger, '#7ab8ff', 'これ以下で発報（RSV＋着陸必要）')
+    +'</table>';
 }
 
 // ② Fuel Loading Distribution 〔WB Sec.8 · density 6.7 lb/USG〕
