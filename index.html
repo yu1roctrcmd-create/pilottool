@@ -2202,7 +2202,7 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel(); }
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel(); buffetCalc(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
@@ -7999,7 +7999,7 @@ restoreState();
     <div class="fg">
       <label>Flight Level (FL)</label>
       <input type="number" id="crz-fl" value="350" step="10" min="100" max="450"
-             inputmode="numeric" oninput="crzFlChanged()">
+             inputmode="numeric" oninput="crzFlChanged(); buffetCalc();">
     </div>
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
@@ -8018,12 +8018,12 @@ restoreState();
     <div class="fg">
       <label>Mach</label>
       <input type="number" id="crz-mach" value="0.84" step="0.01" min="0.5" max="1.0"
-             inputmode="decimal" oninput="crzCalcFrom('mach')">
+             inputmode="decimal" oninput="crzCalcFrom('mach'); buffetCalc();">
     </div>
     <div class="fg">
       <label>IAS / CAS (KT)</label>
       <input type="number" id="crz-ias" step="1" min="150" max="400"
-             inputmode="numeric" placeholder="e.g. 280" oninput="crzCalcFrom('ias')">
+             inputmode="numeric" placeholder="e.g. 280" oninput="crzCalcFrom('ias'); buffetCalc();">
     </div>
   </div>
   <div id="crz-result" style="margin-top:10px">
@@ -8105,7 +8105,7 @@ restoreState();
       </label>
       <input type="number" id="crz-weight" step="1" min="400" max="1050"
              inputmode="numeric" placeholder="e.g. 750"
-             oninput="_crzWtManual=true;$('crz-wt-sync-lbl').style.display='none';$('crz-wt-reset').style.display='';buildDevFuelTable();">
+             oninput="_crzWtManual=true;$('crz-wt-sync-lbl').style.display='none';$('crz-wt-reset').style.display='';buildDevFuelTable();buffetCalc();">
     </div>
     <div class="fg">
       <label>Cruise Mach <span style="font-size:0.75em;font-weight:400;opacity:0.6">重量未入力時</span></label>
@@ -8114,6 +8114,20 @@ restoreState();
     </div>
   </div>
   <div id="crz-dev-fuel-table"></div>
+</div>
+
+<!-- Buffet Speed Margin -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">Buffet Margin — Speed Envelope
+    <span style="float:right;font-size:0.72rem;font-weight:400;color:var(--muted)">CRZ Weight × FL 連動 · CG 22%MAC</span>
+  </div>
+  <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px;line-height:1.6">
+    低速／高速バフェット境界（KIAS）。<b>上段 1.3G</b>（推奨マージン）／<b>下段 1.5G</b>。
+    <b style="color:var(--warn)">*</b> = MMO(M.90) 制限。上の Flight Level・CRZ Weight に連動。
+  </div>
+  <div id="crz-buffet-result">
+    <p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>
+  </div>
 </div>
 
 <!-- INOP Weight Input -->
@@ -9306,6 +9320,10 @@ restoreState();
   </div>
   <div id="fu-dv-result" style="margin-top:8px">
     <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN を入力してください</p>
+  </div>
+  <div style="font-size:0.7em;color:var(--muted);margin-top:10px;border-top:1px solid #12283c;padding-top:7px;line-height:1.6">
+    <b style="color:#e0a020">EICAS「FUEL QTY LOW」</b> — いずれかの <b>Main Tank</b> が
+    <b style="color:var(--fg)">2,000 LB 以下</b>になると表示（B747-8F システム）。低残燃料の注意喚起。
   </div>
 </div>
 
@@ -11187,6 +11205,108 @@ function calcInop1Eng() {
       <li>Engine anti-ice ON: LRC capability −400 ft</li>
       <li>Engine &amp; wing anti-ice ON: LRC capability −1,100 ft</li>
     </ul>`;
+}
+
+/* ═══════════════════════════════════════════════
+   BUFFET SPEED MARGIN 〔CG 22%MAC〕
+   セル = null（範囲外） or [LOW, HIGH, mmoFlag]（KIAS）
+═══════════════════════════════════════════════ */
+const BUF_FL = [430,420,410,400,390,380,370,360,350,340,330,320,310,300,290];
+const BUF_WT = [950,900,850,800,750,700,650,600,550]; // ×1000 LB
+// 1.3G マージン
+const BUF13 = [
+/*430*/ [null,null,null,null,null,null,null,null,[226,240,0]],
+/*420*/ [null,null,null,null,null,null,null,null,[223,252,0]],
+/*410*/ [null,null,null,null,null,null,null,[235,253,0],[222,263,0]],
+/*400*/ [null,null,null,null,null,null,null,[233,265,0],[221,272,0]],
+/*390*/ [null,null,null,null,null,null,[243,268,0],[232,276,0],[220,281,0]],
+/*380*/ [null,null,null,null,null,[254,269,0],[241,280,0],[231,285,0],[219,288,1]],
+/*370*/ [null,null,null,null,null,[251,283,0],[240,290,0],[229,295,0],[217,296,1]],
+/*360*/ [null,null,null,null,[260,287,0],[250,295,0],[239,300,0],[228,303,1],[215,303,1]],
+/*350*/ [null,null,null,[270,291,0],[259,299,0],[249,305,0],[238,309,0],[226,310,1],[213,310,1]],
+/*340*/ [null,null,[280,294,0],[267,304,0],[258,310,0],[247,315,0],[236,317,1],[224,317,1],[211,317,1]],
+/*330*/ [null,null,[276,310,0],[266,316,0],[257,321,0],[246,324,1],[234,324,1],[222,324,1],[208,324,1]],
+/*320*/ [null,[284,315,0],[275,322,0],[265,327,0],[255,331,0],[244,332,1],[232,332,1],[219,332,1],[206,332,1]],
+/*310*/ [[292,321,0],[283,328,0],[273,333,0],[264,337,0],[253,339,1],[242,339,1],[230,339,1],[217,339,1],[204,339,1]],
+/*300*/ [[290,334,0],[281,339,0],[272,343,0],[262,346,1],[251,346,1],[240,346,1],[228,346,1],[215,346,1],[202,346,1]],
+/*290*/ [[289,346,0],[280,350,0],[270,353,0],[260,354,1],[249,354,1],[237,354,1],[225,354,1],[213,354,1],[201,354,1]],
+];
+// 1.5G マージン
+const BUF15 = [
+/*430*/ [null,null,null,null,null,null,null,null,null],
+/*420*/ [null,null,null,null,null,null,null,null,null],
+/*410*/ [null,null,null,null,null,null,null,null,null],
+/*400*/ [null,null,null,null,null,null,null,null,[242,257,0]],
+/*390*/ [null,null,null,null,null,null,null,null,[239,271,0]],
+/*380*/ [null,null,null,null,null,null,null,[252,272,0],[238,282,0]],
+/*370*/ [null,null,null,null,null,null,null,[249,285,0],[237,292,0]],
+/*360*/ [null,null,null,null,null,null,[260,287,0],[248,296,0],[236,301,0]],
+/*350*/ [null,null,null,null,null,[272,289,0],[259,299,0],[247,306,0],[234,310,1]],
+/*340*/ [null,null,null,null,null,[269,303,0],[258,310,0],[246,316,0],[233,317,1]],
+/*330*/ [null,null,null,null,[279,307,0],[268,315,0],[257,321,0],[244,324,1],[231,324,1]],
+/*320*/ [null,null,null,[289,310,0],[277,320,0],[267,326,0],[255,331,0],[242,332,1],[228,332,1]],
+/*310*/ [null,null,[300,313,0],[287,325,0],[276,331,0],[265,336,0],[253,339,1],[240,339,1],[226,339,1]],
+/*300*/ [null,null,[296,330,0],[285,337,0],[275,342,0],[264,346,1],[251,346,1],[238,346,1],[224,346,1]],
+/*290*/ [null,[304,335,0],[294,343,0],[284,348,0],[273,352,0],[262,354,1],[249,354,1],[236,354,1],[221,354,1]],
+];
+function _bufInterp(TBL, wt, fl){
+  const W=BUF_WT, F=BUF_FL;
+  const wc=Math.max(W[W.length-1],Math.min(W[0],wt));
+  const fc=Math.max(F[F.length-1],Math.min(F[0],fl));
+  let wi=0; while(wi<W.length-2 && wc<W[wi+1]) wi++;
+  let wf=(W[wi]-wc)/(W[wi]-W[wi+1]);
+  let fi=0; while(fi<F.length-2 && fc<F[fi+1]) fi++;
+  let ff=(F[fi]-fc)/(F[fi]-F[fi+1]);
+  if(wf>=0.9999 && wi+1<W.length){wi++;wf=0;}
+  if(ff>=0.9999 && fi+1<F.length){fi++;ff=0;}
+  const corners=[[fi,wi,(1-ff)*(1-wf)],[fi,wi+1,(1-ff)*wf],[fi+1,wi,ff*(1-wf)],[fi+1,wi+1,ff*wf]];
+  let low=0,high=0,mmo=false;
+  for(const [r,c,w] of corners){
+    if(w===0) continue;
+    const cell=(TBL[r]&&TBL[r][c])?TBL[r][c]:null;
+    if(!cell) return null;
+    low+=cell[0]*w; high+=cell[1]*w; if(cell[2])mmo=true;
+  }
+  return {low:Math.round(low), high:Math.round(high), mmo};
+}
+function buffetCalc(){
+  const el=$('crz-buffet-result'); if(!el) return;
+  const wt=parseFloat(($('crz-weight')||{}).value);
+  const fl=parseFloat(($('crz-fl')||{}).value);
+  if(isNaN(wt)||isNaN(fl)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>'; return; }
+  const wc=Math.max(550,Math.min(950,wt)), fc=Math.max(290,Math.min(430,fl));
+  const clamped=(wt!==wc)||(Math.round(fl)!==Math.round(fc));
+  const r13=_bufInterp(BUF13,wt,fl), r15=_bufInterp(BUF15,wt,fl);
+  const ias=parseFloat(($('crz-ias')||{}).value);
+  const row=(lbl,r,accent)=>{
+    if(!r) return `<div style="margin-bottom:8px"><span style="font-weight:700;color:${accent}">${lbl}</span> `
+      +`<span style="color:var(--warn);font-size:0.82em">この Weight×FL は範囲外（バフェット限界超）</span></div>`;
+    const d=r.high-r.low;
+    const box=(t,v,c,star)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:6px 4px;flex:1">`
+      +`<div style="font-size:0.56em;color:var(--muted);margin-bottom:2px">${t}</div>`
+      +`<div style="font-size:1.05em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}${star||''}</div></div>`;
+    let mark='';
+    if(isFinite(ias)){
+      if(ias<r.low) mark=`<span style="color:#ff8c42">↓ 低速側 (下限 ${r.low})</span>`;
+      else if(ias>r.high) mark=`<span style="color:#ff4560">↑ 高速側 (上限 ${r.high})</span>`;
+      else mark=`<span style="color:var(--green)">範囲内 ✓</span>`;
+    }
+    return `<div style="margin-bottom:8px">`
+      +`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">`
+      +`<span style="font-weight:700;color:${accent}">${lbl} マージン</span>`
+      +`<span style="font-size:0.72em">${mark}</span></div>`
+      +`<div style="display:flex;gap:6px">`
+      +box('LOW BUFFET',r.low,'var(--green)')
+      +box('HIGH BUFFET',r.high,r.mmo?'var(--warn)':'var(--text)',r.mmo?'*':'')
+      +box('Δ SPREAD',d,'var(--accent)')
+      +`</div></div>`;
+  };
+  el.innerHTML =
+    `<div style="font-size:0.66em;color:var(--muted);margin-bottom:6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:var(--fg)">FL${Math.round(fc)}</b>${isFinite(ias)?` · 現在 IAS <b style="color:var(--fg)">${Math.round(ias)}</b>`:''}</div>`
+    + row('1.3G', r13, '#4f8fd8')
+    + row('1.5G', r15, '#7a68d8')
+    + (clamped?`<div style="color:var(--warn);font-size:0.66em;margin-top:2px">⚠ 表範囲外（Weight 550–950k / FL290–430）のため端値でクランプ。</div>`:'')
+    + `<div style="font-size:0.62em;color:var(--muted);margin-top:4px">LOW=低速バフェット / HIGH=高速バフェット境界。* = MMO(M.90) 制限。IAS は上の変換器の値を参照。</div>`;
 }
 
 /* ─────────────────────────────────────────────
