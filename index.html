@@ -2202,7 +2202,7 @@ function switchTab(name, btn) {
   if (name === 'ldg')    requestAnimationFrame(initLdgDrums);
   if (name === 'flight') requestAnimationFrame(() => window.FLT && FLT.init());
   if (name === 'clb')    { requestAnimationFrame(_initTasMachTable); syncClbWeight(); }
-  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel(); buffetCalc(); }
+  if (name === 'crz')    { requestAnimationFrame(_initCrzTmt); syncCrzWeight(); syncInopWeight(); calcInop1Eng(); calcInop2Eng(); calcInopFuel(); buffetCalc(); econCruiseCalc(); }
   if (name === 'des')    { requestAnimationFrame(_initDesTmt); syncDesWeight(); desApprPathCalc(); }
   if (name === 'wxrdr')  requestAnimationFrame(wxrInit);
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
@@ -7999,7 +7999,7 @@ restoreState();
     <div class="fg">
       <label>Flight Level (FL)</label>
       <input type="number" id="crz-fl" value="350" step="10" min="100" max="450"
-             inputmode="numeric" oninput="crzFlChanged(); buffetCalc();">
+             inputmode="numeric" oninput="crzFlChanged(); buffetCalc(); econCruiseCalc();">
     </div>
     <div class="fg">
       <label>ΔT from ISA (°C)</label>
@@ -8028,6 +8028,19 @@ restoreState();
   </div>
   <div id="crz-result" style="margin-top:10px">
     <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
+  </div>
+</div>
+
+<!-- ECON(CI=40) Cruise Reference -->
+<div class="card" style="margin-top:12px">
+  <div class="card-title">ECON (CI=40) Cruise — 参考 Mach / IAS
+    <span style="float:right;font-size:0.72rem;font-weight:400;color:var(--muted)">FL × CRZ Weight 連動</span>
+  </div>
+  <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px;line-height:1.6">
+    上の <b>Flight Level</b>・<b>CRZ Weight</b>（TOW連動）での ECON 巡航速度。<b>高度変更時の目安</b>。
+  </div>
+  <div id="crz-econ-cruise">
+    <p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>
   </div>
 </div>
 
@@ -8105,7 +8118,7 @@ restoreState();
       </label>
       <input type="number" id="crz-weight" step="1" min="400" max="1050"
              inputmode="numeric" placeholder="e.g. 750"
-             oninput="_crzWtManual=true;$('crz-wt-sync-lbl').style.display='none';$('crz-wt-reset').style.display='';buildDevFuelTable();buffetCalc();">
+             oninput="_crzWtManual=true;$('crz-wt-sync-lbl').style.display='none';$('crz-wt-reset').style.display='';buildDevFuelTable();buffetCalc();econCruiseCalc();">
     </div>
     <div class="fg">
       <label>Cruise Mach <span style="font-size:0.75em;font-weight:400;opacity:0.6">重量未入力時</span></label>
@@ -11307,6 +11320,78 @@ function buffetCalc(){
     + row('1.5G', r15, '#7a68d8')
     + (clamped?`<div style="color:var(--warn);font-size:0.66em;margin-top:2px">⚠ 表範囲外（Weight 550–950k / FL290–430）のため端値でクランプ。</div>`:'')
     + `<div style="font-size:0.62em;color:var(--muted);margin-top:4px">LOW=低速バフェット / HIGH=高速バフェット境界。* = MMO(M.90) 制限。IAS は上の変換器の値を参照。</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   ECON (CI=40) CRUISE CONTROL — 参考 Mach / IAS
+   W 降順・A(×1000ft) 昇順。null = 上昇限度超
+═══════════════════════════════════════════════ */
+const ECON_W = [1000,950,900,850,800,750,700,650,600,550,500,450];
+const ECON_A = [11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43];
+const ECON_MA = [
+  [.660,.683,.705,.728,.751,.776,.802,.824,.834,.836,.834,.832,null,null,null,null,null],
+  [.646,.670,.693,.715,.739,.763,.788,.813,.831,.836,.836,.833,null,null,null,null,null],
+  [.632,.656,.679,.702,.725,.749,.774,.800,.823,.834,.836,.834,.832,null,null,null,null],
+  [.618,.640,.664,.688,.711,.735,.759,.785,.810,.830,.836,.836,.834,null,null,null,null],
+  [.602,.625,.648,.673,.696,.720,.744,.769,.795,.819,.834,.837,.836,.833,null,null,null],
+  [.586,.608,.632,.656,.680,.705,.729,.753,.778,.804,.826,.836,.837,.835,.832,null,null],
+  [.570,.591,.614,.638,.662,.687,.712,.736,.761,.787,.812,.832,.837,.837,.834,null,null],
+  [.553,.574,.596,.619,.643,.668,.694,.718,.743,.768,.794,.818,.836,.837,.837,.834,null],
+  [.536,.556,.577,.599,.623,.648,.673,.699,.724,.749,.775,.801,.824,.837,.838,.837,.834],
+  [.518,.537,.557,.579,.602,.626,.651,.677,.702,.728,.754,.780,.806,.828,.838,.838,.837],
+  [.497,.517,.537,.558,.579,.603,.627,.652,.679,.705,.730,.757,.784,.810,.830,.838,.838],
+  [.476,.495,.515,.536,.556,.578,.602,.626,.652,.678,.705,.731,.758,.786,.811,.830,.838],
+];
+const ECON_KIAS = [
+  [361,360,359,358,356,354,353,349,339,326,311,297,null,null,null,null,null],
+  [353,353,352,351,349,348,346,344,338,326,312,298,null,null,null,null,null],
+  [345,346,345,344,343,341,339,338,334,325,312,298,284,null,null,null,null],
+  [337,337,338,337,336,334,332,331,328,323,312,299,285,null,null,null,null],
+  [329,329,329,329,328,327,325,323,322,319,311,299,286,272,null,null,null],
+  [320,320,320,320,320,319,318,316,314,312,308,299,286,272,259,null,null],
+  [311,311,311,311,312,311,310,309,307,305,302,297,286,273,260,null,null],
+  [301,301,301,302,302,302,302,301,299,297,295,292,285,273,261,248,null],
+  [292,291,292,292,292,292,292,292,291,289,287,285,281,273,261,249,237],
+  [281,281,281,281,282,282,282,282,281,280,279,277,274,270,261,249,238],
+  [270,271,271,271,271,271,271,271,271,271,269,268,266,263,258,249,238],
+  [258,259,260,260,260,260,260,260,260,260,259,258,256,255,252,247,238],
+];
+const ECON_FF = [
+  [7919,7866,7717,7622,7584,7569,7550,7529,7388,7178,7089,7272,null,null,null,null,null],
+  [7467,7438,7318,7233,7193,7173,7152,7152,7065,6817,6668,6718,null,null,null,null,null],
+  [7033,7006,6921,6848,6812,6789,6763,6766,6721,6501,6291,6271,6405,null,null,null,null],
+  [6600,6577,6519,6461,6433,6408,6381,6374,6345,6187,5962,5874,5907,null,null,null,null],
+  [6172,6160,6117,6075,6050,6034,6003,5994,5958,5833,5663,5529,5494,5587,null,null,null],
+  [5786,5765,5735,5703,5678,5672,5644,5634,5593,5476,5358,5249,5141,5158,5349,null,null],
+  [5431,5395,5370,5345,5318,5312,5294,5282,5245,5126,5023,4986,4860,4802,4871,null,null],
+  [5082,5038,5016,5003,4972,4952,4956,4921,4896,4781,4687,4664,4613,4499,4500,4581,null],
+  [4750,4690,4663,4666,4658,4610,4620,4616,4536,4446,4349,4343,4318,4249,4184,4193,4282],
+  [4428,4381,4314,4321,4342,4316,4275,4346,4232,4108,4021,4016,4010,3974,3927,3872,3881],
+  [4102,4101,4024,3976,4005,4016,3974,3988,4002,3787,3699,3685,3697,3676,3666,3616,3559],
+  [3819,3798,3782,3694,3671,3688,3675,3650,3654,3499,3383,3364,3374,3385,3378,3383,3315],
+];
+function econCruiseCalc(){
+  const el=$('crz-econ-cruise'); if(!el) return;
+  const wt=parseFloat(($('crz-weight')||{}).value);
+  const fl=parseFloat(($('crz-fl')||{}).value);
+  if(isNaN(wt)||isNaN(fl)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>'; return; }
+  const wc=Math.max(450,Math.min(1000,wt)), altc=Math.max(11,Math.min(43,fl/10));
+  const clamped=(wt!==wc)||(Math.abs(fl/10-altc)>1e-6);
+  const r=_lrcLook(wt, fl, ECON_W, ECON_A, ECON_MA, ECON_FF, ECON_KIAS);
+  if(!r){ el.innerHTML=`<div style="font-size:0.8em;color:var(--warn);padding:4px 0">この Weight × FL は ECON 巡航表の範囲外（上昇限度超 / FL${Math.round(altc*10)}）。高度を下げてください。</div>`; return; }
+  const box=(t,v,c,sub)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:7px 6px;flex:1">`
+    +`<div style="font-size:0.56em;color:var(--muted);margin-bottom:2px">${t}</div>`
+    +`<div style="font-size:1.15em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}</div>`
+    +(sub?`<div style="font-size:0.55em;color:var(--muted)">${sub}</div>`:'')+`</div>`;
+  el.innerHTML=
+    `<div style="font-size:0.66em;color:var(--muted);margin-bottom:6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:var(--fg)">FL${Math.round(fl)}</b></div>`
+    +`<div style="display:flex;gap:6px">`
+    +box('MACH','M'+r.mach.toFixed(3),'var(--accent)')
+    +box('IAS',r.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
+    +box('FF/ENG',r.ff.toLocaleString(),'var(--text)','× 4 = '+(r.ff*4).toLocaleString())
+    +`</div>`
+    +(clamped?`<div style="color:var(--warn);font-size:0.64em;margin-top:5px">⚠ 表範囲外（Weight 450–1000k / FL110–430）のため端値でクランプ。</div>`:'')
+    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。高度変更時の目安速度。</div>`;
 }
 
 /* ─────────────────────────────────────────────
