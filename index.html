@@ -9345,8 +9345,8 @@ restoreState();
   <div style="margin-top:12px;border-top:1px solid #12283c;padding-top:10px">
     <div style="font-size:0.75em;font-weight:700;color:#4f8fd8;letter-spacing:.04em;margin-bottom:5px">▸ 通報タイミング判断（Minimum Fuel / PAN PAN / MAYDAY）</div>
     <div style="font-size:0.68em;color:var(--muted);margin-bottom:8px;line-height:1.6">
-      目的地上空の予測残燃料から各トリガーを逆算。RSV は①の値を使用。<br>
-      基準：<b style="color:#ff7a8c">MAYDAY</b>=RSV ／ <b style="color:#7ab8ff">PAN PAN</b>=RSV＋Approach ／ <b style="color:#e0a020">Minimum</b>=PAN PAN＋10分(RSV/3)。
+      目的地上空の予測残燃料から各トリガーを逆算。①の決心燃料に整合。<br>
+      基準：<b style="color:#e0a020">Minimum</b>=① Minimum Fuel(1.5×RSV) ／ <b style="color:#7ab8ff">PAN PAN</b>=RSV＋Approach ／ <b style="color:#ff7a8c">MAYDAY</b>=① Mayday Fuel(RSV)。
     </div>
     <div class="row2">
       <div class="fg">
@@ -9555,7 +9555,9 @@ function pppCalc(){
   let fapp=_fuNum('fu-pp-fapp'); if(!isFinite(fapp)) fapp=0;
   if(!isFinite(rsv)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">① の RSV を入力してください</p>'; return; }
   if(!isFinite(fod)){ el.innerHTML='<p style="font-size:0.75em;color:var(--muted)">目的地上空 予測残燃料を入力してください</p>'; return; }
-  const MAY=rsv, PP=rsv+fapp, MIN=rsv+fapp+rsv/3;   // 各トリガー（目的地上空残で判定）
+  const MAY=rsv, MIN=1.5*rsv;                        // ① Mayday Fuel / Minimum Fuel に一致
+  const rawPP=rsv+fapp, PP=Math.min(rawPP,MIN);      // PAN PAN は Minimum を超えない
+  const coincide=rawPP>=MIN;                          // Approach≥0.5RSV で Minimum と一致
   const land=fod-fapp;                              // 着陸時予測燃料
   let badge,detail,nextLbl,nextLvl,col;
   if(fod<=MAY){ col='#ff7a8c'; badge='🔴 MAYDAY 水準';
@@ -9563,7 +9565,7 @@ function pppCalc(){
   else if(fod<=PP){ col='#7ab8ff'; badge='🔵 ▶ PAN PAN 発報';
     detail=`このまま進むと着陸時に Final Reserve 未満（進入燃料を確保できる最終局面）→ <b style="color:#7ab8ff">「PAN PAN ×3」</b>で優先権を要求。`; nextLbl='MAYDAY'; nextLvl=MAY; }
   else if(fod<=MIN){ col='#e0a020'; badge='🟡 MINIMUM FUEL 通報';
-    detail=`予想外の遅延を受け入れられない水準 → <b style="color:#e0a020">「MINIMUM FUEL」</b>を通報（優先権なし）。以後の遅延で PAN PAN へ。`; nextLbl='PAN PAN'; nextLvl=PP; }
+    detail=`① Minimum Fuel 水準。予想外の遅延を受け入れられない → <b style="color:#e0a020">「MINIMUM FUEL」</b>を通報（優先権なし）。以後の遅延で PAN PAN へ。`; nextLbl='PAN PAN'; nextLvl=PP; }
   else { col='#5fd08a'; badge='🟢 正常';
     detail=`各トリガーまで余裕あり。目的地上空残が下の各水準を切ると通報／発報。`; nextLbl='MINIMUM FUEL'; nextLvl=MIN; }
   let nextTxt='';
@@ -9589,7 +9591,8 @@ function pppCalc(){
     +lvlRow('MINIMUM FUEL 通報',MIN,'#e0a020')
     +lvlRow('PAN PAN 発報',PP,'#7ab8ff')
     +lvlRow('MAYDAY 水準',MAY,'#ff7a8c')
-    +'</table>';
+    +'</table>'
+    +(coincide?`<div style="font-size:0.64em;color:var(--warn);margin-top:5px">⚠ Approach（${_fuFmt(fapp)}）≥ 0.5×RSV のため PAN PAN が Minimum Fuel と一致。分離するには Approach を ${_fuFmt(0.5*rsv)} LB 未満に。</div>`:'');
 }
 
 // ② Fuel Loading Distribution 〔WB Sec.8 · density 6.7 lb/USG〕
