@@ -9532,11 +9532,12 @@ function fuDivert(){
   const commitA = 1.5*rsv + a;         // RSV×0.5＋RSV＋ALTN
   const commitB = minimum + a;         // Pan Pan＋10分＋ALTN
   const commit  = Math.max(commitA, commitB);
+  const ru=(x)=>Math.ceil(x/100)*100;   // 100 LB 単位で切上げ
   const levels=[
-    {lbl:'Commit Fuel', v:commit,  note:(commitB>=commitA?'Pan Pan＋10分＋ALTN':'RSV×0.5＋RSV＋ALTN'), col:'#4f8fd8'},
-    {lbl:'Minimum Fuel',v:minimum, note:'Pan Pan＋10分',  col:'#e0a020'},
-    {lbl:'Pan Pan 通報', v:panpan,  note:'RSV＋App分',     col:'#a78bfa'},
-    {lbl:'Mayday Fuel', v:rsv,     note:'＝RSV',          col:'#e05555'},
+    {lbl:'Commit Fuel', v:ru(commit),  note:(commitB>=commitA?'Pan Pan＋10分＋ALTN':'RSV×0.5＋RSV＋ALTN'), col:'#4f8fd8'},
+    {lbl:'Minimum Fuel',v:ru(minimum), note:'Pan Pan＋10分',  col:'#e0a020'},
+    {lbl:'Pan Pan 通報', v:ru(panpan),  note:'RSV＋App分',     col:'#a78bfa'},
+    {lbl:'Mayday Fuel', v:ru(rsv),     note:'＝RSV',          col:'#e05555'},
   ];
   let html='<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
     +'<tr style="font-size:0.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
@@ -9561,7 +9562,7 @@ function fuDivert(){
   });
   html+='</table>';
   html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
-    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。Commit は大きい方を採用。`
+    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。Commit は大きい方を採用。各燃料は 100 LB 単位で切上げ。`
              :`現在燃料 FOB を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB。`)
     +(isFinite(altn)?'':'<br>※ ALTN 未入力（0扱い）— Commit は 1.5×RSV のみ。')
     +`</div>`;
