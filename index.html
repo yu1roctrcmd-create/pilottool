@@ -9535,7 +9535,7 @@ function fuDivert(){
   let html='<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
     +'<tr style="font-size:0.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
     +'<td style="padding:2px 6px">決心燃料</td><td style="padding:2px 6px;text-align:right">燃料 (LB)</td>'
-    +(hasFob?'<td style="padding:2px 6px;text-align:right">現在との差</td><td style="padding:2px 6px;text-align:right">Holding 可能</td>':'<td colspan="2" style="padding:2px 6px">算出式</td>')
+    +(hasFob?'<td style="padding:2px 6px;text-align:right">現在との差</td><td style="padding:2px 6px;text-align:right">到達まで</td>':'<td colspan="2" style="padding:2px 6px">算出式</td>')
     +'</tr>';
   levels.forEach(L=>{
     const diff=hasFob?fob-L.v:NaN;
@@ -9555,8 +9555,8 @@ function fuDivert(){
   });
   html+='</table>';
   html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
-    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「Holding 可能」＝ (現在−各決心燃料) ÷ Holding。各燃料に達するまで保持できる時間。`
-             :`現在燃料 FOB を入力すると、各決心燃料までの差分と Holding 可能時間を表示。`)
+    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>（Holding 継続時）。`
+             :`現在燃料 FOB を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。`)
     +(isFinite(altn)?'':'<br>※ ALTN 未入力（0扱い）— Commit は 1.5×RSV のみ。')
     +`</div>`;
   el.innerHTML=html;
