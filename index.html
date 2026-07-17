@@ -8041,6 +8041,13 @@ restoreState();
   <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px;line-height:1.6">
     上の <b>Flight Level</b>・<b>CRZ Weight</b>（TOW連動）での ECON 巡航速度。<b>高度変更時の目安</b>。
   </div>
+  <div class="row2" style="margin-bottom:6px">
+    <div class="fg">
+      <label>変更先 高度 (FL) — Mach/IAS Transition 図</label>
+      <input type="number" id="crz-econ-tgt" step="10" min="100" max="450"
+             inputmode="numeric" placeholder="e.g. 390" oninput="econCruiseCalc()">
+    </div>
+  </div>
   <div id="crz-econ-cruise">
     <p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>
   </div>
@@ -11465,7 +11472,62 @@ function econCruiseCalc(){
     +`</div>`
     +cmp
     +(clamped?`<div style="color:var(--warn);font-size:0.64em;margin-top:5px">⚠ 表範囲外（Weight 450–1000k / FL110–430）のため端値でクランプ。</div>`:'')
-    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=現在（変換器）との差。</div>`;
+    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=現在（変換器）との差。</div>`
+    +_econTrans(wt, fl, r);
+}
+
+// 高度変更 Mach/IAS Transition 図（現在 FL → 変更先 FL）
+function _econTrans(wt, curFL, rC){
+  const tgt=parseFloat(($('crz-econ-tgt')||{}).value);
+  if(isNaN(tgt)) return '';
+  const rT=_lrcLook(wt, tgt, ECON_W, ECON_A, ECON_MA, ECON_FF, ECON_KIAS);
+  const climb=tgt>curFL, same=Math.round(tgt)===Math.round(curFL);
+  const hi=Math.max(curFL,tgt), lo=Math.min(curFL,tgt);
+  const yTop=40, yBot=132;
+  const yOf=(fl)=> (hi===lo)? (yTop+yBot)/2 : yTop+(hi-fl)/(hi-lo)*(yBot-yTop);
+  const yC=yOf(curFL), yT=yOf(tgt);
+  const AC='var(--accent)';
+  const dir = same?'同高度':(climb?'CLIMB ▲':'DESCENT ▼');
+  const dCol= same?'var(--muted)':(climb?'#5fd08a':'#7ab8ff');
+  // ラベル配置（上の点は線の上・下の点は線の下）
+  const lbl=(x,y,anchor,fl,spd,upper,spdCol)=>{
+    const y1=upper?y-20:y+15, y2=upper?y-8:y+27;
+    return `<text x="${x}" y="${y1}" fill="var(--text)" font-size="11" font-weight="700" text-anchor="${anchor}">FL${Math.round(fl)}</text>`
+      +`<text x="${x}" y="${y2}" fill="${spdCol}" font-size="10" font-weight="700" text-anchor="${anchor}">${spd}</text>`;
+  };
+  const curUpper = same?false:(yC<yT);
+  const tgtUpper = same?true :(yT<yC);
+  const curSpd=`M${rC.mach.toFixed(3)} · ${rC.kias}kt`;
+  const tgtSpd= rT? `M${rT.mach.toFixed(3)} · ${rT.kias}kt` : '上昇限度超';
+  let svg=`<svg viewBox="0 0 360 168" style="width:100%;height:auto;margin-top:6px">`
+    +`<line x1="26" y1="${yC}" x2="334" y2="${yC}" stroke="var(--border)" stroke-dasharray="2 3"/>`
+    +(same?'':`<line x1="26" y1="${yT}" x2="334" y2="${yT}" stroke="var(--border)" stroke-dasharray="2 3"/>`)
+    +`<path d="M26 ${yC} L150 ${yC} L212 ${yT} L334 ${yT}" fill="none" stroke="${AC}" stroke-width="2.5" stroke-linejoin="round"/>`
+    +`<circle cx="150" cy="${yC}" r="4" fill="${AC}"/>`
+    +`<circle cx="212" cy="${yT}" r="4.5" fill="none" stroke="${AC}" stroke-width="2.5"/>`
+    +(same?'':`<text x="181" y="${(yC+yT)/2}" fill="${dCol}" font-size="10" font-weight="700" text-anchor="middle" dy="-3">${dir}</text>`)
+    +lbl(28, yC, 'start', curFL, '現在 '+curSpd, curUpper, AC)
+    +lbl(332, yT, 'end', tgt, '変更先 '+tgtSpd, tgtUpper, rT?'#5fd08a':'var(--warn)')
+    +`</svg>`;
+  // Δ chips
+  let chips='';
+  if(rT){
+    const dM=rT.mach-rC.mach, dI=rT.kias-rC.kias;
+    const arr=(v)=> v>0?'▲':(v<0?'▼':'＝');
+    const mc = dM>0?'#5fd08a':(dM<0?'#e0a020':'var(--muted)');
+    const ic = dI>0?'#5fd08a':(dI<0?'#e0a020':'var(--muted)');
+    const chip=(t,val,c)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:6px 6px;flex:1"><div style="font-size:0.54em;color:var(--muted);margin-bottom:2px">${t}</div><div style="font-size:1.0em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${val}</div></div>`;
+    chips=`<div style="display:flex;gap:6px;margin-top:4px">`
+      +chip('Δ MACH（変更先−現在）',(dM>=0?'+':'')+dM.toFixed(3)+' '+arr(dM),mc)
+      +chip('Δ IAS（変更先−現在）',(dI>=0?'+':'')+dI+'kt '+arr(dI),ic)
+      +`</div>`;
+  } else {
+    chips=`<div style="font-size:0.66em;color:var(--warn);margin-top:4px">変更先 FL${Math.round(tgt)} は Weight ${Math.round(wt)}k で ECON 表範囲外（上昇限度超）。</div>`;
+  }
+  return `<div style="margin-top:10px;border-top:1px solid #12283c;padding-top:8px">`
+    +`<div style="font-size:0.64em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-bottom:2px">▸ Mach / IAS Transition（FL${Math.round(curFL)} → FL${Math.round(tgt)}）</div>`
+    +svg + chips
+    +`<div style="font-size:0.6em;color:var(--muted);margin-top:4px">同一 Weight で高度変更した場合の ECON 目安速度の変化。▲=増加 / ▼=減少。</div></div>`;
 }
 
 /* ─────────────────────────────────────────────
