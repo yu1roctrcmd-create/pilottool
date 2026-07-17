@@ -9561,10 +9561,13 @@ function fuDivert(){
     html+='</tr>';
   });
   html+='</table>';
+  html+=`<div style="font-size:0.66em;color:var(--muted);margin-top:8px;padding-top:6px;border-top:1px solid #12283c;line-height:1.7">`
+    +`<b style="color:#4f8fd8">Commit Fuel</b> ＝ ( <b>RSV×0.5＋RSV</b> ) or ( <b>Pan Pan＋10分</b> ) の大きい方 ＋ ALTN`
+    +`</div>`;
   html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
-    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。Commit は大きい方を採用。各燃料は 100 LB 単位で切上げ。`
+    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。各燃料は 100 LB 単位で切上げ。`
              :`現在燃料 FOB を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB。`)
-    +(isFinite(altn)?'':'<br>※ ALTN 未入力（0扱い）— Commit は 1.5×RSV のみ。')
+    +(isFinite(altn)?'':'<br>※ ALTN 未入力（0扱い）。')
     +`</div>`;
   el.innerHTML=html;
 }
