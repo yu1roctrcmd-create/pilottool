@@ -902,6 +902,40 @@
   background: rgba(0,113,227,0.05);
 }#tab-flight .section-wrap { margin-bottom: 16px; }#tab-flight textarea.fi { min-height: 100px; resize: vertical; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; }#tab-flight .hint { font-size: 12px; color: var(--sub); margin-bottom: 10px; line-height: 1.6; background: var(--bg); padding: 10px 13px; border-radius: 8px; }#tab-flight .acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }#tab-flight /* Settings */
 .api-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; margin-top: 8px; }#tab-flight .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }#tab-flight .dot.on { background: #30c060; }#tab-flight a { color: var(--blue); text-decoration: none; }#tab-flight a:hover { text-decoration: underline; }
+
+/* PBN tab */
+.pbn-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68em;font-weight:700;letter-spacing:.3px;white-space:nowrap;line-height:1.5}
+.pbn-rnp2 {background:#3a0f2e;color:#ff9ad6;border:1px solid #7a2a5e}
+.pbn-rnp4 {background:#4a1113;color:#ff8a8a;border:1px solid #7a2a2a}
+.pbn-rnp10{background:#4a3111;color:#ffc06a;border:1px solid #7a5a2a}
+.pbn-rnav5{background:#0d2a4a;color:#7ec8ff;border:1px solid #1a5a8a}
+.pbn-rnav2{background:#0d3a34;color:#5fe0c0;border:1px solid #1a6a5a}
+.pbn-conv {background:#26303a;color:#9fb2c4;border:1px solid #3a4a5a}
+.pbn-none {background:#1a2230;color:#5a6a7a;border:1px solid #2a3a4a}
+.pbn-ref{width:100%;border-collapse:collapse;font-size:0.72em;min-width:520px}
+.pbn-ref th,.pbn-ref td{border:1px solid var(--border);padding:5px 7px;text-align:left;vertical-align:top}
+.pbn-ref th{background:#0e1c2e;color:var(--accent);font-size:0.92em}
+.pbn-ref td:nth-child(4){text-align:center;color:var(--muted);white-space:nowrap}
+.pbn-symcol{white-space:nowrap;font-weight:700;color:#fff}
+.pbn-ref-desc td:nth-child(4){text-align:left;white-space:normal;color:var(--sub,#9fb2c4)}
+.pbn-ref-desc td:nth-child(3){white-space:nowrap}
+.pbn-group{font-size:0.7em;font-weight:700;color:var(--accent);background:#0a1a2a;padding:5px 8px;border-radius:5px;margin:12px 0 4px}
+.pbn-row{border:1px solid var(--border);border-radius:7px;margin-bottom:5px;background:var(--card);overflow:hidden}
+.pbn-row summary{list-style:none;cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pbn-row summary::-webkit-details-marker{display:none}
+.pbn-row summary::before{content:'▸';color:var(--muted);font-size:0.8em;transition:transform .15s}
+.pbn-row[open] summary::before{transform:rotate(90deg)}
+.pbn-fms{font-weight:700;font-size:0.86em;color:#fff;min-width:92px;font-variant-numeric:tabular-nums}
+.pbn-rid{font-size:0.68em;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.pbn-badges{display:flex;flex-wrap:wrap;gap:4px;flex:1;justify-content:flex-end}
+.pbn-route{padding:6px 12px 12px;font-size:0.78em;line-height:2.0;color:var(--sub,#9fb2c4);border-top:1px dashed var(--border);word-break:break-word}
+.awy{font-weight:700;padding:0 3px;border-radius:3px}
+.awy-oth {color:#8fa4b8}
+.awy-rnp4 {color:#ff8a8a;background:#3a1012}
+.awy-rnp10{color:#ffc06a;background:#3a2810}
+.awy-rus  {color:#c8a6ff;background:#2a1a3a}
+.awy-q    {color:#ff9ad6;background:#3a0f2e}
+
 </style>
 </head>
 <body>
@@ -933,6 +967,7 @@
   <button class="tab-btn"        onclick="switchTab('prep',this)">PREP</button>
   <button class="tab-btn"        onclick="switchTab('freq',this)">FREQ</button>
   <button class="tab-btn"        onclick="switchTab('fuel',this)">FUEL</button>
+  <button class="tab-btn"        onclick="switchTab('pbn',this)">PBN</button>
   <button class="reset-btn"      onclick="resetAllState()">RESET</button>
   <button class="theme-btn" id="cache-btn" onclick="ncaForceCache()" title="オフライン用キャッシュを更新">📥</button>
   <button class="theme-btn" id="update-btn" onclick="ncaUpdate()" title="キャッシュをクリアして最新バージョンに更新">🔄</button>
@@ -2208,6 +2243,7 @@ function switchTab(name, btn) {
   if (name === 'prep')   { requestAnimationFrame(_initPrepTable); cargoUldTypeChange(); }
   if (name === 'freq')   requestAnimationFrame(freqRender);
   if (name === 'fuel')   requestAnimationFrame(fuelInit);
+  if (name === 'pbn')    requestAnimationFrame(pbnInit);
 }
 
 let _crewDrumReady = false;
@@ -9518,6 +9554,320 @@ restoreState();
 </div>
 </div>
 
+<!-- ══════════════════ PBN / COMPANY ROUTE TAB ══════════════════ -->
+<div class="tab-panel" id="tab-pbn">
+<div class="tab-content">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <h2 style="margin:0">🛰 Company Route PBN 要件</h2>
+    <p class="lead" style="margin:2px 0 0">AM「FMS NAV DATA COMPANY ROUTE (B747-8F)」— Route毎の RNAV / RNP 航法要件早見</p>
+  </div>
+</div>
+
+<!-- Airway 記号（プレフィックス）の意味 -->
+<div class="card" style="margin-top:10px">
+  <div class="card-title">Airway 記号の意味 &nbsp;<span style="font-size:0.72em;font-weight:400;color:var(--muted)">（日本の ATS ルート — AM「日本のATSルートについて」）</span></div>
+  <div style="overflow-x:auto;margin-top:8px">
+  <table class="pbn-ref pbn-ref-desc">
+    <thead><tr><th>記号</th><th>種別</th><th>航法仕様</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td class="pbn-symcol">Q</td><td>RNAV 経路</td><td><span class="pbn-badge pbn-rnp2">RNP2</span></td><td>RNP 仕様に従い航行。レーダー監視要件なし・<b>GNSS のみ</b>利用（例 Q1）</td></tr>
+      <tr><td class="pbn-symcol">L / M / N / Y / Z</td><td>RNAV 経路</td><td><span class="pbn-badge pbn-rnav5">RNAV5</span></td><td>RNAV 仕様に従い航行。<b>レーダー覆域内のみ</b>設定・レーダー運用時限定。<b>L・Z は調整経路 (CDR)</b></td></tr>
+      <tr><td class="pbn-symcol">A / B / G / R / V / W</td><td>従来型 航空路</td><td><span class="pbn-badge pbn-conv">在来</span></td><td>複数の航法援助施設を接続した保護空域を有する経路。国内は <b>VOR / TACAN</b> 基準・中心線両側 4nm（例 A1 は HKC・KEC が必要）</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div style="font-size:0.62em;color:var(--muted);margin-top:8px;line-height:1.6">
+    ※ 上記は<b>日本国内 ATS ルート</b>の記号定義です（AIP Japan ENR 3.3 で Y経路は全 252 本 RNAV5、Q1=RNP2、M523=RNP4、N884=RNP10 と確認）。同じ頭文字でも<b>オセアニック / 国際区間</b>では仕様が異なります（例: M523=NOPAC RNP4、N892・L642=南シナ海 RNP10、L870・M131=ロシア RNAV5、Q11/12/13=オセアニック）。各 Route の実際の要件は下表バッジを参照。
+  </div>
+</div>
+
+<!-- 凡例 / 根拠 -->
+<div class="card" style="margin-top:10px">
+  <div class="card-title">航法仕様 凡例 &nbsp;<span style="font-size:0.72em;font-weight:400;color:var(--muted)">（AM ENROUTE 記載＝AM印 / それ以外は一般PBN知識による推定）</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+    <span class="pbn-badge pbn-rnp2">RNP2</span>
+    <span class="pbn-badge pbn-rnp4">RNP4</span>
+    <span class="pbn-badge pbn-rnp10">RNP10 / RNAV10</span>
+    <span class="pbn-badge pbn-rnav5">RNAV5</span>
+    <span class="pbn-badge pbn-rnav2">RNAV2</span>
+    <span class="pbn-badge pbn-conv">在来 (VOR)</span>
+  </div>
+  <div style="overflow-x:auto;margin-top:10px">
+  <table class="pbn-ref">
+    <thead><tr><th>空域 / 区分</th><th>仕様</th><th>対象 Airway・条件</th><th>根拠</th></tr></thead>
+    <tbody>
+      <tr><td>太平洋オセアニック<br>(Fukuoka / Anchorage / Oakland FIR)</td><td><span class="pbn-badge pbn-rnp10">RNP10</span></td><td>NOPAC=<b>A590</b> / PACOTS / 緯度経度WPT (例 55N00)　FL290+</td><td>AM印</td></tr>
+      <tr><td>NOPAC 指定経路</td><td><span class="pbn-badge pbn-rnp4">RNP4</span></td><td><b>R220</b>(east of NANAC) / <b>M523</b> / <b>R580</b>　FL340–400</td><td>AM印</td></tr>
+      <tr><td>南シナ海</td><td><span class="pbn-badge pbn-rnp10">RNP10</span> <span class="pbn-badge pbn-rnp4">RNP4</span></td><td>L642 / M771 / N892 / L625 / N884 / M767 / P901 / L644 / M772 / M768（香港FIR内区間は RNP4）</td><td>AM印</td></tr>
+      <tr><td>北大西洋 (NAT HLA)</td><td><span class="pbn-badge pbn-rnp10">RNAV10</span> <span class="pbn-badge pbn-rnp4">RNP4</span></td><td>OCA間 緯度経度WPT　FL285–420 / PBCSトラックは RNP4</td><td>AM印</td></tr>
+      <tr><td>ロシア上空 (欧州〜日本)</td><td><span class="pbn-badge pbn-rnav5">RNAV5</span></td><td>T565 / M131 / L870 / L168 / M152 ほか（GPS / 一部 RNAV10）　FL265+</td><td>AM印</td></tr>
+      <tr><td>日本 RNAV経路</td><td><span class="pbn-badge pbn-rnav5">RNAV5</span></td><td><b>Y 経路（全 252 本）</b>・M750 = RNAV5、M523 = RNP4、N884 = RNP10、Q1 = RNP2</td><td>AIP ENR3.3</td></tr>
+      <tr><td>日本 Q経路</td><td><span class="pbn-badge pbn-rnp2">RNP2</span></td><td>Q 番号 = RNP2（GNSSのみ）の命名慣行。Q11/12/13 等オセアニック区間は AIP国内経路に無く推定</td><td>一般</td></tr>
+      <tr><td>欧州 上空</td><td><span class="pbn-badge pbn-rnav5">RNAV5</span></td><td>UL / UN / UW / 欧州域内 L・M・N・Z ルート（B-RNAV 基準）</td><td>一般</td></tr>
+      <tr><td>米国 RNAV経路</td><td><span class="pbn-badge pbn-rnav2">RNAV2</span></td><td>Q ルート（High RNAV）</td><td>一般</td></tr>
+      <tr><td>米国 ジェット経路</td><td><span class="pbn-badge pbn-conv">在来</span></td><td>J ルート（VOR ベース）</td><td>一般</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- フィルタ + 検索 -->
+<div class="card" style="margin-top:12px">
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="pbn-filter">
+    <button class="std-btn std-active" onclick="pbnFilter('ALL',this)" style="flex:1;min-width:60px">ALL</button>
+    <button class="std-btn" onclick="pbnFilter('JAPAN',this)" style="flex:1;min-width:60px">JAPAN</button>
+    <button class="std-btn" onclick="pbnFilter('ASIA',this)" style="flex:1;min-width:60px">ASIA</button>
+    <button class="std-btn" onclick="pbnFilter('EUROPE',this)" style="flex:1;min-width:60px">EUROPE</button>
+    <button class="std-btn" onclick="pbnFilter('USA',this)" style="flex:1;min-width:60px">USA</button>
+  </div>
+  <input type="text" id="pbn-search" placeholder="🔍 FMS ID / 空港 / Airway (A590,R220) / 仕様 (RNP4,RNP10) で検索" oninput="pbnRender()"
+         style="width:100%;padding:8px;font-size:0.9em;background:#0d1f2d;color:#fff;border:1px solid #1a4a7a;border-radius:6px;box-sizing:border-box">
+  <div id="pbn-count" style="font-size:0.68em;color:var(--muted);margin:8px 2px 0"></div>
+  <div id="pbn-list" style="margin-top:6px"></div>
+  <div style="font-size:0.62em;color:var(--warn);margin-top:10px;line-height:1.7">
+    ⚠ 本表は AM「FMS NAV DATA COMPANY ROUTE」および AM ENROUTE の PBN 記載を基にした<b>参考</b>です。1つのRouteは複数空域を通過し、要件は<b>区間ごと</b>に変わります。「AM印」以外のバッジは一般的なPBN知識による推定を含みます。運航では必ず最新の AM / AIP / NOTAM / Dispatch 及び当該 ATC の指示を優先してください。
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+// ══════════════════ PBN / COMPANY ROUTE TAB ══════════════════
+const COROUTES=[
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"AATT",rid:"A01",rt:"PEDLA Y824 AROSA"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"AAGG",rid:"S01",rt:"PIGOK Y50 OLTOM"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"AABB1",rid:"S01",rt:"PIGOK Y50 ELNIS Y564 IBENO Y56 TOHME Y54 KOHWA Y544 DUBKA"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"AABB2",rid:"S21",rt:"PIGOK Y50 ELNIS Y564 IBENO Y56 TOHME Y54 KOHWA Y12 KEC Y43 KISEI Y46 CANDY"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"AACC1",rid:"S01",rt:"KIMIN Y117 LEKOL Y119 OHMAR Y13 SIRAO Y139 NAVER"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVHHH1",rid:"S01",rt:"PIGOK Y50 IGMON A1 ELATO V522 ABBEY"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVHHH2",rid:"S02",rt:"SAMUS Y84 HCE Y86 YULIA Y293 TONAR Y525 KXC Y62 GANAS Y576 LILRA R595 APU A1 ELATO V522 ABBEY"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVHHH3",rid:"S03",rt:"SAMUS Y84 HCE Y86 YULIA Y293 TONAR Y52 IGURU Q13 PICHU J7 HCN G581 ELATO V522 ABBEY"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAZSPD1",rid:"S01",rt:"REDEK Y60 ISAKY Y592 ONIKU A593 DUMET"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAWSSS1",rid:"S01",rt:"SAMUS Y84 HCE Y86 YULIA Y293 TONAR Y52 IGURU Q13 KABAM N892 MELAS MABAL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAWSSS3",rid:"S03",rt:"SAMUS Y84 BUBDO A590 JOM M767 TOMAN"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAWSSS7",rid:"S07",rt:"PIGOK Y50 IGMON A1 DRAKE Q11 TACLE Q12 KABAM N892 MELAS DCT MABAL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAARCTP1",rid:"S01",rt:"PIGOK Y50 IGMON A1 DRAKE"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVTBS1",rid:"S01",rt:"SAMUS Y84 HCE Y86 YULIA Y293 TONAR Y52 IGURU Q13 PICHU J7 HCN G86 KAPLI MADRU SULUX IGLEG IKELA A1 UBL Y20 GRASO Y13 RUKSA EASTE"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVTBS2",rid:"S02",rt:"PIGOK Y50 IGMON A1 DRAKE Q11 GID LATIS B591 HCN G86 KAPLI MADRU SULUX IGLEG IKELA A1 UBL Y20 GRASO Y13 RUKSA EASTE"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAVTBS3",rid:"S03",rt:"PIGOK Y50 DONKY Y75 SWANO Y26 IGURU Q13 PICHU J7 HCN G86 KAPLI MADRU SULUX IGLEG IKELA A1 UBL Y20 GRASO Y13 RUKSA EASTE"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAPANC1",rid:"S01",rt:"GULBO Y808 PUTER A590 HAMND"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAPANC2",rid:"S02",rt:"GULBO Y808 IGARA Y815 MAKMU R580 HAMND"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAPANC3",rid:"S03",rt:"GULBO Y808 NOLAX Y812 ADNAP R591 ADGOR AGEDI AKISU ASPIN AAMYY SYA AMOND ALDOZ ALUFF SPY CHUUK EHM HAMND"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAPANC2R",rid:"R02",rt:"KIMIN Y117 JYONA Y11 CHE Y116 AWE Y114 ANIMO T565 ODORA L771 BETAM N222 VALDA H222 MCG"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAPANC3R",rid:"R03",rt:"KIMIN Y117 JYONA Y11 CHE Y116 AWE Y114 ANIMO T565 PAKLI T657 TK B244 LUNAD N222 VALDA H222 MCG"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM1",rid:"S01",rt:"AGRIS Y37 HAIJI Y375 IGROD L168 UNILA N742 UHT T816 ROMUM L870 RESMO TODNA DEREX LATVI GORAX ALASA EEL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM2",rid:"S02",rt:"AGRIS Y37 AVGOK L870 FA N742 UNILA L168 NRM N151 BEMRU N866 AGAMO IBOSU RUNGA KOXIM EVBAS ALASA EEL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM3",rid:"S03",rt:"AGRIS Y37 HAIJI Y375 IGROD L168 NRM N151 BEMRU N866 AGAMO IBOSU RUNGA KOXIM EVBAS ALASA EEL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM4",rid:"S04",rt:"AGRIS Y37 AVGOK L870 FA N742 ARELI M130 BAVMO TADOX BAKLA DEPEX VADIN DOSUR EEL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM5",rid:"S05",rt:"AGRIS Y37 AVGOK L870 FA N742 ARELI M130 ARTUN M131 HTG N150 ANODI T570 LIMUS M745 SIVNU TUVLU REKMI ETOMI MAKUR DOSUR EEL"},
+ {rg:"JAPAN",dep:"RJAA",city:"NRT",fms:"RJAAEHAM6",rid:"S06",rt:"KIMIN Y117 JYONA Y11 CHE Y10 YOROI Y104 AKSUN M131 HTG N150 ANODI T570 LIMUS M745 SIVNU TUVLU REKMI ETOMI MAKUR DOSUR EEL"},
+ {rg:"JAPAN",dep:"TEST",city:"",fms:"BBAAY01",rid:"Y01",rt:"KEC A597 TAPOP OTR25 HCE Y840 SABRI HACH1(N3216E13917) HACH2(N3223E13842) HACH3(N3124E13828) HACH4(N3118E13902) HACH1 (N3216E13917) SABRI Y873 FITTO Y87 BAFFY Y81 RUTAS"},
+ {rg:"JAPAN",dep:"TEST",city:"",fms:"CCAAY14",rid:"Y14",rt:"CHE Y10 YOROI V1 WKE MVE TBE V3 TCE V5 CHE Y10 LARCH Y302 JUGEM Y30 SWAMP"},
+ {rg:"ASIA",dep:"VHHH",city:"HKG",fms:"VHHHRJAA1",rid:"S01",rt:"DALOL V631 ENVAR M750 MUKEP Y891 AGIMO Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VHHH",city:"HKG",fms:"VHHHRJAA2",rid:"S02",rt:"DALOL V642 SKATE DCT KAPLI G86 HCN J7 PICHU Q13 IGURU Y57 YULIA Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VHHH",city:"HKG",fms:"VHHHRJAA7",rid:"S07",rt:"BEKOL A461 SHL G471 PLT A599 JTN G327 LAMEN A593 SADLI Y590 BEDAR Y591 FUE Y23 KASTE Y81 RUTAS"},
+ {rg:"ASIA",dep:"VHHH",city:"HKG",fms:"VHHHRJAA8",rid:"S08",rt:"DALOL V642 NOMAN M501 ALDIS L625 MEVIN B462 KAZIK Y59 AZAMA Y57 YULIA Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VHHH",city:"HKG",fms:"VHHHRCTP1",rid:"S01",rt:"DALOL V631 ENVAR M750 TONGA"},
+ {rg:"ASIA",dep:"ZSPD",city:"PVG",fms:"ZSPDRJAA1",rid:"S01",rt:"LAMEN A593 SADLI Y590 BEDAR Y591 FUE Y23 KASTE Y81 RUTAS"},
+ {rg:"ASIA",dep:"ZSPD",city:"PVG",fms:"ZSPDPANC1",rid:"S01",rt:"LAMEN A593 SADLI Y590 BEDAR Y591 BESMU Y14 SAMON Y51 INUBO Y808 PUTER A590 HAMND"},
+ {rg:"ASIA",dep:"ZSPD",city:"PVG",fms:"ZSPDPANC2",rid:"S02",rt:"LAMEN A593 SADLI Y590 BEDAR Y591 BESMU Y14 SAMON Y51 INUBO Y808 NOLAX Y812 ADNAP R591 ADGOR AGEDI AKISU ASPIN AAMYY SYA AMOND ALDOZ ALUFF SPY CHUUK EHM HAMND"},
+ {rg:"ASIA",dep:"ZSPD",city:"PVG",fms:"ZSPDPANC2R",rid:"R02",rt:"LAMEN A593 SADLI Y590 BEDAR Y591 BESMU Y14 GOLDO Y19 MRE Y13 CHE Y116 AWE Y114 ANIMO T565 ODORA L771 BETAM N222 VALDA H222 MCG"},
+ {rg:"ASIA",dep:"WSSS",city:"SIN",fms:"WSSSVTBS1",rid:"S01",rt:"VMR B469 VPK M751 VKB M644 ALUMO Y12 ALEMI TUMGA"},
+ {rg:"ASIA",dep:"WSSS",city:"SIN",fms:"WSSSVTBS2",rid:"S02",rt:"VMR B469 VPK M751 VKB M644 RYN TUMGA"},
+ {rg:"ASIA",dep:"WSSS",city:"SIN",fms:"WSSSVHHH1",rid:"S01",rt:"VMR M771 DULOP Q1 CARSO V551 BETTY"},
+ {rg:"ASIA",dep:"WSSS",city:"SIN",fms:"WSSSVHHH2",rid:"S02",rt:"VMR L642 ENREP M753 BITOD M755 TIA N639 VIBUN R575 PAPRA A1 IKELA P901 IDOSI V561 CANTO"},
+ {rg:"ASIA",dep:"WSSS",city:"SIN",fms:"WSSSWMKK1",rid:"S01",rt:"MASBO A457 GUPTA"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSRJAA1",rid:"S01",rt:"LIPLI Y16 BUTRA A1 IKELA MORTU NOBAD KAPLI G86 HCN J7 PICHU Q13 IGURU Y57 YULIA Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSRJAA2",rid:"S02",rt:"LIPLI Y16 BUTRA A1 IKELA MORTU NOBAD KAPLI G86 ANDRE A577 TNN W4 ANLOT M750 MUKEP Y891 AGIMO Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSRJAA4",rid:"S04",rt:"DOSBU L880 VEMKO G474 PCA L628 ARESI L625 MEVIN B462 KAZIK Y59 AZAMA Y57 YULIA Y89 GUPER Y81 RUTAS"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSVHHH1",rid:"S01",rt:"LIPLI Y16 BUTRA A1 IKELA P901 IDOSI V561 CANTO"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSVHHH2",rid:"S02",rt:"SELKA A1 SANOT Y15 GUROK A202 SIKOU V571 CANTO"},
+ {rg:"ASIA",dep:"VTBS",city:"BKK",fms:"VTBSVHHH3",rid:"S03",rt:"GOMES R468 TSH N500 PANDI M765 NOBEN M754 AKOTA A583 SABNO V542 BETTY"},
+ {rg:"ASIA",dep:"RCTP",city:"TPE",fms:"RCTPRJAA1",rid:"S01",rt:"MOLKA M750 MUKEP Y891 AGIMO Y89 GUPER Y81 RUTAS"},
+ {rg:"EUROPE",dep:"LIMC",city:"MXP",fms:"LIMCRJAA1",rid:"S01",rt:"OSKOR NOBMI BABAG RUGOG PODOB GINAM NISVA ARNOV RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SUBUT T916 LEYLA N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"LIMC",city:"MXP",fms:"LIMCRJAA2",rid:"S02",rt:"OSKOR NOBMI BABAG RUGOG PODOB GINAM NISVA ARNOV RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 LUSAL N199 RASAM L88 METKA B476 TIMGA A480 OTBOR N147 GENGA N143 RUDIZ N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"LIMC",city:"MXP",fms:"LIMCRJAA3",rid:"S03",rt:"OSKOR NOBMI BABAG RUGOG PODOB GINAM NISVA ARNOV RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SULEL N449 DUKAN A480 OTBOR N147 GENGA N143 RUDIZ N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"LIMC",city:"MXP",fms:"LIMCRJAA4",rid:"S04",rt:"OSKOR NOBMI ROTAR NISVA ARNOV RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SUBUT T916 LEYLA N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"LIMC",city:"MXP",fms:"LIMCEHAM1",rid:"S01",rt:"PEPAG ABESI N851 ROLSA LOKTA TEDGO HAREM LOHRE MAPOX NORKU"},
+ {rg:"EUROPE",dep:"EHAM",city:"AMS",fms:"EHAMLIMC1",rid:"S01",rt:"EDUPO Z739 MISGO ASBON TUSUK ULNOK L607 ABUKA KRH NATOR TRA RIPUS GERSA SOSON DEGAD Z424 RIXUV"},
+ {rg:"EUROPE",dep:"EDDF",city:"FRA",fms:"EDDFRJAA1",rid:"S01",rt:"CINDY Z74 HAREM ASLEP TAKUT L603 BESNI L605 BIBAG Q104 AKIMA STEIN TEGRI BULEN RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SUBUT T916 LEYLA N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"EDDF",city:"FRA",fms:"EDDFRJAA2",rid:"S02",rt:"CINDY Z74 HAREM ASLEP TAKUT L603 BESNI L605 BIBAG Q104 AKIMA STEIN TEGRI BULEN RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 LUSAL N199 RASAM L88 METKA B476 TIMGA A480 OTBOR N147 GENGA N143 RUDIZ N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"EDDF",city:"FRA",fms:"EDDFRJAA3",rid:"S03",rt:"SULUS Z650 VEMUT ODNEM ERGOM BUDOP BULEN RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SUBUT T916 LEYLA N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"EDDF",city:"FRA",fms:"EDDFRJAA4",rid:"S04",rt:"SULUS Z650 VEMUT ODNEM ERGOM BUDOP BULEN RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 LUSAL N199 RASAM L88 METKA B476 TIMGA A480 OTBOR N147 GENGA N143 RUDIZ N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"EUROPE",dep:"EDDF",city:"FRA",fms:"EDDFRJAA5",rid:"S05",rt:"CINDY Z74 LAMPU NOMBO Y161 MAH L173 EBEDA L603 LATLO OBEDI LURID SOMUN NISVA ARNOV RIXEN UL605 YAVRU UL615 SIV UW706 TBN UN61 NOLGA N61 LAGAS M747 SUBUT T916 LEYLA N161 SARIN A368 FKG W188 LIKMI W270 DKO W69 HUR B339 LADIX W34 VAPGU W100 ORAVA W201 UNSEK A326 DONVO G597 AGAVO Y644 EGOBA Y697 LANAT Y51 SAMON Y517 ESKAS Y303 ENTAK Y30 SWAMP"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCRJAA1",rid:"S01",rt:"NODLE R220 NANAC Y810 OLDIV Y809 SUPOK"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCRJAA2",rid:"S02",rt:"NODLE R220 NICHO M523 IPGUD Y802 OLDIV Y809 SUPOK"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCRJAA2R",rid:"R02",rt:"NODLE MCG J111 OME KUTAL L771 ODORA T565 ANIMO Y114 AWE Y116 CHE Y10 LARCH Y302 JUGEM Y30 SWAMP"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD1",rid:"S01",rt:"YESKA JOH J501 YAK DEEJA MITOM YQU Q862 DURUR Q971 MOT UFFDA Q156 ZZIPR"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD2",rid:"S02",rt:"YESKA TMSON JAGIT YXY 60N30 59N20 YOJ 57N10 TULAG PETMA 52N00 FAR HSTIN Q156 ZZIPR"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD4",rid:"S04",rt:"YESKA REMBY COHIL GOROV LEPET NUBEG WAINN DURUR Q971 MOT UFFDA Q156 ZZIPR"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD5",rid:"S05",rt:"ELLAM TIEKL OMSUN IGSOM 61N30 60N20 58N10 PETMA 52N00 FAR HSTIN Q156 ZZIPR"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD7",rid:"S07",rt:"TED J804R FRIED YZP J523 SEA J90 HLN J34 DPR UFFDA Q156 ZZIPR"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKORD8",rid:"S08",rt:"YESKA TMSON JAGIT YXY 60N30 59N20 YOJ TULAG PETMA 54N00 YRL KP09K GRB FGHRN"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKDFW1",rid:"S01",rt:"YESKA JOH J501 YAK DEEJA MITOM DUXAR YWL YXC J569 GTF J13 FQF J52 LAA J168 SPS"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKDFW2",rid:"S02",rt:"MDO J804R FRIED YZP J523 YZT YVR J52 LAA J168 SPS"},
+ {rg:"USA",dep:"PANC",city:"ANC",fms:"PANCKDFW3",rid:"S03",rt:"MDO J804R FRIED YZP J523 TOU J54 BOI J15 JNC ALS PNH J58 SPS"},
+ {rg:"USA",dep:"KJFK",city:"JFK",fms:"KJFKPANC1",rid:"S01",rt:"GAYEL Q818 WOZEE Q917 SSM FERNO 55N00 RIDOK FADIM 61N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KJFK",city:"JFK",fms:"KJFKPANC2",rid:"S02",rt:"GAYEL Q818 WOZEE NOSIK Q812 CEWDA DLH KALLU KIROD 56N00 IKLIX YSM YFS 62N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KJFK",city:"JFK",fms:"KJFKPANC5",rid:"S05",rt:"GREKI CAM MSS NAGNO YTS YPL 55N00 RIDOK FADIM 61N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KDFW",city:"DFW",fms:"KDFWKLAX1",rid:"S01",rt:"CIKAN EWM J4 WLVRN ESTWD"},
+ {rg:"USA",dep:"KDFW",city:"DFW",fms:"KDFWKLAX2",rid:"S02",rt:"BRHMA CNX ONM SJN DRK J231 HIPPI GABBL"},
+ {rg:"USA",dep:"KDFW",city:"DFW",fms:"KDFWKORD1",rid:"S01",rt:"MLC SGF WELTS"},
+ {rg:"USA",dep:"KDFW",city:"DFW",fms:"KDFWPANC1",rid:"S01",rt:"ROLLS LAA BKF GANNE MLP YWL YYD RIBIT SSR J541 YAK J501 JOH"},
+ {rg:"USA",dep:"KDFW",city:"DFW",fms:"KDFWPANC2",rid:"S02",rt:"HUDAD PNH HBU OGD BOI YKM J20 SEA Q902 ANN J195 BKA MACIE Q801 JOH"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC1",rid:"S01",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH DEGVA POPLR 54N00 PETMA TULAG 59N20 60N30 YXY JAGIT JOH"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC2",rid:"S02",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH KP18G OTLUR KOBID Q908 TAGOT WAINN NUBEG LEPET YDL GOROV COHIL REMBY"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC3",rid:"S03",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH KP18G OTLUR KOBID Q908 TAGOT YEGGA 55N20 56N25 LVD BKA J605 MDO"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC11",rid:"S11",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH NORUN 53N00 PETMA TULAG HOGAR 60N20 61N30 IGSOM OMSUN TMSON"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC12",rid:"S12",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH DEGVA POPLR 54N00 58N10 HOGAR 60N20 61N30 IGSOM OMSUN TMSON"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC13",rid:"S13",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH DEGVA POPLR KEVBO FADIM 61N20 62N30 TOVAD TIEKL"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC14",rid:"S14",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH DEGVA POPLR KEVBO YSM YFS 62N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC15",rid:"S15",rt:"PMPKN NEATO DLLAN RONIC BAE J101 GRB KP18K FERNO YTH YSF NAKTO YWY 63N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDPANC16",rid:"S16",rt:"PMPKN NEATO DLLAN RONIC BAE J101 GRB CIBPA TADIS YTH 58N00 62N10 YZF YWY 63N30 ALUSO OMSUN TIEKL"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDRJAA1",rid:"S01",rt:"PMPKN NEATO DLLAN RONIC BAE J89 BGOSH YRL YTH YSF YZF YVQ POTAT BTT OME R338 NATES R220 NANAC Y810 OLDIV Y809 SUPOK"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDRJAA3",rid:"S03",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH KP18G OTLUR TAGOT YEGGA YQU LVD BKA J605 MDO AKN EHM B757 HOWRR M523 IPGUD Y802 OLDIV Y809 SUPOK"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDRJAA4",rid:"S04",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH KP18G OTLUR TAGOT YEGGA PARQE YYD MOCKA HMPTN B757 CJAYY J123 ODK R341 HAVAM M523 IPGUD Y802 OLDIV Y809 SUPOK"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDRJAA5",rid:"S05",rt:"PMPKN NEATO DLLAN RONIC BAE J89 DLH KP18G OTLUR TAGOT EXDEE Q807 YPE J537 YYE J515 FAI J122 GAL B233 KUTAL L771 ODORA T565 ANIMO Y114 AWE Y116 CHE Y10 LARCH Y302 JUGEM Y30 SWAMP"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDKJFK1",rid:"S01",rt:"DUFEE ELX HAAKK DOXXY DXO JHW Q476 WLKES"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDKJFK2",rid:"S02",rt:"RAYNR BRTMN TAAYZ SQUIB HAUCK HRRSH HOCKE Q816 AHPAH Q140 YODAA"},
+ {rg:"USA",dep:"KORD",city:"ORD",fms:"KORDKDFW1",rid:"S01",rt:"ACITO ADELL ARLYN STL RZC FSM RRNET"},
+];
+
+// AM明記の Airway リスト（出典: AM ENROUTE — Pacific / South China Sea / NAT / Russia）
+const PBN = {
+  rnp4_pac : ['R220','M523','R580'],
+  rnp10_nopac : ['A590'],
+  scs_rnp10 : ['L642','M771','N892','L625','N884','M767','P901','L644','M772','M768'],
+  scs_rnp4  : ['L642','M771','N884','M767'],
+  russia    : ['T565','M131','L870','L168','M152','A957','P168','G583','R446','B223','R490','A933','R22','R211','N992','A931','A932','B451']
+};
+const _has = (toks,set)=> toks.some(t=>set.indexOf(t)>=0);
+const _isCoord = t=> /^\d{2}[NS]\d{2}$/.test(t);
+const _isQ = t=> /^Q\d+$/.test(t);
+const _isJ = t=> /^J\d+[A-Z]?$/.test(t);
+const _isYT = t=> /^[YT]\d+$/.test(t);
+const _isEurU = t=> /^U[LNWM]?\d+$/.test(t);
+
+// spec 強度順（大きいほど厳しい）— primary 判定に使用
+const SPEC_RANK = { 'RNP2':6, 'RNP4':5, 'RNP10':4, 'RNAV5':3, 'RNAV2':2, '在来':1 };
+const SPEC_CLASS = { 'RNP2':'pbn-rnp2','RNP4':'pbn-rnp4','RNP10':'pbn-rnp10','RNAV5':'pbn-rnav5','RNAV2':'pbn-rnav2','在来':'pbn-conv' };
+
+function pbnClassify(r){
+  const toks = r.rt.split(/\s+/);
+  const tags = [];   // {spec, label, src, hits:[airways]}
+  const add=(spec,label,src,hits)=>{ tags.push({spec,label,src,hits:[...new Set(hits)]}); };
+
+  // --- AM明記 ---
+  let h;
+  h = toks.filter(t=>PBN.rnp4_pac.indexOf(t)>=0);
+  if(h.length) add('RNP4','RNP4 (太平洋NOPAC)','AM',h);
+  h = toks.filter(t=>PBN.rnp10_nopac.indexOf(t)>=0);
+  if(h.length) add('RNP10','RNP10 (NOPAC)','AM',h);
+  h = toks.filter(t=>PBN.scs_rnp10.indexOf(t)>=0);
+  if(h.length){
+    const h4 = toks.filter(t=>PBN.scs_rnp4.indexOf(t)>=0);
+    if(h4.length) add('RNP4','RNP4/RNP10 (南シナ海)','AM',h);
+    else add('RNP10','RNP10 (南シナ海)','AM',h);
+  }
+  h = toks.filter(t=>PBN.russia.indexOf(t)>=0);
+  if(h.length) add('RNAV5','RNAV5 (ロシア上空)','AM',h);
+
+  // --- 緯度経度WPT → オセアニック ---
+  h = toks.filter(_isCoord);
+  if(h.length){
+    const nat = /JFK/.test(r.fms);  // JFK系 = 北大西洋
+    if(nat) add('RNP10','RNAV10/RNP4 (NAT HLA)','AM',h.slice(0,3));
+    else if(!_has(toks,PBN.rnp10_nopac) && !_has(toks,PBN.rnp4_pac))
+      add('RNP10','RNP10 (太平洋オセアニック)','AM',h.slice(0,3));
+  }
+
+  // 日本 RNAV経路: Y経路・M750 = RNAV5 (AIP Japan ENR 3.3 で全Y経路 RNAV5)
+  h = toks.filter(t=>/^Y\d+$/.test(t) || t==='M750');
+  if(h.length && (r.rg==='JAPAN'||r.rg==='ASIA')) add('RNAV5','RNAV5 (日本Y経路)','AM',h.slice(0,4));
+
+  // --- 一般PBN推定 ---
+  // 欧州 upper
+  h = toks.filter(_isEurU);
+  if(h.length && r.rg==='EUROPE') add('RNAV5','RNAV5 (欧州 B-RNAV)','一般',h.slice(0,4));
+  // Q ルート: 日本/アジア=RNP2 (Q番号=RNP2 の命名慣行, 推定) / 米国=RNAV2 (High RNAV)
+  //   ※ Q11/Q12/Q13 等はオセアニック区間で AIP国内RNAV経路には無いため推定扱い
+  h = toks.filter(_isQ);
+  if(h.length){
+    if(r.rg==='USA') add('RNAV2','RNAV2 (米Qルート)','一般',h.slice(0,4));
+    else if(r.rg==='JAPAN'||r.rg==='ASIA') add('RNP2','RNP2 (Qルート)','一般',h.slice(0,4));
+  }
+  // J ルート（米国 VOR ジェット経路。米国限定）
+  h = toks.filter(_isJ);
+  if(h.length && r.rg==='USA') add('在来','在来VOR (Jルート)','一般',h.slice(0,4));
+
+  // primary = 最も厳しい spec
+  let primary = tags.length ? tags.reduce((a,b)=> SPEC_RANK[b.spec]>SPEC_RANK[a.spec]?b:a).spec : null;
+  return {tags, primary};
+}
+
+let _pbnRegion='ALL';
+function pbnFilter(rg,btn){
+  _pbnRegion=rg;
+  document.querySelectorAll('#pbn-filter .std-btn').forEach(b=>b.classList.remove('std-active'));
+  if(btn) btn.classList.add('std-active');
+  pbnRender();
+}
+function pbnBadge(spec,label){ return `<span class="pbn-badge ${SPEC_CLASS[spec]}">${label}</span>`; }
+function _esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function pbnRender(){
+  const q = (document.getElementById('pbn-search').value||'').trim().toUpperCase();
+  const list = document.getElementById('pbn-list');
+  let rows = COROUTES.filter(r=> _pbnRegion==='ALL' || r.rg===_pbnRegion );
+  if(q){
+    rows = rows.filter(r=>{
+      const c = pbnClassify(r);
+      const specs = c.tags.map(t=> t.spec+' '+t.label).join(' ');
+      const hay = (r.fms+' '+r.dep+' '+r.city+' '+r.rid+' '+r.rt+' '+specs).toUpperCase();
+      return q.split(/\s+/).every(w=> hay.indexOf(w)>=0);
+    });
+  }
+  document.getElementById('pbn-count').textContent = `${rows.length} routes`;
+  if(!rows.length){ list.innerHTML='<p style="font-size:0.8em;color:var(--muted);padding:10px">該当なし</p>'; return; }
+  let html='';
+  let curKey=null;
+  rows.forEach(r=>{
+    const key = r.rg+'|'+r.dep;
+    if(key!==curKey){
+      curKey=key;
+      const label = r.dep==='TEST' ? 'JAPAN — TEST FLIGHT' : `${r.rg} — ${r.dep}${r.city?'/'+r.city:''}`;
+      html += `<div class="pbn-group">${label}</div>`;
+    }
+    const c = pbnClassify(r);
+    const badges = c.tags.map(t=>`<span class="pbn-badge ${SPEC_CLASS[t.spec]}" title="${_esc(t.hits.join(', '))}${t.src==='AM'?'　[AM記載]':'　[推定]'}">${t.label}${t.src==='AM'?' ✽':''}</span>`).join(' ')
+                  || '<span class="pbn-badge pbn-none">要件特定なし</span>';
+    const rtHtml = _esc(r.rt).replace(/\b([A-Z]{1,2}\d{1,3}[A-Z]?)\b/g, (m)=>{
+        let cls='awy-oth';
+        if(PBN.rnp4_pac.indexOf(m)>=0||PBN.scs_rnp4.indexOf(m)>=0) cls='awy-rnp4';
+        else if(PBN.rnp10_nopac.indexOf(m)>=0||PBN.scs_rnp10.indexOf(m)>=0) cls='awy-rnp10';
+        else if(PBN.russia.indexOf(m)>=0) cls='awy-rus';
+        else if(/^Q\d+$/.test(m)) cls='awy-q';
+        return `<span class="awy ${cls}">${m}</span>`;
+      });
+    html += `<details class="pbn-row">
+      <summary>
+        <span class="pbn-fms">${_esc(r.fms)}</span>
+        <span class="pbn-rid">${_esc(r.rid)}</span>
+        <span class="pbn-badges">${badges}</span>
+      </summary>
+      <div class="pbn-route">${rtHtml}</div>
+    </details>`;
+  });
+  list.innerHTML = html;
+}
+
+let _pbnInited=false;
+function pbnInit(){ if(_pbnInited) return; _pbnInited=true; pbnRender(); }
+</script>
+
 <script>
 // ── FUEL TAB ─────────────────────────────────────────────
 const _fuNum = (id)=>{ const v=parseFloat(document.getElementById(id).value); return isFinite(v)?v:NaN; };
@@ -11441,10 +11791,12 @@ function econCruiseCalc(){
   const clamped=(wt!==wc)||(Math.abs(fl/10-altc)>1e-6);
   const r=_lrcLook(wt, fl, ECON_W, ECON_A, ECON_MA, ECON_FF, ECON_KIAS);
   if(!r){ el.innerHTML=`<div style="font-size:0.8em;color:var(--warn);padding:4px 0">この Weight × FL は ECON 巡航表の範囲外（上昇限度超 / FL${Math.round(altc*10)}）。高度を下げてください。</div>`; return; }
-  const box=(t,v,c,sub)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:7px 6px;flex:1">`
-    +`<div style="font-size:0.56em;color:var(--muted);margin-bottom:2px">${t}</div>`
-    +`<div style="font-size:1.15em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}</div>`
+  const box=(t,v,c,sub)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:7px 5px;flex:1">`
+    +`<div style="font-size:0.54em;color:var(--muted);margin-bottom:2px">${t}</div>`
+    +`<div style="font-size:1.1em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}</div>`
     +(sub?`<div style="font-size:0.55em;color:var(--muted)">${sub}</div>`:'')+`</div>`;
+  const dISA=parseFloat(($('crz-disa')||{}).value)||0;
+  const tas=Math.round(_machToSpeeds(r.mach, fl*100, dISA).TAS);   // 予想TAS（ISA偏差込み）
   // 現在の速度（上の変換器）と ECON の比較 — CRZ ALT 変更後の照合用
   let cmp='';
   const cur=window._crzCur;
@@ -11468,6 +11820,7 @@ function econCruiseCalc(){
     +`<div style="display:flex;gap:6px">`
     +box('MACH','M'+r.mach.toFixed(3),'var(--accent)')
     +box('IAS',r.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
+    +box('予想TAS',tas+'<span style="font-size:0.6em"> KT</span>','var(--gold)',dISA?`ISA${dISA>=0?'+':''}${dISA}`:'ISA')
     +box('FF/ENG',r.ff.toLocaleString(),'var(--text)','× 4 = '+(r.ff*4).toLocaleString())
     +`</div>`
     +cmp
@@ -11512,14 +11865,17 @@ function _econTrans(wt, curFL, rC){
   // Δ chips
   let chips='';
   if(rT){
-    const dM=rT.mach-rC.mach, dI=rT.kias-rC.kias;
+    const dISA=parseFloat(($('crz-disa')||{}).value)||0;
+    const tasC=Math.round(_machToSpeeds(rC.mach, curFL*100, dISA).TAS);
+    const tasT=Math.round(_machToSpeeds(rT.mach, tgt*100, dISA).TAS);
+    const dM=rT.mach-rC.mach, dI=rT.kias-rC.kias, dT=tasT-tasC;
     const arr=(v)=> v>0?'▲':(v<0?'▼':'＝');
-    const mc = dM>0?'#5fd08a':(dM<0?'#e0a020':'var(--muted)');
-    const ic = dI>0?'#5fd08a':(dI<0?'#e0a020':'var(--muted)');
-    const chip=(t,val,c)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:6px 6px;flex:1"><div style="font-size:0.54em;color:var(--muted);margin-bottom:2px">${t}</div><div style="font-size:1.0em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${val}</div></div>`;
-    chips=`<div style="display:flex;gap:6px;margin-top:4px">`
-      +chip('Δ MACH（変更先−現在）',(dM>=0?'+':'')+dM.toFixed(3)+' '+arr(dM),mc)
-      +chip('Δ IAS（変更先−現在）',(dI>=0?'+':'')+dI+'kt '+arr(dI),ic)
+    const cc=(v)=> v>0?'#5fd08a':(v<0?'#e0a020':'var(--muted)');
+    const chip=(t,val,c)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:6px 4px;flex:1"><div style="font-size:0.5em;color:var(--muted);margin-bottom:2px">${t}</div><div style="font-size:0.95em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${val}</div></div>`;
+    chips=`<div style="display:flex;gap:5px;margin-top:4px">`
+      +chip('Δ MACH',(dM>=0?'+':'')+dM.toFixed(3)+' '+arr(dM),cc(dM))
+      +chip('Δ IAS',(dI>=0?'+':'')+dI+'kt '+arr(dI),cc(dI))
+      +chip('Δ 予想TAS',(dT>=0?'+':'')+dT+'kt '+arr(dT),cc(dT))
       +`</div>`;
   } else {
     chips=`<div style="font-size:0.66em;color:var(--warn);margin-top:4px">変更先 FL${Math.round(tgt)} は Weight ${Math.round(wt)}k で ECON 表範囲外（上昇限度超）。</div>`;
