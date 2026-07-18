@@ -137,6 +137,7 @@
       --accent: #1264a0;
       --text:   #181818;
       --muted:  #787068;
+      --sub:    #5f574e;
       --green:  #1a7040;
       --gold:   #906800;
       --warn:   #a04800;
@@ -916,7 +917,7 @@
 .pbn-ref th,.pbn-ref td{border:1px solid var(--border);padding:5px 7px;text-align:left;vertical-align:top}
 .pbn-ref th{background:#0e1c2e;color:var(--accent);font-size:0.92em}
 .pbn-ref td:nth-child(4){text-align:center;color:var(--muted);white-space:nowrap}
-.pbn-symcol{white-space:nowrap;font-weight:700;color:#fff}
+.pbn-symcol{white-space:nowrap;font-weight:700;color:var(--text)}
 .pbn-ref-desc td:nth-child(4){text-align:left;white-space:normal;color:var(--sub,#9fb2c4)}
 .pbn-ref-desc td:nth-child(3){white-space:nowrap}
 .pbn-group{font-size:0.7em;font-weight:700;color:var(--accent);background:#0a1a2a;padding:5px 8px;border-radius:5px;margin:12px 0 4px}
@@ -925,7 +926,7 @@
 .pbn-row summary::-webkit-details-marker{display:none}
 .pbn-row summary::before{content:'▸';color:var(--muted);font-size:0.8em;transition:transform .15s}
 .pbn-row[open] summary::before{transform:rotate(90deg)}
-.pbn-fms{font-weight:700;font-size:0.86em;color:#fff;min-width:92px;font-variant-numeric:tabular-nums}
+.pbn-fms{font-weight:700;font-size:0.86em;color:var(--text);min-width:92px;font-variant-numeric:tabular-nums}
 .pbn-rid{font-size:0.68em;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
 .pbn-badges{display:flex;flex-wrap:wrap;gap:4px;flex:1;justify-content:flex-end}
 .pbn-route{padding:6px 12px 12px;font-size:0.78em;line-height:2.0;color:var(--sub,#9fb2c4);border-top:1px dashed var(--border);word-break:break-word}
