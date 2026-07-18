@@ -8067,6 +8067,44 @@ restoreState();
   <div id="crz-result" style="margin-top:10px">
     <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
   </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--muted);cursor:pointer;user-select:none;margin-top:10px;padding-top:8px;border-top:1px solid #12283c">
+    <input type="checkbox" id="crz2-show" onchange="crz2Toggle()" style="width:16px;height:16px;accent-color:var(--accent)">
+    第2 Converter を表示（2地点/高度の比較用）
+  </label>
+</div>
+
+<!-- 第2 IAS / TAS / Mach Converter（チェックで表示） -->
+<div class="card" id="crz2-card" style="margin-top:12px;display:none;border:1px solid rgba(122,160,255,0.3)">
+  <div class="card-title" style="color:#7aa0ff">IAS / TAS / Mach Converter ②
+    <span style="float:right;font-size:0.72rem;font-weight:400;color:var(--muted)">比較用</span>
+  </div>
+  <div class="row2">
+    <div class="fg">
+      <label>Flight Level (FL)</label>
+      <input type="number" id="crz2-fl" value="330" step="10" min="100" max="450"
+             inputmode="numeric" oninput="crz2Calc()">
+    </div>
+    <div class="fg">
+      <label>ΔT from ISA (°C)</label>
+      <input type="number" id="crz2-disa" value="0" step="1"
+             inputmode="numeric" placeholder="0" oninput="crz2Calc()">
+    </div>
+  </div>
+  <div class="row2" style="margin-top:8px">
+    <div class="fg">
+      <label>Mach</label>
+      <input type="number" id="crz2-mach" value="0.84" step="0.01" min="0.5" max="1.0"
+             inputmode="decimal" oninput="crz2CalcFrom('mach')">
+    </div>
+    <div class="fg">
+      <label>IAS / CAS (KT)</label>
+      <input type="number" id="crz2-ias" step="1" min="150" max="400"
+             inputmode="numeric" placeholder="e.g. 280" oninput="crz2CalcFrom('ias')">
+    </div>
+  </div>
+  <div id="crz2-result" style="margin-top:10px">
+    <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
+  </div>
 </div>
 
 <!-- ECON(CI=40) Cruise Reference -->
@@ -11884,6 +11922,50 @@ function _econTrans(wt, curFL, rC){
     +`<div style="font-size:0.64em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-bottom:2px">▸ Mach / IAS Transition（FL${Math.round(curFL)} → FL${Math.round(tgt)}）</div>`
     +svg + chips
     +`<div style="font-size:0.6em;color:var(--muted);margin-top:4px">同一 Weight で高度変更した場合の ECON 目安速度の変化。▲=増加 / ▼=減少。</div></div>`;
+}
+
+// 第2 IAS/TAS/Mach Converter（比較用・チェックで表示）
+function crz2Toggle(){
+  const cb=$('crz2-show'), card=$('crz2-card'); if(!cb||!card) return;
+  card.style.display = cb.checked ? '' : 'none';
+  if(cb.checked) crz2Calc();
+}
+let _crz2Fix='mach';
+function crz2CalcFrom(src){ _crz2Fix=src; crz2Calc(); }
+function crz2Calc(){
+  const el=$('crz2-result'); if(!el) return;
+  const fl=parseFloat(($('crz2-fl')||{}).value);
+  const dISA=parseFloat(($('crz2-disa')||{}).value)||0;
+  if(isNaN(fl)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">FL を入力してください</p>'; return; }
+  const h=fl*100;
+  const mach=parseFloat(($('crz2-mach')||{}).value), ias=parseFloat(($('crz2-ias')||{}).value);
+  let sp;
+  if(_crz2Fix==='ias' && !isNaN(ias) && $('crz2-ias').value!=='') sp=_casToSpeeds(ias,h,dISA);
+  else if(!isNaN(mach) && $('crz2-mach').value!=='') sp=_machToSpeeds(mach,h,dISA);
+  else if(!isNaN(ias) && $('crz2-ias').value!=='') sp=_casToSpeeds(ias,h,dISA);
+  else { el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">Mach または IAS を入力してください</p>'; return; }
+  const atmos=_crzAtmos(h,dISA);
+  const isaC=atmos.T_isa-273.15, actC=atmos.T-273.15, aboveTp=h>36089;
+  el.innerHTML=`
+    <div class="result-card" style="margin-bottom:0;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;margin-bottom:12px">
+        <div><div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">IAS (CAS)</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--accent)">${sp.CAS.toFixed(0)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT</div></div>
+        <div><div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">TAS</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--green)">${sp.TAS.toFixed(0)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">KT</div></div>
+        <div><div style="font-size:0.6em;color:var(--muted);letter-spacing:1px">MACH</div>
+          <div style="font-size:1.9em;font-weight:700;color:var(--gold)">${sp.M.toFixed(3)}</div>
+          <div style="font-size:0.6em;color:var(--muted)">M</div></div>
+      </div>
+      <div class="breakdown" style="display:block">
+        <div class="brow"><span>FL${fl.toFixed(0)} (${h.toLocaleString()} ft) ${aboveTp?'— 圏界面以上':''}</span><span class="v">${aboveTp?'Isothermal':'Troposphere'}</span></div>
+        <div class="brow"><span>ISA Temperature</span><span class="v">${isaC.toFixed(1)}°C</span></div>
+        ${dISA!==0?`<div class="brow"><span>Actual Temp (ISA${dISA>=0?'+':''}${dISA})</span><span class="v" style="color:var(--warn)">${actC.toFixed(1)}°C</span></div>`:''}
+        <div class="brow"><span>Speed of Sound</span><span class="v">${sp.a.toFixed(0)} KT</span></div>
+      </div>
+    </div>`;
 }
 
 /* ─────────────────────────────────────────────
