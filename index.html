@@ -8069,7 +8069,12 @@ restoreState();
   <div id="crz-result" style="margin-top:10px">
     <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
   </div>
-  <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--muted);cursor:pointer;user-select:none;margin-top:10px;padding-top:8px;border-top:1px solid #12283c">
+  <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--accent);cursor:pointer;user-select:none;margin-top:10px;padding-top:8px;border-top:1px solid #12283c">
+    <input type="checkbox" id="crz-econ-chk" onchange="crzEconInline()" style="width:16px;height:16px;accent-color:var(--accent)">
+    ◆ ECON (CI=40) の IAS / TAS / MACH を併記
+  </label>
+  <div id="crz-econ-inline"></div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--muted);cursor:pointer;user-select:none;margin-top:8px">
     <input type="checkbox" id="crz2-show" onchange="crz2Toggle()" style="width:16px;height:16px;accent-color:var(--accent)">
     第2 Converter を表示（2地点/高度の比較用）
   </label>
@@ -8107,6 +8112,11 @@ restoreState();
   <div id="crz2-result" style="margin-top:10px">
     <p style="font-size:0.78em;color:var(--muted)">FL / Mach または IAS を入力してください</p>
   </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--accent);cursor:pointer;user-select:none;margin-top:10px;padding-top:8px;border-top:1px solid #12283c">
+    <input type="checkbox" id="crz2-econ-chk" onchange="crz2EconInline()" style="width:16px;height:16px;accent-color:var(--accent)">
+    ◆ ECON (CI=40) の IAS / TAS / MACH を併記
+  </label>
+  <div id="crz2-econ-inline"></div>
   <div id="crz2-compare"></div>
 </div>
 
@@ -8116,11 +8126,16 @@ restoreState();
     <span style="float:right;font-size:0.72rem;font-weight:400;color:var(--muted)">FL × CRZ Weight 連動</span>
   </div>
   <div style="font-size:0.7em;color:var(--muted);margin-bottom:8px;line-height:1.6">
-    上の <b>Flight Level</b>・<b>CRZ Weight</b>（TOW連動）での ECON 巡航速度。<b>高度変更時の目安</b>。
+    上の <b>CRZ Weight</b>（TOW連動）での ECON 巡航速度。<b>変更前→変更先</b>を比較。
   </div>
   <div class="row2" style="margin-bottom:6px">
     <div class="fg">
-      <label>変更先 高度 (FL) — Mach/IAS Transition 図</label>
+      <label>変更前 高度 (FL)</label>
+      <input type="number" id="crz-econ-from" step="10" min="100" max="450"
+             inputmode="numeric" placeholder="未入力=上のFL" oninput="econCruiseCalc()">
+    </div>
+    <div class="fg">
+      <label>変更先 高度 (FL) — Transition 図</label>
       <input type="number" id="crz-econ-tgt" step="10" min="100" max="450"
              inputmode="numeric" placeholder="e.g. 390" oninput="econCruiseCalc()">
     </div>
@@ -11826,7 +11841,9 @@ const ECON_FF = [
 function econCruiseCalc(){
   const el=$('crz-econ-cruise'); if(!el) return;
   const wt=parseFloat(($('crz-weight')||{}).value);
-  const fl=parseFloat(($('crz-fl')||{}).value);
+  const flMain=parseFloat(($('crz-fl')||{}).value);
+  const flFrom=parseFloat(($('crz-econ-from')||{}).value);
+  const fl=isFinite(flFrom)?flFrom:flMain;   // 変更前高度（未入力=上のFL）
   if(isNaN(wt)||isNaN(fl)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">CRZ Weight・FL を入力してください</p>'; return; }
   const wc=Math.max(450,Math.min(1000,wt)), altc=Math.max(11,Math.min(43,fl/10));
   const clamped=(wt!==wc)||(Math.abs(fl/10-altc)>1e-6);
@@ -11841,7 +11858,7 @@ function econCruiseCalc(){
   // 現在の速度（上の変換器）と ECON の比較 — CRZ ALT 変更後の照合用
   let cmp='';
   const cur=window._crzCur;
-  if(cur && isFinite(cur.mach) && isFinite(cur.cas)){
+  if(cur && isFinite(cur.mach) && isFinite(cur.cas) && Math.round(cur.fl)===Math.round(fl)){
     const dM=cur.mach - r.mach;      // + = 現在の方が速い
     const dI=cur.cas  - r.kias;
     const near=Math.abs(dM)<0.003 && Math.abs(dI)<3;
@@ -11857,7 +11874,7 @@ function econCruiseCalc(){
       +`<div style="font-size:0.68em;font-weight:700;color:${col};margin-top:5px">${word}</div></div>`;
   }
   el.innerHTML=
-    `<div style="font-size:0.66em;color:var(--muted);margin-bottom:6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:var(--fg)">FL${Math.round(fl)}</b></div>`
+    `<div style="font-size:0.66em;color:var(--muted);margin-bottom:6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:var(--fg)">変更前 FL${Math.round(fl)}</b>${isFinite(flFrom)?'':'（上のFL）'}</div>`
     +`<div style="display:flex;gap:6px">`
     +box('MACH','M'+r.mach.toFixed(3),'var(--accent)')
     +box('IAS',r.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
@@ -11866,8 +11883,38 @@ function econCruiseCalc(){
     +`</div>`
     +cmp
     +(clamped?`<div style="color:var(--warn);font-size:0.64em;margin-top:5px">⚠ 表範囲外（Weight 450–1000k / FL110–430）のため端値でクランプ。</div>`:'')
-    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=現在（変換器）との差。</div>`
+    +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=変換前FLでの変換器との差。</div>`
     +_econTrans(wt, fl, r);
+  crzEconInline();
+  crz2EconInline();
+}
+
+// Converter に ECON 速度（IAS/TAS/MACH）を併記
+function _econInlineHTML(wt, fl, disa){
+  if(isNaN(wt)||isNaN(fl)) return '<div style="font-size:0.66em;color:var(--muted);margin-top:8px">CRZ Weight・FL が必要です</div>';
+  const r=_lrcLook(wt, fl, ECON_W, ECON_A, ECON_MA, ECON_FF, ECON_KIAS);
+  if(!r) return '<div style="font-size:0.66em;color:var(--warn);margin-top:8px">ECON 表範囲外（上昇限度超）</div>';
+  const tas=Math.round(_machToSpeeds(r.mach, fl*100, disa||0).TAS);
+  const box=(t,v,c)=>`<div style="text-align:center;background:rgba(0,0,0,0.28);border-radius:6px;padding:6px 5px;flex:1"><div style="font-size:0.52em;color:var(--muted);margin-bottom:2px">${t}</div><div style="font-size:1.0em;font-weight:700;color:${c};font-variant-numeric:tabular-nums">${v}</div></div>`;
+  return `<div style="margin-top:6px">`
+    +`<div style="font-size:0.6em;color:var(--accent);font-weight:700;margin-bottom:4px">◆ ECON (CI=40) @ FL${Math.round(fl)} · W${Math.round(wt)}k${disa?` · ISA${disa>=0?'+':''}${disa}`:''}</div>`
+    +`<div style="display:flex;gap:6px">`
+    +box('IAS',r.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
+    +box('TAS',tas+'<span style="font-size:0.6em"> KT</span>','var(--gold)')
+    +box('MACH','M'+r.mach.toFixed(3),'var(--accent)')
+    +`</div></div>`;
+}
+function crzEconInline(){
+  const el=$('crz-econ-inline'); if(!el) return;
+  const chk=$('crz-econ-chk');
+  if(!chk||!chk.checked){ el.innerHTML=''; return; }
+  el.innerHTML=_econInlineHTML(parseFloat(($('crz-weight')||{}).value), parseFloat(($('crz-fl')||{}).value), parseFloat(($('crz-disa')||{}).value)||0);
+}
+function crz2EconInline(){
+  const el=$('crz2-econ-inline'); if(!el) return;
+  const chk=$('crz2-econ-chk');
+  if(!chk||!chk.checked){ el.innerHTML=''; return; }
+  el.innerHTML=_econInlineHTML(parseFloat(($('crz-weight')||{}).value), parseFloat(($('crz2-fl')||{}).value), parseFloat(($('crz2-disa')||{}).value)||0);
 }
 
 // 高度変更 Mach/IAS Transition 図（現在 FL → 変更先 FL）
@@ -11900,7 +11947,7 @@ function _econTrans(wt, curFL, rC){
     +`<circle cx="150" cy="${yC}" r="4" fill="${AC}"/>`
     +`<circle cx="212" cy="${yT}" r="4.5" fill="none" stroke="${AC}" stroke-width="2.5"/>`
     +(same?'':`<text x="181" y="${(yC+yT)/2}" fill="${dCol}" font-size="10" font-weight="700" text-anchor="middle" dy="-3">${dir}</text>`)
-    +lbl(28, yC, 'start', curFL, '現在 '+curSpd, curUpper, AC)
+    +lbl(28, yC, 'start', curFL, '変更前 '+curSpd, curUpper, AC)
     +lbl(332, yT, 'end', tgt, '変更先 '+tgtSpd, tgtUpper, rT?'#5fd08a':'var(--warn)')
     +`</svg>`;
   // Δ chips
@@ -11970,6 +12017,7 @@ function crz2Calc(){
         <div class="brow"><span>Speed of Sound</span><span class="v">${sp.a.toFixed(0)} KT</span></div>
       </div>
     </div>`;
+  crz2EconInline();
   crz2Compare();
 }
 
