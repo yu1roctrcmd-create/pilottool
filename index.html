@@ -9467,7 +9467,8 @@ restoreState();
     <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>
   </div>
 
-  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:4px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE ラダー（目的地に着陸する場合）</div>
+  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:2px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE ラダー（目的地に着陸する場合）</div>
+  <div style="font-size:0.6em;color:var(--muted);margin-bottom:6px">Minimum Fuel・Mayday Fuel は AIP 正式用語。<span style="color:#a78bfa">Pan Pan は社内参考の中間トリガー</span>（詳細は下の「通報基準・用語」）。</div>
   <div id="fu-dv-result">
     <p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>
   </div>
@@ -9480,25 +9481,33 @@ restoreState();
 
 <!-- 通報基準・用語 -->
 <div class="card" style="margin-top:12px">
-  <div class="card-title">通報基準・用語 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Minimum Fuel / MAYDAY FUEL</span></div>
+  <div class="card-title">通報基準・用語 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Minimum Fuel / MAYDAY FUEL &nbsp;<span style="color:#5fd08a">— AIP 2023/3/23 改正準拠</span></span></div>
 
   <div style="border-left:3px solid #e0a020;padding:6px 0 6px 10px;margin-bottom:10px">
     <div style="font-weight:700;color:#e0a020;font-size:0.9em">MINIMUM FUEL 通報</div>
     <div style="font-size:0.8em;line-height:1.6;margin-top:3px">
-      現在の管制承認（clearance）に<b>変更が生じた場合</b>に、着陸時の残存燃料量が
-      <b>30分 Holding 相当（RSV）未満</b>になると計算される時 →
-      管制機関に <b style="color:#e0a020">「MINIMUM FUEL」</b>の用語で通報する。<br>
+      <b>着陸を計画する飛行場の選択肢が一つの飛行場に限定され</b>（Divert先の選択肢がなくなり目的地に着陸決心した状態）、
+      その飛行場に安全に着陸するために必要な残存燃料が<b>遅延を受け入れられない状態</b>に達した時 →
+      管制機関等に <b style="color:#e0a020">「MINIMUM FUEL」</b>の用語で<b>通報しなければならない</b>。<br>
       <span style="color:var(--muted);font-size:0.92em">※ 緊急事態ではない（優先権の保証はされない）。以後の遅延を受け入れられない旨の通知。</span>
     </div>
   </div>
 
   <div style="border-left:3px solid #e05555;padding:6px 0 6px 10px;margin-bottom:10px">
-    <div style="font-weight:700;color:#e05555;font-size:0.9em">MAYDAY FUEL 宣言</div>
+    <div style="font-weight:700;color:#e05555;font-size:0.9em">緊急状態の宣言（MAYDAY FUEL）</div>
     <div style="font-size:0.8em;line-height:1.6;margin-top:3px">
-      安全な着陸が可能な<b>最寄りの飛行場</b>への着陸時の残存燃料量が
-      <b>30分 Holding 相当（RSV）未満</b>となると判断した時 →
-      <b style="color:#e05555">「MAYDAY ×3　FUEL」</b>の用語で緊急事態を宣言し、
-      管制機関に<b>着陸の優先権を要求</b>する。
+      使用可能な残存燃料で安全に着陸するために<b>管制上の優先的取り扱い</b>を必要とする場合 →
+      管制機関等に残存燃料が緊急状態であることを次の用語で<b>宣言しなければならない</b>。<br>
+      <b style="color:#e05555">「MAYDAY MAYDAY MAYDAY FUEL」</b> 又は <b style="color:#e05555">「MAYDAY FUEL」</b>
+    </div>
+  </div>
+
+  <div style="border-left:3px solid #a78bfa;padding:6px 0 6px 10px;margin-bottom:10px">
+    <div style="font-weight:700;color:#a78bfa;font-size:0.9em">▲ PAN PAN について（本ツール上の参考トリガー）</div>
+    <div style="font-size:0.78em;line-height:1.6;margin-top:3px;color:var(--muted)">
+      「PAN PAN FUEL」は<b style="color:var(--fg)">日本 AIP の正式な通報用語ではありません</b>。公式の緊急宣言は
+      一律「MAYDAY MAYDAY MAYDAY FUEL」（又は「MAYDAY FUEL」）です。①のラダーにある
+      <b style="color:var(--fg)">Pan Pan 通報</b>は、MINIMUM FUEL と MAYDAY FUEL の間に置いた<b style="color:var(--fg)">社内参考用の中間トリガー</b>（Reserve 防衛の早期警戒点）であり、AIP上の必須通報ではありません。
     </div>
   </div>
 
@@ -9515,14 +9524,17 @@ restoreState();
   <table style="width:100%;border-collapse:collapse;font-size:0.8em">
     <tr style="border-top:1px solid #12283c">
       <td style="padding:5px 6px;font-weight:700;color:#e0a020;white-space:nowrap;vertical-align:top">MINIMUM FUEL</td>
-      <td style="padding:5px 6px;line-height:1.5">予想外の遅延を受け入れられない燃料量不足</td></tr>
+      <td style="padding:5px 6px;line-height:1.5">1飛行場に着陸決心＋遅延を受け入れられない燃料量不足（AIP 正式用語）</td></tr>
     <tr style="border-top:1px solid #12283c">
-      <td style="padding:5px 6px;font-weight:700;color:#4f8fd8;white-space:nowrap;vertical-align:top">PAN PAN ×3</td>
-      <td style="padding:5px 6px;line-height:1.5">管制上の優先的な取り扱いが必要な場合</td></tr>
+      <td style="padding:5px 6px;font-weight:700;color:#a78bfa;white-space:nowrap;vertical-align:top">PAN PAN <span style="font-size:0.85em">(参考)</span></td>
+      <td style="padding:5px 6px;line-height:1.5">AIP正式用語ではない。ツール内の Reserve 防衛・早期警戒の中間トリガー</td></tr>
     <tr style="border-top:1px solid #12283c">
       <td style="padding:5px 6px;font-weight:700;color:#e05555;white-space:nowrap;vertical-align:top">MAYDAY FUEL</td>
-      <td style="padding:5px 6px;line-height:1.5">遭難の段階に陥るほど航空機の燃料量が欠乏した場合</td></tr>
+      <td style="padding:5px 6px;line-height:1.5">管制上の優先的取り扱いが必要な緊急状態（AIP 正式用語・「MAYDAY MAYDAY MAYDAY FUEL」で宣言）</td></tr>
   </table>
+  <div style="font-size:0.6em;color:var(--muted);margin-top:8px;line-height:1.6">
+    出典：ATC再発見 Radio Telephony Meeting Vol.038（2023.03.13）「Minimum Fuel 通報に係る AIP の改正」（JAPA ATS委員会・ATCAJ技術委員会）。AIP 2023/3/23 改正はEASA安全情報ブリテン及びICAO PANS-ATM準拠。Final Reserve Fuel の定量的基準（30分 Holding, 1500ft）は ICAO Annex 6 / AIM-J 第12章参照。
+  </div>
 </div>
 
 <!-- 2. Fuel Loading Distribution -->
