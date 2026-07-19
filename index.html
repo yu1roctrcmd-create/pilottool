@@ -9421,21 +9421,22 @@ restoreState();
 
 <!-- 1. Divert 決心燃料 -->
 <div class="card" style="margin-top:10px">
-  <div class="card-title">① Divert 決心燃料 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Commit / Minimum / Pan Pan / Mayday ＋ Holding 可能時間</span></div>
+  <div class="card-title">① Divert 決心燃料 &nbsp;<span style="font-size:0.78em;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">Divert 判断 ＋ Final Reserve ラダー（目的地着陸）</span></div>
   <div class="row2">
     <div class="fg">
       <label>RSV — Final Reserve (LB)</label>
       <input type="number" id="fu-dv-rsv" step="100" min="0" inputmode="numeric" placeholder="e.g. 9600" oninput="fuDivert()">
     </div>
     <div class="fg">
-      <label>ALTN — Fuel to Alternate (LB)</label>
-      <input type="number" id="fu-dv-altn" step="100" min="0" inputmode="numeric" placeholder="e.g. 15400" oninput="fuDivert()">
+      <label>ALTN — Fuel to Alternate (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">代替空港の進入込</span></label>
+      <input type="number" id="fu-dv-altn" step="100" min="0" inputmode="numeric" placeholder="e.g. 15000" oninput="fuDivert()">
     </div>
   </div>
   <div class="row2" style="margin-top:8px">
     <div class="fg">
-      <label>App分 — Approach 燃料 (LB)</label>
-      <input type="number" id="fu-dv-app" step="500" min="0" value="5000" inputmode="numeric" placeholder="進入〜接地" oninput="fuDivert()">
+      <label>App分 — 目的地 進入燃料 (LB)</label>
+      <input type="number" id="fu-dv-app" step="500" min="0" value="5000" inputmode="numeric" placeholder="目的地 進入〜接地" oninput="fuDivert()">
     </div>
     <div class="fg">
       <label>Holding 燃料流量 (LB/hr)</label>
@@ -9444,13 +9445,21 @@ restoreState();
   </div>
   <div class="row2" style="margin-top:8px">
     <div class="fg">
-      <label>現在燃料 FOB (LB) — Holding 可能時間の起点</label>
-      <input type="number" id="fu-dv-fob" step="500" min="0" inputmode="numeric" placeholder="現在の総燃料" oninput="fuDivert()">
+      <label>目的地上空 予測残燃料 (LB)</label>
+      <input type="number" id="fu-dv-fob" step="500" min="0" inputmode="numeric" placeholder="FMC PROG 目的地予測残" oninput="fuDivert()">
     </div>
   </div>
-  <div id="fu-dv-result" style="margin-top:10px">
-    <p style="font-size:0.78em;color:var(--muted)">RSV を入力してください（現在燃料で Holding 可能時間を算出）</p>
+
+  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:12px;margin-bottom:4px">▸ DIVERT 判断（目的地 or ALTN）</div>
+  <div id="fu-dv-divert">
+    <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>
   </div>
+
+  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:4px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE ラダー（目的地に着陸する場合）</div>
+  <div id="fu-dv-result">
+    <p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>
+  </div>
+
   <div style="font-size:0.7em;color:var(--muted);margin-top:10px;border-top:1px solid #12283c;padding-top:7px;line-height:1.6">
     <b style="color:#e0a020">EICAS「FUEL QTY LOW」</b> — いずれかの <b>Main Tank</b> が
     <b style="color:var(--fg)">2,000 LB 以下</b>になると表示（B747-8F システム）。低残燃料の注意喚起。
@@ -9929,60 +9938,88 @@ function pbnInit(){ if(_pbnInited) return; _pbnInited=true; pbnRender(); }
 const _fuNum = (id)=>{ const v=parseFloat(document.getElementById(id).value); return isFinite(v)?v:NaN; };
 const _fuFmt = (n)=> Math.round(n).toLocaleString('en-US');
 
-// ① Divert 決心燃料
+// ① Divert 決心燃料 — 上段:Divert判断 / 下段:Final Reserveラダー
+const _fuRoundUp=(x)=>Math.ceil(x/100)*100;   // 100 LB 単位で切上げ
 function fuDivert(){
   const rsv=_fuNum('fu-dv-rsv'), altn=_fuNum('fu-dv-altn');
   const app=_fuNum('fu-dv-app'), fob=_fuNum('fu-dv-fob');
   let hold=_fuNum('fu-dv-hold'); if(!isFinite(hold)||hold<=0) hold=20000;
-  const el=document.getElementById('fu-dv-result');
-  if(!isFinite(rsv)){ el.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>'; return; }
+  const elD=document.getElementById('fu-dv-divert');
+  const elR=document.getElementById('fu-dv-result');
+  if(!isFinite(rsv)){
+    elD.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>';
+    elR.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>';
+    return;
+  }
   const a=isFinite(altn)?altn:0, ap=isFinite(app)?app:0;
   const hasFob=isFinite(fob);
-  // 決心燃料 4段（高→低）
-  const ten     = hold*10/60;          // 10分ぶんの Holding 燃料
-  const panpan  = rsv + ap;            // Pan Pan通報 = RSV + App分
-  const minimum = panpan + ten;        // Minimum = Pan Pan + 10分
-  const commitA = 1.5*rsv + a;         // RSV×0.5＋RSV＋ALTN
-  const commitB = minimum + a;         // Pan Pan＋10分＋ALTN
-  const commit  = Math.max(commitA, commitB);
-  const ru=(x)=>Math.ceil(x/100)*100;   // 100 LB 単位で切上げ
-  const levels=[
-    {lbl:'Commit Fuel', v:ru(commit),  note:(commitB>=commitA?'Pan Pan＋10分＋ALTN':'RSV×0.5＋RSV＋ALTN'), col:'#4f8fd8'},
-    {lbl:'Minimum Fuel',v:ru(minimum), note:'Pan Pan＋10分',  col:'#e0a020'},
-    {lbl:'Pan Pan 通報', v:ru(panpan),  note:'RSV＋App分',     col:'#a78bfa'},
-    {lbl:'Mayday Fuel', v:ru(rsv),     note:'＝RSV',          col:'#e05555'},
-  ];
-  let html='<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
-    +'<tr style="font-size:0.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
-    +'<td style="padding:2px 6px">決心燃料</td><td style="padding:2px 6px;text-align:right">燃料 (LB)</td>'
-    +(hasFob?'<td style="padding:2px 6px;text-align:right">現在との差</td><td style="padding:2px 6px;text-align:right">到達まで</td>':'<td colspan="2" style="padding:2px 6px">算出式</td>')
-    +'</tr>';
-  levels.forEach(L=>{
-    const diff=hasFob?fob-L.v:NaN;
-    const mins=hasFob?diff/hold*60:NaN;
-    const dcol=diff>=0?'#5fd08a':'#ff7a8c';
-    html+='<tr style="border-top:1px solid #12283c">'
-      +`<td style="padding:6px 6px"><span style="font-weight:700;color:${L.col}">${L.lbl}</span>`
-      +`<div style="font-size:0.6em;color:var(--muted)">${L.note}</div></td>`
-      +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${_fuFmt(L.v)}</td>`;
-    if(hasFob){
-      html+=`<td style="padding:6px 6px;text-align:right;font-variant-numeric:tabular-nums;color:${dcol}">${diff>=0?'+':''}${_fuFmt(diff)}</td>`
-        +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:${diff>=0?L.col:'#ff7a8c'}">${diff>=0?Math.floor(mins)+' 分':'超過'}</td>`;
+
+  // ▸ 上段: Divert 判断 — Divert 可能限界 = ALTN + RSV
+  const divertLimit=_fuRoundUp(rsv+a);
+  {
+    let html='';
+    if(!isFinite(altn)){
+      html='<p style="font-size:0.75em;color:var(--muted)">ALTN を入力してください</p>';
     } else {
-      html+=`<td colspan="2" style="padding:6px 6px;font-size:0.72em;color:var(--muted)">${L.note}</td>`;
+      html+=`<div style="display:flex;justify-content:space-between;align-items:baseline;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 10px;margin-bottom:6px">`
+        +`<span style="font-size:0.78em;font-weight:700;color:#4f8fd8">Divert 可能限界</span>`
+        +`<span style="font-size:1.05em;font-weight:700;font-variant-numeric:tabular-nums;color:#4f8fd8">${_fuFmt(divertLimit)} <span style="font-size:0.68em;color:var(--muted)">LB</span></span></div>`
+        +`<div style="font-size:0.62em;color:var(--muted);margin-bottom:8px">＝ ALTN(${_fuFmt(a)}) ＋ RSV(${_fuFmt(rsv)})。これ以上残っていれば ALTN へ Divert して RSV を確保可能。</div>`;
+      if(hasFob){
+        const margin=fob-divertLimit;
+        const mins=margin/hold*60;
+        if(margin>=0){
+          html+=`<div style="margin-bottom:4px"><span style="background:#123321;color:#5fd08a;font-weight:700;font-size:0.8em;padding:3px 10px;border-radius:6px">🟢 Divert 可能</span></div>`
+            +`<div style="font-size:0.74em;line-height:1.6">目的地上空 <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB → 限界まで余裕 <b style="color:#5fd08a">+${_fuFmt(margin)}</b> LB（約 <b style="color:var(--fg)">${Math.floor(mins)} 分</b>）。これを超えて保持すると Divert 不可・目的地コミット必須。</div>`;
+        } else {
+          html+=`<div style="margin-bottom:4px"><span style="background:#3a1015;color:#ff7a8c;font-weight:700;font-size:0.8em;padding:3px 10px;border-radius:6px">🔴 目的地コミット必須</span></div>`
+            +`<div style="font-size:0.74em;line-height:1.6">目的地上空 <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB は Divert 可能限界を <b style="color:#ff7a8c">${_fuFmt(-margin)}</b> LB 下回る。ALTN へ回っても RSV を確保できないため、目的地へ着陸を継続。</div>`;
+        }
+      } else {
+        html+='<div style="font-size:0.72em;color:var(--muted)">目的地上空 予測残燃料を入力すると判定を表示。</div>';
+      }
     }
-    html+='</tr>';
-  });
-  html+='</table>';
-  html+=`<div style="font-size:0.66em;color:var(--muted);margin-top:8px;padding-top:6px;border-top:1px solid #12283c;line-height:1.7">`
-    +`<b style="color:#4f8fd8">Commit Fuel</b> ＝ ( <b>RSV×0.5＋RSV</b> ) or ( <b>Pan Pan＋10分</b> ) の大きい方 ＋ ALTN`
-    +`</div>`;
-  html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
-    +(hasFob?`現在 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。各燃料は 100 LB 単位で切上げ。`
-             :`現在燃料 FOB を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB。`)
-    +(isFinite(altn)?'':'<br>※ ALTN 未入力（0扱い）。')
-    +`</div>`;
-  el.innerHTML=html;
+    elD.innerHTML=html;
+  }
+
+  // ▸ 下段: Final Reserve ラダー（目的地着陸・App分=目的地進入のみ）
+  {
+    const ten     = hold*10/60;          // 10分ぶんの Holding 燃料
+    const panpan  = rsv + ap;            // Pan Pan通報 = RSV + App分（目的地進入）
+    const minimum = panpan + ten;        // Minimum = Pan Pan + 10分
+    const levels=[
+      {lbl:'Minimum Fuel',v:_fuRoundUp(minimum), note:'Pan Pan＋10分',  col:'#e0a020'},
+      {lbl:'Pan Pan 通報', v:_fuRoundUp(panpan),  note:'RSV＋App分',     col:'#a78bfa'},
+      {lbl:'Mayday Fuel', v:_fuRoundUp(rsv),     note:'＝RSV',          col:'#e05555'},
+    ];
+    let html='<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
+      +'<tr style="font-size:0.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
+      +'<td style="padding:2px 6px">決心燃料</td><td style="padding:2px 6px;text-align:right">燃料 (LB)</td>'
+      +(hasFob?'<td style="padding:2px 6px;text-align:right">現在との差</td><td style="padding:2px 6px;text-align:right">到達まで</td>':'<td colspan="2" style="padding:2px 6px">算出式</td>')
+      +'</tr>';
+    levels.forEach(L=>{
+      const diff=hasFob?fob-L.v:NaN;
+      const mins=hasFob?diff/hold*60:NaN;
+      const dcol=diff>=0?'#5fd08a':'#ff7a8c';
+      html+='<tr style="border-top:1px solid #12283c">'
+        +`<td style="padding:6px 6px"><span style="font-weight:700;color:${L.col}">${L.lbl}</span>`
+        +`<div style="font-size:0.6em;color:var(--muted)">${L.note}</div></td>`
+        +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${_fuFmt(L.v)}</td>`;
+      if(hasFob){
+        html+=`<td style="padding:6px 6px;text-align:right;font-variant-numeric:tabular-nums;color:${dcol}">${diff>=0?'+':''}${_fuFmt(diff)}</td>`
+          +`<td style="padding:6px 6px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:${diff>=0?L.col:'#ff7a8c'}">${diff>=0?Math.floor(mins)+' 分':'超過'}</td>`;
+      } else {
+        html+=`<td colspan="2" style="padding:6px 6px;font-size:0.72em;color:var(--muted)">${L.note}</td>`;
+      }
+      html+='</tr>';
+    });
+    html+='</table>';
+    html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
+      +(hasFob?`目的地上空 <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。各燃料は 100 LB 単位で切上げ。App分は<b>目的地</b>進入分（ALTN側の進入は ALTN に内包済み）。`
+               :`目的地上空 予測残燃料を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB。`)
+      +`</div>`;
+    elR.innerHTML=html;
+  }
 }
 
 // ② Fuel Loading Distribution 〔WB Sec.8 · density 6.7 lb/USG〕
