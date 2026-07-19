@@ -9439,7 +9439,8 @@ restoreState();
   </div>
   <div class="row2" style="margin-top:8px">
     <div class="fg">
-      <label>App分 — 目的地 進入燃料 (LB)</label>
+      <label>App分 — 目的地 進入燃料 (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">Divert判断・モード換算用</span></label>
       <input type="number" id="fu-dv-app" step="500" min="0" value="5000" inputmode="numeric" placeholder="目的地 進入〜接地" oninput="fuDivert()">
     </div>
     <div class="fg">
@@ -9467,8 +9468,8 @@ restoreState();
     <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>
   </div>
 
-  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:2px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE ラダー（目的地に着陸する場合）</div>
-  <div style="font-size:0.6em;color:var(--muted);margin-bottom:6px">Minimum Fuel・Mayday Fuel は AIP 正式用語。<span style="color:#a78bfa">Pan Pan は社内参考の中間トリガー</span>（詳細は下の「通報基準・用語」）。</div>
+  <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:2px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE ラダー（着陸時予測燃料ベース・FMC Prediction 準拠）</div>
+  <div style="font-size:0.6em;color:var(--muted);margin-bottom:6px">Minimum Fuel・Mayday Fuel は AIP 正式用語。<span style="color:#a78bfa">Pan Pan は社内参考の中間トリガー</span>（詳細は下の「通報基準・用語」）。着陸時予測燃料（FMC PROG 準拠）を基準に判定。</div>
   <div id="fu-dv-result">
     <p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>
   </div>
@@ -9995,12 +9996,14 @@ function fuDivert(){
   }
   const a=isFinite(altn)?altn:0, ap=isFinite(app)?app:0;
   const hasFob=isFinite(fobRaw);
-  // FMC着陸予想モードは「入力＝着陸時予測」なので App分を足して上空換算(fob)に統一する
-  const fob = hasFob ? (_fuDvMode==='landing' ? fobRaw+ap : fobRaw) : NaN;
+  // 上空判断用（Divert 判断＝ALTN+RSVとの比較）と着陸時判断用（Final Reserveラダー）を両方算出
+  // FMC着陸予想モードは「入力＝着陸時予測」なので App分を足して上空換算(fob)、逆に上空予測モードはApp分を引いて着陸時換算(fobLand)
+  const fob     = hasFob ? (_fuDvMode==='landing' ? fobRaw+ap : fobRaw) : NaN;
+  const fobLand = hasFob ? (_fuDvMode==='landing' ? fobRaw    : fobRaw-ap) : NaN;
   if(elN){
     elN.innerHTML = (_fuDvMode==='landing' && hasFob)
-      ? `入力＝着陸時予測 <b style="color:var(--fg)">${_fuFmt(fobRaw)}</b> LB → 上空換算（＋App分 ${_fuFmt(ap)}）＝ <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB として判定`
-      : (_fuDvMode==='over' ? '入力＝目的地上空（進入前）の予測残燃料。着陸時予測は App分を差し引いて算出。' : '');
+      ? `入力＝着陸時予測 <b style="color:var(--fg)">${_fuFmt(fobRaw)}</b> LB → 上空換算（＋App分 ${_fuFmt(ap)}）＝ <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB として Divert 判断に使用`
+      : (_fuDvMode==='over' && hasFob ? `入力＝目的地上空（進入前）の予測残燃料 → 着陸時換算（−App分 ${_fuFmt(ap)}）＝ <b style="color:var(--fg)">${_fuFmt(fobLand)}</b> LB として Final Reserve ラダーに使用` : '');
   }
 
   // ▸ 上段: Divert 判断 — Divert 可能限界 = ALTN + RSV
@@ -10031,15 +10034,17 @@ function fuDivert(){
     elD.innerHTML=html;
   }
 
-  // ▸ 下段: Final Reserve ラダー（目的地着陸・App分=目的地進入のみ）
+  // ▸ 下段: Final Reserve ラダー（着陸時予測燃料ベース・FMC Prediction 準拠）
   {
     const ten     = hold*10/60;          // 10分ぶんの Holding 燃料
-    const panpan  = rsv + ap;            // Pan Pan通報 = RSV + App分（目的地進入）
-    const minimum = panpan + ten;        // Minimum = Pan Pan + 10分
+    const fifteen = hold*15/60;          // 15分ぶんの Holding 燃料
+    const mayday  = rsv;                 // Mayday   = 着陸時予測 < RSV
+    const panpan  = rsv + ten;           // Pan Pan  = 着陸時予測 < RSV+10分
+    const minimum = rsv + fifteen;       // Minimum  = 着陸時予測 < RSV+15分
     const levels=[
-      {lbl:'Minimum Fuel',v:_fuRoundUp(minimum), note:'Pan Pan＋10分',  col:'#e0a020'},
-      {lbl:'Pan Pan 通報', v:_fuRoundUp(panpan),  note:'RSV＋App分',     col:'#a78bfa'},
-      {lbl:'Mayday Fuel', v:_fuRoundUp(rsv),     note:'＝RSV',          col:'#e05555'},
+      {lbl:'Minimum Fuel',v:_fuRoundUp(minimum), note:'RSV＋15分',  col:'#e0a020'},
+      {lbl:'Pan Pan 通報', v:_fuRoundUp(panpan),  note:'RSV＋10分',  col:'#a78bfa'},
+      {lbl:'Mayday Fuel', v:_fuRoundUp(mayday),  note:'＝RSV',      col:'#e05555'},
     ];
     let html='<table style="width:100%;border-collapse:collapse;font-size:0.9em">'
       +'<tr style="font-size:0.62em;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">'
@@ -10047,7 +10052,7 @@ function fuDivert(){
       +(hasFob?'<td style="padding:2px 6px;text-align:right">現在との差</td><td style="padding:2px 6px;text-align:right">到達まで</td>':'<td colspan="2" style="padding:2px 6px">算出式</td>')
       +'</tr>';
     levels.forEach(L=>{
-      const diff=hasFob?fob-L.v:NaN;
+      const diff=hasFob?fobLand-L.v:NaN;
       const mins=hasFob?diff/hold*60:NaN;
       const dcol=diff>=0?'#5fd08a':'#ff7a8c';
       html+='<tr style="border-top:1px solid #12283c">'
@@ -10064,8 +10069,8 @@ function fuDivert(){
     });
     html+='</table>';
     html+=`<div style="font-size:0.64em;color:var(--muted);margin-top:6px;line-height:1.6">`
-      +(hasFob?`目的地上空 <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (現在−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB。各燃料は 100 LB 単位で切上げ。App分は<b>目的地</b>進入分（ALTN側の進入は ALTN に内包済み）。`
-               :`目的地上空 予測残燃料を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB。`)
+      +(hasFob?`着陸時予測 <b style="color:var(--fg)">${_fuFmt(fobLand)}</b> LB · Holding <b style="color:var(--fg)">${_fuFmt(hold)}</b> LB/hr。「到達まで」＝ (着陸時予測−各決心燃料) ÷ Holding ＝ その決心燃料に<b>なるまでの時間</b>。10分＝<b style="color:var(--fg)">${_fuFmt(ten)}</b> LB／15分＝<b style="color:var(--fg)">${_fuFmt(fifteen)}</b> LB。各燃料は 100 LB 単位で切上げ。FMC PROG の着陸時予測燃料を基準（FMC Prediction 準拠）。`
+               :`着陸時予測燃料を入力すると、各決心燃料までの差分と「到達まで」の時間を表示。10分＝${_fuFmt(ten)} LB／15分＝${_fuFmt(fifteen)} LB。`)
       +`</div>`;
     elR.innerHTML=html;
   }
