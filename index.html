@@ -1307,6 +1307,7 @@
   <div class="fg" style="margin:6px 0 10px">
     <label>Tailwind Limit</label>
     <div class="tgl-group">
+      <button id="btnTw5"  class="tgl"    onclick="setTwLimit(5)">5 KT</button>
       <button id="btnTw10" class="tgl on" onclick="setTwLimit(10)">10 KT</button>
       <button id="btnTw15" class="tgl"    onclick="setTwLimit(15)">15 KT</button>
     </div>
@@ -1763,6 +1764,7 @@
   <div class="fg" style="margin:6px 0 10px">
     <label>Tailwind Limit</label>
     <div class="tgl-group" id="ldg-twBtns">
+      <button id="ldg-btnTw5"  class="tgl"    onclick="setTwLimitLdg(5)">5 KT</button>
       <button id="ldg-btnTw10" class="tgl on" onclick="setTwLimitLdg(10)">10 KT</button>
       <button id="ldg-btnTw15" class="tgl"    onclick="setTwLimitLdg(15)">15 KT</button>
     </div>
@@ -2603,6 +2605,7 @@ function updateGustOptions() {
 let twLimit = 10;
 function setTwLimit(v) {
   twLimit = v;
+  $('btnTw5').className  = v === 5  ? 'tgl on' : 'tgl';
   $('btnTw10').className = v === 10 ? 'tgl on' : 'tgl';
   $('btnTw15').className = v === 15 ? 'tgl on' : 'tgl';
   buildXwTable();
@@ -3034,6 +3037,7 @@ function updateLdgVref() {
 }
 function setTwLimitLdg(v) {
   twLimitLdg = v;
+  $('ldg-btnTw5').className  = v === 5  ? 'tgl on' : 'tgl';
   $('ldg-btnTw10').className = v === 10 ? 'tgl on' : 'tgl';
   $('ldg-btnTw15').className = v === 15 ? 'tgl on' : 'tgl';
   buildXwTableLdg();
