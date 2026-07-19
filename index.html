@@ -11855,6 +11855,24 @@ function econCruiseCalc(){
     +(sub?`<div style="font-size:0.55em;color:var(--muted)">${sub}</div>`:'')+`</div>`;
   const dISA=parseFloat(($('crz-disa')||{}).value)||0;
   const tas=Math.round(_machToSpeeds(r.mach, fl*100, dISA).TAS);   // 予想TAS（ISA偏差込み）
+  // 変更後（変更先高度）の ECON を併記
+  let afterRow='';
+  const tgt=parseFloat(($('crz-econ-tgt')||{}).value);
+  if(isFinite(tgt)){
+    const r2=_lrcLook(wt, tgt, ECON_W, ECON_A, ECON_MA, ECON_FF, ECON_KIAS);
+    if(r2){
+      const tas2=Math.round(_machToSpeeds(r2.mach, tgt*100, dISA).TAS);
+      afterRow=`<div style="font-size:0.66em;color:var(--muted);margin:10px 0 6px">Weight <b style="color:var(--fg)">${Math.round(wc)}k</b> LB · <b style="color:#5fd08a">変更後 FL${Math.round(tgt)}</b></div>`
+        +`<div style="display:flex;gap:6px">`
+        +box('MACH','M'+r2.mach.toFixed(3),'var(--accent)')
+        +box('IAS',r2.kias+'<span style="font-size:0.6em"> KT</span>','var(--green)')
+        +box('予想TAS',tas2+'<span style="font-size:0.6em"> KT</span>','var(--gold)',dISA?`ISA${dISA>=0?'+':''}${dISA}`:'ISA')
+        +box('FF/ENG',r2.ff.toLocaleString(),'var(--text)','× 4 = '+(r2.ff*4).toLocaleString())
+        +`</div>`;
+    } else {
+      afterRow=`<div style="font-size:0.66em;color:var(--warn);margin:10px 0 4px">変更後 <b>FL${Math.round(tgt)}</b> は Weight ${Math.round(wt)}k で ECON 表範囲外（上昇限度超）。</div>`;
+    }
+  }
   // 現在の速度（上の変換器）と ECON の比較 — CRZ ALT 変更後の照合用
   let cmp='';
   const cur=window._crzCur;
@@ -11881,6 +11899,7 @@ function econCruiseCalc(){
     +box('予想TAS',tas+'<span style="font-size:0.6em"> KT</span>','var(--gold)',dISA?`ISA${dISA>=0?'+':''}${dISA}`:'ISA')
     +box('FF/ENG',r.ff.toLocaleString(),'var(--text)','× 4 = '+(r.ff*4).toLocaleString())
     +`</div>`
+    +afterRow
     +cmp
     +(clamped?`<div style="color:var(--warn);font-size:0.64em;margin-top:5px">⚠ 表範囲外（Weight 450–1000k / FL110–430）のため端値でクランプ。</div>`:'')
     +`<div style="font-size:0.62em;color:var(--muted);margin-top:5px">ECON CI=40 巡航。Weight × 高度を線形補間。上段=ECON目安 / 下段=変換前FLでの変換器との差。</div>`
