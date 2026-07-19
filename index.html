@@ -9447,12 +9447,20 @@ restoreState();
       <input type="number" id="fu-dv-hold" step="500" min="1000" value="20000" inputmode="numeric" placeholder="20000" oninput="fuDivert()">
     </div>
   </div>
-  <div class="row2" style="margin-top:8px">
+  <div class="row2" style="margin-top:8px;align-items:flex-end">
     <div class="fg">
-      <label>目的地上空 予測残燃料 (LB)</label>
+      <label id="fu-dv-fob-label">目的地上空 予測残燃料 (LB)</label>
       <input type="number" id="fu-dv-fob" step="500" min="0" inputmode="numeric" placeholder="FMC PROG 目的地予測残" oninput="fuDivert()">
     </div>
+    <div class="fg">
+      <label>入力モード</label>
+      <div class="tgl-group">
+        <button id="fu-dv-mode-over"    class="tgl on" onclick="fuSetDvMode('over')">上空予測</button>
+        <button id="fu-dv-mode-landing" class="tgl"    onclick="fuSetDvMode('landing')">FMC着陸予想</button>
+      </div>
+    </div>
   </div>
+  <div id="fu-dv-mode-note" style="font-size:0.62em;color:var(--muted);margin-top:4px"></div>
 
   <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:12px;margin-bottom:4px">▸ DIVERT 判断（目的地 or ALTN）</div>
   <div id="fu-dv-divert">
@@ -9944,19 +9952,44 @@ const _fuFmt = (n)=> Math.round(n).toLocaleString('en-US');
 
 // ① Divert 決心燃料 — 上段:Divert判断 / 下段:Final Reserveラダー
 const _fuRoundUp=(x)=>Math.ceil(x/100)*100;   // 100 LB 単位で切上げ
+let _fuDvMode='over';   // 'over'=目的地上空予測（入力そのまま） / 'landing'=FMC着陸予想（+App分で上空換算）
+function fuSetDvMode(m){
+  _fuDvMode=m;
+  document.getElementById('fu-dv-mode-over').className    = m==='over'    ? 'tgl on':'tgl';
+  document.getElementById('fu-dv-mode-landing').className = m==='landing' ? 'tgl on':'tgl';
+  const lbl=document.getElementById('fu-dv-fob-label');
+  const inp=document.getElementById('fu-dv-fob');
+  if(m==='landing'){
+    lbl.textContent='FMC PROG 着陸時予想燃料 (LB)';
+    inp.placeholder='FMC 着陸時予想残';
+  } else {
+    lbl.textContent='目的地上空 予測残燃料 (LB)';
+    inp.placeholder='FMC PROG 目的地予測残';
+  }
+  fuDivert();
+}
 function fuDivert(){
   const rsv=_fuNum('fu-dv-rsv'), altn=_fuNum('fu-dv-altn');
-  const app=_fuNum('fu-dv-app'), fob=_fuNum('fu-dv-fob');
+  const app=_fuNum('fu-dv-app'), fobRaw=_fuNum('fu-dv-fob');
   let hold=_fuNum('fu-dv-hold'); if(!isFinite(hold)||hold<=0) hold=20000;
   const elD=document.getElementById('fu-dv-divert');
   const elR=document.getElementById('fu-dv-result');
+  const elN=document.getElementById('fu-dv-mode-note');
   if(!isFinite(rsv)){
     elD.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>';
     elR.innerHTML='<p style="font-size:0.78em;color:var(--muted)">RSV を入力してください</p>';
+    if(elN) elN.innerHTML='';
     return;
   }
   const a=isFinite(altn)?altn:0, ap=isFinite(app)?app:0;
-  const hasFob=isFinite(fob);
+  const hasFob=isFinite(fobRaw);
+  // FMC着陸予想モードは「入力＝着陸時予測」なので App分を足して上空換算(fob)に統一する
+  const fob = hasFob ? (_fuDvMode==='landing' ? fobRaw+ap : fobRaw) : NaN;
+  if(elN){
+    elN.innerHTML = (_fuDvMode==='landing' && hasFob)
+      ? `入力＝着陸時予測 <b style="color:var(--fg)">${_fuFmt(fobRaw)}</b> LB → 上空換算（＋App分 ${_fuFmt(ap)}）＝ <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB として判定`
+      : (_fuDvMode==='over' ? '入力＝目的地上空（進入前）の予測残燃料。着陸時予測は App分を差し引いて算出。' : '');
+  }
 
   // ▸ 上段: Divert 判断 — Divert 可能限界 = ALTN + RSV
   const divertLimit=_fuRoundUp(rsv+a);
