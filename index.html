@@ -9440,11 +9440,13 @@ restoreState();
   <div style="font-size:0.68em;font-weight:700;color:#4f8fd8;letter-spacing:.03em;margin-top:12px;margin-bottom:4px">1st Alternate</div>
   <div class="row2">
     <div class="fg">
-      <label>Flight Fuel (LB)</label>
-      <input type="number" id="fu-dv-alt1-flight" step="100" min="0" inputmode="numeric" placeholder="ALTNまでの飛行燃料" oninput="fuDivert()">
+      <label>ALTN Fuel (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">OFP Alternate Fuel・進入込一括値</span></label>
+      <input type="number" id="fu-dv-alt1-flight" step="100" min="0" inputmode="numeric" placeholder="ALTNまでの飛行＋進入燃料" oninput="fuDivert()">
     </div>
     <div class="fg">
-      <label>Approach 燃料 (LB)</label>
+      <label>Approach 燃料 (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">IAF基準判断専用・ALTN Fuelには非加算</span></label>
       <input type="number" id="fu-dv-alt1-app" step="100" min="0" inputmode="numeric" placeholder="1st ALTN 進入〜接地" oninput="fuDivert()">
     </div>
   </div>
@@ -9464,11 +9466,13 @@ restoreState();
     <div style="font-size:0.68em;font-weight:700;color:#a78bfa;letter-spacing:.03em;margin-top:8px;margin-bottom:4px">2nd Alternate</div>
     <div class="row2">
       <div class="fg">
-        <label>Flight Fuel (LB)</label>
-        <input type="number" id="fu-dv-alt2-flight" step="100" min="0" inputmode="numeric" placeholder="2nd ALTNまでの飛行燃料" oninput="fuDivert()">
+        <label>ALTN Fuel (LB)
+          <span style="font-size:0.72em;font-weight:400;color:var(--muted)">OFP Alternate Fuel・進入込一括値</span></label>
+        <input type="number" id="fu-dv-alt2-flight" step="100" min="0" inputmode="numeric" placeholder="2nd ALTNまでの飛行＋進入燃料" oninput="fuDivert()">
       </div>
       <div class="fg">
-        <label>Approach 燃料 (LB)</label>
+        <label>Approach 燃料 (LB)
+          <span style="font-size:0.72em;font-weight:400;color:var(--muted)">IAF基準判断専用・ALTN Fuelには非加算</span></label>
         <input type="number" id="fu-dv-alt2-app" step="100" min="0" inputmode="numeric" placeholder="2nd ALTN 進入〜接地" oninput="fuDivert()">
       </div>
     </div>
@@ -10028,22 +10032,23 @@ function fuAlt2Toggle(){
   fuDivert();
 }
 // 1アルタネート分の Commit Fuel / Minimum Diversion Fuel ブロックを生成
-function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold, iafFob){
-  const hasAlt = isFinite(flightVal) && isFinite(appVal);
+function _fuAltBlock(label, headCol, altnVal, appVal, rsv, fob, hasFob, hold, iafFob){
+  const hasAlt = isFinite(altnVal);
   let html=`<div style="font-size:0.72em;font-weight:700;color:${headCol};letter-spacing:.03em;margin-top:8px;margin-bottom:4px">${label}</div>`;
   if(!hasAlt){
-    html+='<p style="font-size:0.75em;color:var(--muted)">Flight Fuel・Approach 燃料を入力してください</p>';
+    html+='<p style="font-size:0.75em;color:var(--muted)">ALTN Fuel を入力してください</p>';
     return html;
   }
-  const altTotal=flightVal+appVal;
-  const minDivFuel=_fuRoundUp(rsv+altTotal);
-  const commitFuel=_fuRoundUp(rsv+altTotal+rsv*0.5);
+  // Minimum Diversion Fuel = ALTN Fuel（OFPの Alternate Fuel・Approach 込み一括値）＋ RSV
+  // ※ Approach 燃料は別入力だが、ALTN Fuel に既に含まれるため、ここでは加算しない（二重計上防止）
+  const minDivFuel=_fuRoundUp(rsv+altnVal);
+  const commitFuel=_fuRoundUp(rsv+altnVal+rsv*0.5);
   const row=(lbl,val,col,note)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;background:rgba(0,0,0,0.25);border-radius:6px;padding:8px 10px;margin-bottom:4px">`
     +`<span style="font-size:0.78em;font-weight:700;color:${col}">${lbl}<div style="font-size:0.72em;font-weight:400;color:var(--muted)">${note}</div></span>`
     +`<span style="text-align:right"><span style="font-size:1.05em;font-weight:700;font-variant-numeric:tabular-nums;color:${col}">${_fuFmt(val)} <span style="font-size:0.68em;color:var(--muted)">LB</span></span>`
     +`<div style="font-size:0.6em;color:var(--muted);letter-spacing:.04em">（目的地上空 FOB 基準）</div></span></div>`;
   html+=row('Commit Fuel',commitFuel,'#7ab8ff','Diversion Decision Fuel ＝ Minimum Diversion Fuel＋RSV×0.5')
-    +row('Minimum Diversion Fuel',minDivFuel,'#4f8fd8',`＝ ALTN(Flight ${_fuFmt(flightVal)}＋App ${_fuFmt(appVal)})＋RSV`)
+    +row('Minimum Diversion Fuel',minDivFuel,'#4f8fd8',`＝ ALTN Fuel(${_fuFmt(altnVal)}・進入込)＋RSV`)
     +`<div style="font-size:0.6em;color:var(--muted);margin:2px 0 8px">Commit Fuel に達したら Diversion 要求 or 目的地 Commit の意思決定（Intention）を行う。Minimum Diversion Fuel を割ると ALTN へ回っても RSV を確保できない。</div>`;
   if(hasFob){
     const mCommit=fob-commitFuel, mMin=fob-minDivFuel;
@@ -10064,8 +10069,8 @@ function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold, 
   } else {
     html+='<div style="font-size:0.72em;color:var(--muted)">目的地上空 予測残燃料を入力すると判定を表示。</div>';
   }
-  // ▸ Diversion 後 Final Reserve（IAF FOB 基準）
-  if(isFinite(iafFob)){
+  // ▸ Diversion 後 Final Reserve（IAF FOB 基準）※ Approach 燃料はここでのみ使用（ALTN Fuel には非加算）
+  if(isFinite(iafFob) && isFinite(appVal)){
     const altLdg = iafFob - appVal;   // IAF FOB − その ALTN の Approach 燃料 ＝ 着陸時予測
     const ten=hold*10/60, fifteen=hold*15/60;
     const ilevels=[
