@@ -9448,6 +9448,13 @@ restoreState();
       <input type="number" id="fu-dv-alt1-app" step="100" min="0" inputmode="numeric" placeholder="1st ALTN 進入〜接地" oninput="fuDivert()">
     </div>
   </div>
+  <div class="row2" style="margin-top:6px">
+    <div class="fg">
+      <label>IAF FOB (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">Diversion 後 Final Reserve 判断用</span></label>
+      <input type="number" id="fu-dv-alt1-iaf" step="500" min="0" inputmode="numeric" placeholder="1st ALTN IAF 予測残燃料（任意）" oninput="fuDivert()">
+    </div>
+  </div>
 
   <label style="display:flex;align-items:center;gap:8px;font-size:0.78em;color:var(--accent);cursor:pointer;user-select:none;margin-top:10px">
     <input type="checkbox" id="fu-dv-alt2-chk" onchange="fuAlt2Toggle()" style="width:16px;height:16px;accent-color:var(--accent)">
@@ -9463,6 +9470,13 @@ restoreState();
       <div class="fg">
         <label>Approach 燃料 (LB)</label>
         <input type="number" id="fu-dv-alt2-app" step="100" min="0" inputmode="numeric" placeholder="2nd ALTN 進入〜接地" oninput="fuDivert()">
+      </div>
+    </div>
+    <div class="row2" style="margin-top:6px">
+      <div class="fg">
+        <label>IAF FOB (LB)
+          <span style="font-size:0.72em;font-weight:400;color:var(--muted)">Diversion 後 Final Reserve 判断用</span></label>
+        <input type="number" id="fu-dv-alt2-iaf" step="500" min="0" inputmode="numeric" placeholder="2nd ALTN IAF 予測残燃料（任意）" oninput="fuDivert()">
       </div>
     </div>
   </div>
@@ -10014,7 +10028,7 @@ function fuAlt2Toggle(){
   fuDivert();
 }
 // 1アルタネート分の Commit Fuel / Minimum Diversion Fuel ブロックを生成
-function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold){
+function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold, iafFob){
   const hasAlt = isFinite(flightVal) && isFinite(appVal);
   let html=`<div style="font-size:0.72em;font-weight:700;color:${headCol};letter-spacing:.03em;margin-top:8px;margin-bottom:4px">${label}</div>`;
   if(!hasAlt){
@@ -10036,7 +10050,10 @@ function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold){
     const minsC=mCommit/hold*60, minsM=mMin/hold*60;
     if(mCommit>=0){
       html+=`<div style="margin-bottom:4px"><span style="background:#123321;color:#5fd08a;font-weight:700;font-size:0.8em;padding:3px 10px;border-radius:6px">🟢 正常</span></div>`
-        +`<div style="font-size:0.74em;line-height:1.6">目的地上空 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB → Commit Fuel まで余裕 <b style="color:#5fd08a">+${_fuFmt(mCommit)}</b> LB（約 <b style="color:var(--fg)">${Math.floor(minsC)} 分</b>）。到達したら Diversion 要求 or 目的地 Commit を判断。</div>`;
+        +`<div style="background:rgba(95,208,138,0.1);border-radius:6px;padding:6px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline">`
+        +`<span style="font-size:0.72em;color:var(--muted)">⏱ Hold 継続可能時間（Commit Fuel まで）</span>`
+        +`<span style="font-size:1.15em;font-weight:700;color:#5fd08a;font-variant-numeric:tabular-nums">${Math.floor(minsC)} 分</span></div>`
+        +`<div style="font-size:0.74em;line-height:1.6">目的地上空 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB → Commit Fuel まで余裕 <b style="color:#5fd08a">+${_fuFmt(mCommit)}</b> LB。到達したら Diversion 要求 or 目的地 Commit を判断。</div>`;
     } else if(mMin>=0){
       html+=`<div style="margin-bottom:4px"><span style="background:#3a2f10;color:#e0a020;font-weight:700;font-size:0.8em;padding:3px 10px;border-radius:6px">🟡 意思決定要（Intention）</span></div>`
         +`<div style="font-size:0.74em;line-height:1.6">目的地上空 FOB <b style="color:var(--fg)">${_fuFmt(fob)}</b> LB は Commit Fuel を <b style="color:#e0a020">${_fuFmt(-mCommit)}</b> LB 下回る。<b>今すぐ</b> ALTN への Diversion 要求、または目的地への Commit を決定。Minimum Diversion Fuel まで余裕 <b style="color:var(--fg)">${_fuFmt(mMin)}</b> LB（約 ${Math.floor(minsM)} 分）。</div>`;
@@ -10047,13 +10064,34 @@ function _fuAltBlock(label, headCol, flightVal, appVal, rsv, fob, hasFob, hold){
   } else {
     html+='<div style="font-size:0.72em;color:var(--muted)">目的地上空 予測残燃料を入力すると判定を表示。</div>';
   }
+  // ▸ Diversion 後 Final Reserve（IAF FOB 基準）
+  if(isFinite(iafFob)){
+    const altLdg = iafFob - appVal;   // IAF FOB − その ALTN の Approach 燃料 ＝ 着陸時予測
+    const ten=hold*10/60, fifteen=hold*15/60;
+    const ilevels=[
+      {lbl:'Minimum Fuel', v:_fuRoundUp(rsv+fifteen), col:'#e0a020'},
+      {lbl:'Pan Pan 通報',  v:_fuRoundUp(rsv+ten),      col:'#a78bfa'},
+      {lbl:'Mayday Fuel',  v:_fuRoundUp(rsv),          col:'#e05555'},
+    ];
+    html+=`<div style="margin-top:8px;border-top:1px dashed #12283c;padding-top:8px">`
+      +`<div style="font-size:0.68em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-bottom:4px">▸ Diversion 後 Final Reserve（${label}・IAF FOB 基準）</div>`;
+    ilevels.forEach(L=>{
+      const diff=altLdg-L.v, mins=diff/hold*60;
+      const dcol=diff>=0?'#5fd08a':'#ff7a8c';
+      html+=`<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:0.76em;padding:4px 2px;border-top:1px solid #12283c">`
+        +`<span style="font-weight:700;color:${L.col}">${L.lbl}</span>`
+        +`<span style="text-align:right">${_fuFmt(L.v)} <span style="font-size:0.85em;color:var(--muted)">LB</span> ・ <span style="color:${dcol};font-weight:700">${diff>=0?'到達まで '+Math.floor(mins)+' 分':'超過 '+_fuFmt(-diff)+' LB'}</span></span></div>`;
+    });
+    html+=`<div style="font-size:0.6em;color:var(--muted);margin-top:5px">IAF FOB <b style="color:var(--fg)">${_fuFmt(iafFob)}</b> LB − Approach <b style="color:var(--fg)">${_fuFmt(appVal)}</b> LB ＝ 着陸時予測 LDG FUEL <b style="color:var(--fg)">${_fuFmt(altLdg)}</b> LB（${label} 着陸基準）</div>`
+      +`</div>`;
+  }
   return html;
 }
 function fuDivert(){
   const rsv=_fuNum('fu-dv-rsv');
-  const alt1Flight=_fuNum('fu-dv-alt1-flight'), alt1App=_fuNum('fu-dv-alt1-app');
+  const alt1Flight=_fuNum('fu-dv-alt1-flight'), alt1App=_fuNum('fu-dv-alt1-app'), alt1Iaf=_fuNum('fu-dv-alt1-iaf');
   const alt2Chk=document.getElementById('fu-dv-alt2-chk'), alt2On=alt2Chk&&alt2Chk.checked;
-  const alt2Flight=_fuNum('fu-dv-alt2-flight'), alt2App=_fuNum('fu-dv-alt2-app');
+  const alt2Flight=_fuNum('fu-dv-alt2-flight'), alt2App=_fuNum('fu-dv-alt2-app'), alt2Iaf=_fuNum('fu-dv-alt2-iaf');
   const app=_fuNum('fu-dv-app'), fobRaw=_fuNum('fu-dv-fob');
   let hold=_fuNum('fu-dv-hold'); if(!isFinite(hold)||hold<=0) hold=20000;
   const elD=document.getElementById('fu-dv-divert');
@@ -10079,10 +10117,10 @@ function fuDivert(){
 
   // ▸ 上段: Divert 判断（1st Alternate ＋ 任意で 2nd Alternate）
   {
-    let html=_fuAltBlock('1st Alternate','#4f8fd8',alt1Flight,alt1App,rsv,fob,hasFob,hold);
+    let html=_fuAltBlock('1st Alternate','#4f8fd8',alt1Flight,alt1App,rsv,fob,hasFob,hold,alt1Iaf);
     if(alt2On){
       html+='<div style="border-top:1px dashed #12283c;margin:10px 0 0"></div>'
-        +_fuAltBlock('2nd Alternate','#a78bfa',alt2Flight,alt2App,rsv,fob,hasFob,hold);
+        +_fuAltBlock('2nd Alternate','#a78bfa',alt2Flight,alt2App,rsv,fob,hasFob,hold,alt2Iaf);
     }
     elD.innerHTML=html;
   }
