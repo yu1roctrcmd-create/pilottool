@@ -9485,24 +9485,25 @@ restoreState();
     </div>
   </div>
 
-  <div style="font-size:0.68em;font-weight:700;color:var(--muted);letter-spacing:.03em;margin-top:12px;margin-bottom:4px">目的地</div>
+  <div style="font-size:0.68em;font-weight:700;color:#5fd08a;letter-spacing:.03em;margin-top:12px;margin-bottom:2px">目的地（RJAA 等）— DIVERT判断／FINAL RESERVE の共通入力</div>
+  <div style="font-size:0.62em;color:var(--muted);margin-bottom:6px">下の2値は①内の <b style="color:var(--fg)">▸DIVERT判断</b>（全Alternate共通）と <b style="color:var(--fg)">▸FINAL RESERVE MANAGEMENT</b>（目的地着陸）の両方を駆動します。Alternate側の IAF FOB／Approach燃料（Diversion後Final Reserve用）とは別物です。</div>
   <div class="row2">
     <div class="fg">
-      <label>App分 — 目的地 進入燃料 (LB)
-        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">Final Reserve ラダー用</span></label>
+      <label>App分（目的地） (LB)
+        <span style="font-size:0.72em;font-weight:400;color:var(--muted)">FOB⇄LDG FUEL 換算用</span></label>
       <input type="number" id="fu-dv-app" step="500" min="0" value="5000" inputmode="numeric" placeholder="目的地 進入〜接地" oninput="fuDivert()">
     </div>
   </div>
   <div class="row2" style="margin-top:8px;align-items:flex-end">
     <div class="fg">
-      <label id="fu-dv-fob-label">目的地上空 予測残燃料 (LB)</label>
+      <label id="fu-dv-fob-label">目的地 FOB / LDG FUEL (LB)</label>
       <input type="number" id="fu-dv-fob" step="500" min="0" inputmode="numeric" placeholder="FMC PROG 目的地予測残" oninput="fuDivert()">
     </div>
     <div class="fg">
       <label>入力モード</label>
       <div class="tgl-group">
-        <button id="fu-dv-mode-over"    class="tgl on" onclick="fuSetDvMode('over')">上空予測</button>
-        <button id="fu-dv-mode-landing" class="tgl"    onclick="fuSetDvMode('landing')">FMC着陸予想</button>
+        <button id="fu-dv-mode-over"    class="tgl on" onclick="fuSetDvMode('over')">上空予測 (FOB)</button>
+        <button id="fu-dv-mode-landing" class="tgl"    onclick="fuSetDvMode('landing')">FMC着陸予想 (LDG FUEL)</button>
       </div>
     </div>
   </div>
@@ -9510,7 +9511,7 @@ restoreState();
 
   <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:12px;margin-bottom:4px">▸ DIVERT 判断（目的地 or ALTN）</div>
   <div id="fu-dv-divert">
-    <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地上空 予測残燃料を入力してください</p>
+    <p style="font-size:0.78em;color:var(--muted)">RSV・ALTN・目的地 FOB/LDG FUEL を入力してください</p>
   </div>
 
   <div style="font-size:0.66em;font-weight:700;color:var(--accent);letter-spacing:.03em;margin-top:14px;margin-bottom:2px;border-top:1px solid #12283c;padding-top:10px">▸ FINAL RESERVE MANAGEMENT（着陸時予測燃料ベース・FMC Prediction 準拠）</div>
@@ -10018,10 +10019,10 @@ function fuSetDvMode(m){
   const lbl=document.getElementById('fu-dv-fob-label');
   const inp=document.getElementById('fu-dv-fob');
   if(m==='landing'){
-    lbl.textContent='FMC PROG 着陸時予想燃料 (LB)';
+    lbl.textContent='目的地 LDG FUEL — FMC PROG 着陸時予想燃料 (LB)';
     inp.placeholder='FMC 着陸時予想残';
   } else {
-    lbl.textContent='目的地上空 予測残燃料 (LB)';
+    lbl.textContent='目的地 FOB — 上空 予測残燃料 (LB)';
     inp.placeholder='FMC PROG 目的地予測残';
   }
   fuDivert();
